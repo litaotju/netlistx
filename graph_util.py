@@ -234,7 +234,7 @@ def construct_s_graph(edge_set2,vertex_set,vertex_set_dict,verbose=False):
     return s_graph,edge_set_cpy,vertex_set_cpy
      
 ###############################################################################
-def visualize_s_graph(s_vertex_set,vertex_set_dict,s_edge_set,fname):    
+def visualize_s_graph(s_vertex_set,vertex_set_dict,s_edge_set,fname,display_pipo=True):    
     graph=nx.DiGraph() 
     #节点的分类，以便于进行染色
     pi_vertex=[]
@@ -251,18 +251,24 @@ def visualize_s_graph(s_vertex_set,vertex_set_dict,s_edge_set,fname):
             fd_vertex.append(eachVertex)
     graph.add_nodes_from(pi_vertex)
     graph.add_nodes_from(po_vertex)
-    graph.add_nodes_from(fd_vertex)    
-    
+    graph.add_nodes_from(fd_vertex)     
     graph.add_edges_from(s_edge_set)
-    graph.remove_nodes_from(pi_vertex+po_vertex)
     #设置layout
     ps=nx.spring_layout(graph)
-    #nx.draw_networkx_nodes(graph,pos=ps,nodelist=pi_vertex,node_color='r')
-    #nx.draw_networkx_nodes(graph,pos=ps,nodelist=po_vertex,node_color='b')
+    
+    if display_pipo==False:        
+        graph.remove_nodes_from(pi_vertex+po_vertex)
+    else:
+        nx.draw_networkx_nodes(graph,pos=ps,nodelist=pi_vertex,node_color='r')
+        nx.draw_networkx_nodes(graph,pos=ps,nodelist=po_vertex,node_color='b')
     nx.draw_networkx_nodes(graph,pos=ps,nodelist=fd_vertex,node_color='g')
     nx.draw_networkx_edges(graph,ps)
     nx.draw_networkx_labels(graph,ps)
-    plt.savefig(fname+".png")   
+    
+    pic_dir=os.getcwd()+"//tmp//"
+    name_base=os.path.splitext(fname)
+    pic_full_name=pic_dir+name_base[0]+".png"
+    plt.savefig(pic_full_name)   
     return True
 
 ###############################################################################
@@ -292,7 +298,7 @@ if __name__=="__main__":
     s_graph,s_edge,s_vertex                     = construct_s_graph(edge_set2,vertex_set,\
                                                     vertex_set_dict,verbose=True)   
 #   s_graph=construct_s_graph_new(graph,vertex_set_dict,verbose=True)
-    visualize_s_graph(s_vertex,vertex_set_dict,s_edge,fname)
+    visualize_s_graph(s_vertex,vertex_set_dict,s_edge,fname,display_pipo=False)
 #   logic_depth_dict=calc_logic_depth(s_graph,vertex_set_dict)    
     
     #########################################################################                                                
