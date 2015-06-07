@@ -1,0 +1,9 @@
+clk:::::PI
+reset:::::PI
+in1:::::PI
+in2:::::PI
+\r_Z[0]:::::FD
+\r_Z[1]:::::FD
+\r_Z[2]:::::FD
+\r_Z[3]:::::FD
+out:::::PO

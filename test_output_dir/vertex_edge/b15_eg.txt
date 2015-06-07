@@ -1,3 +1,11 @@
+\state2_Z[4] \P1.flush_Z
+\state2_Z[4] \P1.more_Z
+\state2_Z[8] CodeFetch_Z
+\ByteEnable_Z[3] \BE_n_Z[3]
+\ByteEnable_Z[2] \BE_n_Z[2]
+\ByteEnable_Z[1] \BE_n_Z[1]
+\ByteEnable_Z[0] \BE_n_Z[0]
+MemoryFetch_Z M_IO_n_Z
 \Datao_Z[2] Datao[2]
 \Datao_Z[1] Datao[1]
 \Datao_Z[0] Datao[0]
@@ -28322,7 +28330,6 @@ READY_n \state2_Z[7]
 \state2_Z[6] \state2_Z[5]
 READY_n \state2_Z[5]
 \state2_Z[4] \state2_Z[8]
-\state2_Z[8] CodeFetch_Z
 \state2_Z[8] \state2_Z[8]
 \P1.instaddrpointer_Z[31] \P1.instaddrpointer_Z[31]
 \rEIP_Z[31] \P1.instaddrpointer_Z[31]
