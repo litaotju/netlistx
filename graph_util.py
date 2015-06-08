@@ -292,27 +292,32 @@ def calc_logic_depth(s_graph,vertex_set_dict):
     
 ###############################################################################
 if __name__=="__main__":
-    fname=raw_input("plz enter filename:")
-    signal_list,m_list,defparam_init_list       = nu.extract_m_list(fname,verbose=False)
-    graph,vertex_set,vertex_set_dict,edge_set2  = get_edge_vertex(m_list,verbose=True)
-    s_graph,s_edge,s_vertex                     = construct_s_graph(edge_set2,vertex_set,\
-                                                    vertex_set_dict,verbose=True)   
+    parent_path=os.getcwd()+"\\test_input_netlist\\bench_virtex4" 
+    for eachFile in os.listdir(parent_path):
+        print  eachFile
+        if  os.path.splitext(eachFile)[1]=='.v':
+            fname=os.path.join(parent_path,eachFile)
+#    fname=raw_input("plz enter filename:")
+            signal_list,m_list,defparam_init_list       = nu.extract_m_list(fname,verbose=False)
+            graph,vertex_set,vertex_set_dict,edge_set2  = get_edge_vertex(m_list,verbose=False)
+            s_graph,s_edge,s_vertex                     = construct_s_graph(edge_set2,vertex_set,\
+                                                            vertex_set_dict,verbose=False)   
 #   s_graph=construct_s_graph_new(graph,vertex_set_dict,verbose=True)
-    visualize_s_graph(s_vertex,vertex_set_dict,s_edge,fname,display_pipo=False)
+#   visualize_s_graph(s_vertex,vertex_set_dict,s_edge,fname,display_pipo=False)
 #   logic_depth_dict=calc_logic_depth(s_graph,vertex_set_dict)    
-    
     #########################################################################                                                
-    ###setup output file dir输出设置
-    name_base=os.path.splitext(fname)
-    output_dir=os.getcwd()+"//test_output_dir//vertex_edge//"   
-    fobj=open(output_dir+name_base[0]+'_eg.txt','w')
-    fobj2=open(output_dir+name_base[0]+'_vet.txt','w')
-    for eachEdge in s_edge:
-        fobj.writelines(str(eachEdge[0])+' '+str(eachEdge[1])+'\n')
-    for eachVertex in s_vertex:
-       fobj2.writelines(eachVertex+':::::'+vertex_set_dict[eachVertex]+'\n')
-    fobj.close()
-    fobj2.close()
+            ###setup output file dir输出设置
+            name_base=os.path.splitext(eachFile)
+            output_dir=os.getcwd()+"\\test_output_dir\\vertex_edge\\"   
+            fobj=open(output_dir+name_base[0]+'_eg.txt','w')
+            fobj2=open(output_dir+name_base[0]+'_vet.txt','w')
+            for eachEdge in s_edge:
+                fobj.writelines(str(eachEdge[0])+' '+str(eachEdge[1])+'\n')
+            for eachVertex in s_vertex:
+               fobj2.writelines(eachVertex+':::::'+vertex_set_dict[eachVertex]+'\n')
+            fobj.close()
+            fobj2.close()
+            print name_base+" extract s_graph successfully."
     
     
     
