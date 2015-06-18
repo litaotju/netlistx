@@ -2,6 +2,7 @@ import os
 import os.path
 import re
 import netlist_util as nu
+import file_util as fu
 #import generate_testbench as gt
 #############################################################################################
 def insert_scan_chain(fname,verbose=False,presult=True,\
@@ -9,15 +10,18 @@ def insert_scan_chain(fname,verbose=False,presult=True,\
                 K=6):
     input_file=os.path.join(input_file_dir,fname)    
     
-    #functions in netlist.util called
-    signal_list,m_list,defparam_list=nu.extract_m_list(input_file,verbose)
-    all_fd_dict=nu.get_all_fd(m_list,verbose)
-    all_lut_dict,all_lut_cnt=nu.get_all_lut(m_list,verbose)
-    assert len(all_lut_dict.keys())==sum(all_lut_cnt),'Assertion Error: LUT cnt error'
+    #file -->> m_list
+    signal_list,m_list,defparam_list=fu.extract_m_list(input_file,verbose)
+    
+    #m_list -->>all info need 
+    all_fd_dict                          =nu.get_all_fd(m_list,verbose)
+    all_lut_dict,all_lut_cnt             =nu.get_all_lut(m_list,verbose) 
     #gt.generate_testbench(m_list[0],fd_cnt=len(all_fd_dict),output_dir=output_file_dir)
-    lut_out2_FD_dict,FD_din_lut_list=nu.get_lut_cnt2_FD(m_list,all_fd_dict,verbose,K)
-    ce_signal_list,fd_ce_cnt,fd_has_ce_list=nu.get_ce_in_fd(m_list,all_fd_dict.keys(),verbose)
-   
+    lut_out2_FD_dict,FD_din_lut_list        =nu.get_lut_cnt2_FD(m_list,all_fd_dict,verbose,K)    
+    ce_signal_list,fd_has_ce_list           =nu.get_ce_in_fd(all_fd_dict,verbose)
+    lut_cnt2_ce                             =nu.get_lut_cnt2_ce(m_list,ce_signal_list,K)
+    
+    fd_ce_cnt=len(fd_has_ce_list)
     #####################################################################    
     #some string constant nedd to add before a FD line
     sen ='    .SCAN_EN(scan_en),\n'
@@ -32,7 +36,8 @@ def insert_scan_chain(fname,verbose=False,presult=True,\
     scan_out=[]    
     fd_state=False
     current_fd=None
-    status=False
+    
+    edit_lut_state='IDLE'  #('IDLE','ADD_MUX','ADD_OR')
     current_lut=None
     
     counter=0
@@ -46,7 +51,7 @@ def insert_scan_chain(fname,verbose=False,presult=True,\
     #cnt for debug only 
     
     ##get all lines ready for match and do
-    all_lines=nu.remove_comment(input_file,verbose)
+    all_lines=fu.remove_comment(input_file,verbose)
     name_base=os.path.splitext(fname)[0]
     output_file=os.path.join(output_file_dir,name_base+'_insert_scan_chain.v')
     try:
@@ -63,10 +68,12 @@ def insert_scan_chain(fname,verbose=False,presult=True,\
             x="  module "+re.match('^\s*module\s+([^\s]+)',x).groups()[0]+"_scan  (\n"
             fobj.writelines(x)
             fobj.writelines(module_ports_decl)
+        #top module decl end
         elif x[0]==';':
             fobj.writelines(x)
             fobj.writelines(in_out_put_del)
             fobj.writelines(wire_del)
+        #before end of whole module
         elif x[0:10]=='endmodule ':
             for eachCe in  ce_signal_list:
                 gated_ce='gated_'+re.sub('[\\\.\[\]\s]','_',eachCe)
@@ -114,40 +121,62 @@ def insert_scan_chain(fname,verbose=False,presult=True,\
                     fobj.writelines(x)
             ######################################################################    
             #if find a lut record the info and do add port before the LUT LO port
-            elif(match_lut is not None)and(match_lut.groups()[1] in lut_out2_FD_dict.keys()):
-                status=True
-                cnt_edited_lut=cnt_edited_lut+1                
-                counter=counter+1
-                lut_port_num=int(match_lut.groups()[0][3])
+            elif match_lut is not None:
+                assert edit_lut_state=='IDLE'
                 current_lut=match_lut.groups()[1]
-                assert lut_port_num<=(K-2),"edit a LUT has more the 4 PORTS %s" % match_lut.groups()[1]
-                x=re.sub('LUT[1-4]',('LUT'+str(lut_port_num+2)),x)
-                fobj.writelines(x)                
-            elif (re.match('\s*\.LO\(|\s*\.O\(',x) is not None) and (status==True):
-                cnt_edited_lut_port=cnt_edited_lut_port+1                
-                fobj.writelines('    .I'+str(lut_port_num)+'(scan_in'+str(counter)+'),\n')
-                fobj.writelines('    .I'+str(lut_port_num+1)+'(scan_en),\n')
-                fobj.writelines(x)
-                scan_in.append('scan_in'+str(counter))
-                scan_out.append(all_fd_dict[lut_out2_FD_dict[current_lut][1]][1])
-                lut_port_num=0
-                status=False
+                lut_port_num=int(match_lut.groups()[0][3])
+                if current_lut in lut_out2_FD_dict.keys():
+                    edit_lut_state='ADD_MUX'
+                    cnt_edited_lut=cnt_edited_lut+1                
+                    counter=counter+1
+                    assert lut_port_num<=(K-2),"ADD_MUX LUT has more the %d PORTS %s" %(K-2,current_lut)
+                    x=re.sub('LUT[1-4]',('LUT'+str(lut_port_num+2)),x)
+                    fobj.writelines(x)
+                elif current_lut in lut_cnt2_ce:
+                    edit_lut_state='ADD_OR'
+                    assert lut_port_num<=K-1,"ADD_OR LUT has more the %d PORTS %s" %(K-1,current_lut)
+                    x=re.sub('LUT[1-5]',('LUT'+str(lut_port_num+1)),x)
+                    fobj.writelines(x)
+            elif re.match('\s*\.LO\(|\s*\.O\(',x) is not None:
+                if edit_lut_state=='ADD_MUX':
+                    cnt_edited_lut_port=cnt_edited_lut_port+1                
+                    fobj.writelines('    .I'+str(lut_port_num)+'(scan_in'+str(counter)+'),\n')
+                    fobj.writelines('    .I'+str(lut_port_num+1)+'(scan_en),\n')
+                    fobj.writelines(x)
+                    scan_in.append('scan_in'+str(counter))
+                    scan_out.append(all_fd_dict[lut_out2_FD_dict[current_lut][1]][1])
+                    lut_port_num=0
+                elif edit_lut_state=='ADD_OR':
+                    fobj.writelines('    .I'+str(lut_port_num+1)+'(scan_en),\n')
+                    fobj.writelines(x)
+                    
             ######################################################################
             #edit the LUT defparam for PORT_ADDED LUT
-            elif(match_defparam is not None)and(match_defparam.groups()[1] in lut_out2_FD_dict.keys()):
-                cnt_edited_lut_para=cnt_edited_lut_para+1                
-                lut_port_num=(lut_out2_FD_dict[match_defparam.groups()[1]][0])
-                assert lut_port_num<=(K-2),"Error:find a LUT has %d port in lut_out2_FD_dict" % lut_port_num
+            elif match_defparam is not None:
                 old_init=match_defparam.groups()[4]
-                if lut_port_num==1:
-                    assert  (match_defparam.groups()[3]=='2' and old_init=="1"),\
-                    "Error:find LUT1 .INIT !=2'h1 %s" % match_defparam.groups()[1]
-                    NEW_INIT="8'hC5"
-                else:
-                    NEW_INIT=str(2**(lut_port_num+2))+'\'h'+'F'*int(2**(lut_port_num-2)) \
-                    +'0'*int(2**(lut_port_num-2))+old_init*2
-                x=re.sub('([1-9]+)\'h([0-9A-F]+)',NEW_INIT,x)
-                fobj.writelines(x)
+                if edit_lut_state=='ADD_MUX':
+                    edit_lut_state='IDLE'
+                    cnt_edited_lut_para=cnt_edited_lut_para+1                
+                    lut_port_num=(lut_out2_FD_dict[match_defparam.groups()[1]][0])
+                    assert (match_defparam.groups()[1] in lut_out2_FD_dict.keys())
+                    assert lut_port_num<=(K-2),"Error:find a LUT has %d port in lut_out2_FD_dict" % lut_port_num
+                    if lut_port_num==1:
+                        assert  (match_defparam.groups()[3]=='2' and old_init=="1"),\
+                        "Error:find LUT1 .INIT !=2'h1 %s" % match_defparam.groups()[1]
+                        NEW_INIT="8'hC5"
+                    else:
+                        NEW_INIT=str(2**(lut_port_num+2))+'\'h'+'F'*int(2**(lut_port_num-2)) \
+                        +'0'*int(2**(lut_port_num-2))+old_init*2
+                    x=re.sub('([1-9]+)\'h([0-9A-F]+)',NEW_INIT,x)
+                    fobj.writelines(x)
+                elif edit_lut_state=='ADD_OR':
+                    edit_lut_state='IDLE'
+                    if lut_port_num==1:
+                        NEW_INIT="4'hD"
+                    else:
+                        NEW_INIT=str(2**(lut_port_num+1))+'\'h'+'F'*int(2**(lut_port_num-2))\
+                                +old_init
+                    x=re.sub('([1-9]+)\'h([0-9A-F]+)',NEW_INIT,x)
             else:
                 fobj.writelines(x)
     #####################################################################
