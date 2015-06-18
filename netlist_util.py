@@ -1,5 +1,11 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Jun 18 16:30:03 2015
+@author: litao
+"""
 '--this file is composed of a lot of functions to parse and util the Src file--'
 import os
+import copy
 import generate_testbench as gt
 import file_util as fu
 ###############################################################################
@@ -112,17 +118,28 @@ def get_ce_in_fd(all_fd_dict,verbose):
     return ce_signal_list,fd_has_ce_list
     
 ###############################################################################
-def get_lut_cnt2_ce(m_list,ce_signal_list,K=6):
+def get_lut_cnt2_ce(m_list,ce_signal_list,K=6,verbose=False):
     "get for lut combine for ce signal"
     lut_cnt2_ce=[]
+    
+    opt_ce_flag=False
+    un_opt_ce_list=copy.deepcopy(ce_signal_list)
     for eachCE in ce_signal_list:
         for eachModule in m_list[1:]:
             if eachModule.m_type=="LUT" and  eachModule.been_searched==False :
                 if eachModule.port_list[-1].port_assign==eachCE \
                 and int(eachModule.cellref[3])<=(K-1):
                     eachModule.been_searched=True
+                    opt_ce_flag=True
                     lut_cnt2_ce.append(eachModule.name)
-    return lut_cnt2_ce
+        if opt_ce_flag==True:
+            un_opt_ce_list.remove(eachCE)
+            opt_ce_flag=False                 
+    if verbose:
+        for x in lut_cnt2_ce:
+            print x
+    print "Note: get_lut_cnt2_ce() !"
+    return lut_cnt2_ce,un_opt_ce_list
     
 ###############################################################################  
 if __name__=='__main__':

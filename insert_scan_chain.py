@@ -1,3 +1,4 @@
+import sys
 import os
 import os.path
 import re
@@ -19,7 +20,7 @@ def insert_scan_chain(fname,verbose=False,presult=True,\
     #gt.generate_testbench(m_list[0],fd_cnt=len(all_fd_dict),output_dir=output_file_dir)
     lut_out2_FD_dict,FD_din_lut_list        =nu.get_lut_cnt2_FD(m_list,all_fd_dict,verbose,K)    
     ce_signal_list,fd_has_ce_list           =nu.get_ce_in_fd(all_fd_dict,verbose)
-    lut_cnt2_ce                             =nu.get_lut_cnt2_ce(m_list,ce_signal_list,K)
+    lut_cnt2_ce,un_opt_ce_list              =nu.get_lut_cnt2_ce(m_list,ce_signal_list,K,verbose=True)
     
     fd_ce_cnt=len(fd_has_ce_list)
     #####################################################################    
@@ -111,14 +112,15 @@ def insert_scan_chain(fname,verbose=False,presult=True,\
                     scan_out.append('scan_out'+str(counter))
                 else:
                     fobj.writelines(x)
+            ##replace every ce of FD with a GATED ce
             elif ((match_ce_signal is not None) and (fd_state==True)):
-                fd_state=False 
-                ce_gated_cnt=ce_gated_cnt+1
+                fd_state=False
+                #ce_gated_cnt=ce_gated_cnt+1
                 fd_has_ce_list.remove(current_fd)
-                if match_ce_signal.groups()[0] in ce_signal_list:
+                if match_ce_signal.groups()[0] in un_opt_ce_list:
                     gated_ce_assign='gated_'+re.sub('[\\\.\[\]\s]','_',match_ce_signal.groups()[0])
                     x='  .CE('+gated_ce_assign+')'+match_ce_signal.groups()[1]+'\n'                 
-                    fobj.writelines(x)
+                fobj.writelines(x)
             ######################################################################    
             #if find a lut record the info and do add port before the LUT LO port
             elif match_lut is not None:
@@ -131,24 +133,22 @@ def insert_scan_chain(fname,verbose=False,presult=True,\
                     counter=counter+1
                     assert lut_port_num<=(K-2),"ADD_MUX LUT has more the %d PORTS %s" %(K-2,current_lut)
                     x=re.sub('LUT[1-4]',('LUT'+str(lut_port_num+2)),x)
-                    fobj.writelines(x)
                 elif current_lut in lut_cnt2_ce:
                     edit_lut_state='ADD_OR'
                     assert lut_port_num<=K-1,"ADD_OR LUT has more the %d PORTS %s" %(K-1,current_lut)
                     x=re.sub('LUT[1-5]',('LUT'+str(lut_port_num+1)),x)
-                    fobj.writelines(x)
+                fobj.writelines(x)
             elif re.match('\s*\.LO\(|\s*\.O\(',x) is not None:
                 if edit_lut_state=='ADD_MUX':
                     cnt_edited_lut_port=cnt_edited_lut_port+1                
                     fobj.writelines('    .I'+str(lut_port_num)+'(scan_in'+str(counter)+'),\n')
                     fobj.writelines('    .I'+str(lut_port_num+1)+'(scan_en),\n')
-                    fobj.writelines(x)
                     scan_in.append('scan_in'+str(counter))
-                    scan_out.append(all_fd_dict[lut_out2_FD_dict[current_lut][1]][1])
+                    scan_out.append(all_fd_dict[lut_out2_FD_dict[current_lut][1]]['Q'])
                     lut_port_num=0
                 elif edit_lut_state=='ADD_OR':
-                    fobj.writelines('    .I'+str(lut_port_num+1)+'(scan_en),\n')
-                    fobj.writelines(x)
+                    fobj.writelines('    .I'+str(lut_port_num)+'(scan_en),\n')
+                fobj.writelines(x)
                     
             ######################################################################
             #edit the LUT defparam for PORT_ADDED LUT
@@ -168,7 +168,6 @@ def insert_scan_chain(fname,verbose=False,presult=True,\
                         NEW_INIT=str(2**(lut_port_num+2))+'\'h'+'F'*int(2**(lut_port_num-2)) \
                         +'0'*int(2**(lut_port_num-2))+old_init*2
                     x=re.sub('([1-9]+)\'h([0-9A-F]+)',NEW_INIT,x)
-                    fobj.writelines(x)
                 elif edit_lut_state=='ADD_OR':
                     edit_lut_state='IDLE'
                     if lut_port_num==1:
@@ -177,6 +176,7 @@ def insert_scan_chain(fname,verbose=False,presult=True,\
                         NEW_INIT=str(2**(lut_port_num+1))+'\'h'+'F'*int(2**(lut_port_num-2))\
                                 +old_init
                     x=re.sub('([1-9]+)\'h([0-9A-F]+)',NEW_INIT,x)
+                fobj.writelines(x)
             else:
                 fobj.writelines(x)
     #####################################################################
@@ -190,7 +190,7 @@ def insert_scan_chain(fname,verbose=False,presult=True,\
     fobj.close()
     for eachFdce in fd_has_ce_list:
         print eachFdce
-    assert fd_ce_cnt==ce_gated_cnt,"Some CE didnot gated fully %d != %d!!"%(fd_ce_cnt,ce_gated_cnt)
+    #assert fd_ce_cnt==ce_gated_cnt,"Some CE didnot gated fully %d != %d!!"%(fd_ce_cnt,ce_gated_cnt)
     assert (fd_replace_cnt+cnt_edited_lut)==len(all_fd_dict),"not all the FD has been scaned !!"
     assert (cnt_edited_lut==cnt_edited_lut_port and cnt_edited_lut==cnt_edited_lut_port),\
             "Some LUT didnot editted fully !!"
@@ -217,25 +217,32 @@ if __name__=='__main__':
             continue
         else:
             break
-    while(1):
+    flag=True
+    while(flag):
         tmp2=raw_input('Plz enter the output sub dir:')
         output_file_dir=parent_dir+"\\test_output_dir\\"+tmp2
         if os.path.exists(output_file_dir)==False:
             print 'the dir: '+output_file_dir+' dont exists'
             flag=os.mkdir(output_file_dir)
             print 'create a dir : '+output_file_dir
-            break 
         else:
-            continue           
-    K=int(raw_input('plz enter the K parameter of FPGA:K='))        
+            break           
+    K=int(raw_input('plz enter the K parameter of FPGA:K='))
+    assert (K==6 or K==4),"K not 4 or 6"
     print "Note: current path: "+parent_dir
     print "Note: output_file_path: "+output_file_dir
     print "Note: input_file_path: "+input_file_dir
+#    __console__=sys.stdout
+#    log_obj=open("exec_log.txt",'w')
+#    sys.stdout=log_obj
     for eachFile in os.listdir(input_file_dir):
         print  eachFile
         if os.path.splitext(eachFile)[1]=='.v':
             insert_scan_chain(eachFile,False,True,input_file_dir,output_file_dir,K)
         else:
             continue
+#    sys.stdout=__console__
+#    log_obj.close()
+    print "Job :Thingd down!!!"
 
 
