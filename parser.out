@@ -1,0 +1,725 @@
+Created by PLY version 3.6 (http://www.dabeaz.com/ply)
+
+Unused terminals:
+
+    NUMBER
+
+Grammar
+
+Rule 0     S' -> vm_file
+Rule 1     vm_file -> module_decl port_decl_list signal_decl_list primitive_list assign_stm_list ENDMODULE
+Rule 2     module_decl -> MODULE IDENTIFIER ( pipo_list ) ;
+Rule 3     pipo_list -> pipo_list IDENTIFIER
+Rule 4     pipo_list -> IDENTIFIER
+Rule 5     port_decl_list -> port_decl_list port_decl
+Rule 6     port_decl_list -> port_decl
+Rule 7     port_decl -> INPUT IDENTIFIER ;
+Rule 8     port_decl -> INPUT VECTOR IDENTIFIER ;
+Rule 9     port_decl -> OUTPUT IDENTIFIER ;
+Rule 10    port_decl -> OUTPUT VECTOR IDENTIFIER ;
+Rule 11    port_decl -> INOUT IDENTIFIER ;
+Rule 12    port_decl -> INOUT VECTOR IDENTIFIER ;
+Rule 13    signal_decl_list -> signal_decl_list signal_decl
+Rule 14    signal_decl_list -> signal_decl
+Rule 15    signal_decl -> WIRE VECTOR IDENTIFIER ;
+Rule 16    signal_decl -> WIRE IDENTIFIER ;
+Rule 17    primitive_list -> primitive_list primitive
+Rule 18    primitive_list -> primitive
+Rule 19    primitive -> IDENTIFIER IDENTIFIER ( primitive_port_list ) ;
+Rule 20    primitive -> IDENTIFIER IDENTIFIER ( primitive_port_list ) ; defparam
+Rule 21    defparam -> DEFPARAM IDENTIFIER . IDENTIFIER = HEX_NUMBER ;
+Rule 22    primitive_port_list -> primitive_port_list primitive_port
+Rule 23    primitive_port_list -> primitive_port
+Rule 24    primitive_port -> . IDENTIFIER ( IDENTIFIER )
+Rule 25    assign_stm_list -> assign_stm_list assign_stm
+Rule 26    assign_stm_list -> assign_stm
+Rule 27    assign_stm -> ASSIGN IDENTIFIER = IDENTIFIER ;
+
+Terminals, with rules where they appear
+
+(                    : 2 19 20 24
+)                    : 2 19 20 24
+.                    : 21 24
+;                    : 2 7 8 9 10 11 12 15 16 19 20 21 27
+=                    : 21 27
+ASSIGN               : 27
+DEFPARAM             : 21
+ENDMODULE            : 1
+HEX_NUMBER           : 21
+IDENTIFIER           : 2 3 4 7 8 9 10 11 12 15 16 19 19 20 20 21 21 24 24 27 27
+INOUT                : 11 12
+INPUT                : 7 8
+MODULE               : 2
+NUMBER               : 
+OUTPUT               : 9 10
+VECTOR               : 8 10 12 15
+WIRE                 : 15 16
+error                : 
+
+Nonterminals, with rules where they appear
+
+assign_stm           : 25 26
+assign_stm_list      : 1 25
+defparam             : 20
+module_decl          : 1
+pipo_list            : 2 3
+port_decl            : 5 6
+port_decl_list       : 1 5
+primitive            : 17 18
+primitive_list       : 1 17
+primitive_port       : 22 23
+primitive_port_list  : 19 20 22
+signal_decl          : 13 14
+signal_decl_list     : 1 13
+vm_file              : 0
+
+Parsing method: LALR
+
+state 0
+
+    (0) S' -> . vm_file
+    (1) vm_file -> . module_decl port_decl_list signal_decl_list primitive_list assign_stm_list ENDMODULE
+    (2) module_decl -> . MODULE IDENTIFIER ( pipo_list ) ;
+
+    MODULE          shift and go to state 2
+
+    module_decl                    shift and go to state 1
+    vm_file                        shift and go to state 3
+
+state 1
+
+    (1) vm_file -> module_decl . port_decl_list signal_decl_list primitive_list assign_stm_list ENDMODULE
+    (5) port_decl_list -> . port_decl_list port_decl
+    (6) port_decl_list -> . port_decl
+    (7) port_decl -> . INPUT IDENTIFIER ;
+    (8) port_decl -> . INPUT VECTOR IDENTIFIER ;
+    (9) port_decl -> . OUTPUT IDENTIFIER ;
+    (10) port_decl -> . OUTPUT VECTOR IDENTIFIER ;
+    (11) port_decl -> . INOUT IDENTIFIER ;
+    (12) port_decl -> . INOUT VECTOR IDENTIFIER ;
+
+    INPUT           shift and go to state 7
+    OUTPUT          shift and go to state 6
+    INOUT           shift and go to state 8
+
+    port_decl                      shift and go to state 4
+    port_decl_list                 shift and go to state 5
+
+state 2
+
+    (2) module_decl -> MODULE . IDENTIFIER ( pipo_list ) ;
+
+    IDENTIFIER      shift and go to state 9
+
+
+state 3
+
+    (0) S' -> vm_file .
+
+
+
+state 4
+
+    (6) port_decl_list -> port_decl .
+
+    INPUT           reduce using rule 6 (port_decl_list -> port_decl .)
+    OUTPUT          reduce using rule 6 (port_decl_list -> port_decl .)
+    INOUT           reduce using rule 6 (port_decl_list -> port_decl .)
+    WIRE            reduce using rule 6 (port_decl_list -> port_decl .)
+
+
+state 5
+
+    (1) vm_file -> module_decl port_decl_list . signal_decl_list primitive_list assign_stm_list ENDMODULE
+    (5) port_decl_list -> port_decl_list . port_decl
+    (13) signal_decl_list -> . signal_decl_list signal_decl
+    (14) signal_decl_list -> . signal_decl
+    (7) port_decl -> . INPUT IDENTIFIER ;
+    (8) port_decl -> . INPUT VECTOR IDENTIFIER ;
+    (9) port_decl -> . OUTPUT IDENTIFIER ;
+    (10) port_decl -> . OUTPUT VECTOR IDENTIFIER ;
+    (11) port_decl -> . INOUT IDENTIFIER ;
+    (12) port_decl -> . INOUT VECTOR IDENTIFIER ;
+    (15) signal_decl -> . WIRE VECTOR IDENTIFIER ;
+    (16) signal_decl -> . WIRE IDENTIFIER ;
+
+    INPUT           shift and go to state 7
+    OUTPUT          shift and go to state 6
+    INOUT           shift and go to state 8
+    WIRE            shift and go to state 11
+
+    signal_decl                    shift and go to state 10
+    port_decl                      shift and go to state 12
+    signal_decl_list               shift and go to state 13
+
+state 6
+
+    (9) port_decl -> OUTPUT . IDENTIFIER ;
+    (10) port_decl -> OUTPUT . VECTOR IDENTIFIER ;
+
+    IDENTIFIER      shift and go to state 14
+    VECTOR          shift and go to state 15
+
+
+state 7
+
+    (7) port_decl -> INPUT . IDENTIFIER ;
+    (8) port_decl -> INPUT . VECTOR IDENTIFIER ;
+
+    IDENTIFIER      shift and go to state 16
+    VECTOR          shift and go to state 17
+
+
+state 8
+
+    (11) port_decl -> INOUT . IDENTIFIER ;
+    (12) port_decl -> INOUT . VECTOR IDENTIFIER ;
+
+    IDENTIFIER      shift and go to state 18
+    VECTOR          shift and go to state 19
+
+
+state 9
+
+    (2) module_decl -> MODULE IDENTIFIER . ( pipo_list ) ;
+
+    (               shift and go to state 20
+
+
+state 10
+
+    (14) signal_decl_list -> signal_decl .
+
+    WIRE            reduce using rule 14 (signal_decl_list -> signal_decl .)
+    IDENTIFIER      reduce using rule 14 (signal_decl_list -> signal_decl .)
+
+
+state 11
+
+    (15) signal_decl -> WIRE . VECTOR IDENTIFIER ;
+    (16) signal_decl -> WIRE . IDENTIFIER ;
+
+    VECTOR          shift and go to state 22
+    IDENTIFIER      shift and go to state 21
+
+
+state 12
+
+    (5) port_decl_list -> port_decl_list port_decl .
+
+    INPUT           reduce using rule 5 (port_decl_list -> port_decl_list port_decl .)
+    OUTPUT          reduce using rule 5 (port_decl_list -> port_decl_list port_decl .)
+    INOUT           reduce using rule 5 (port_decl_list -> port_decl_list port_decl .)
+    WIRE            reduce using rule 5 (port_decl_list -> port_decl_list port_decl .)
+
+
+state 13
+
+    (1) vm_file -> module_decl port_decl_list signal_decl_list . primitive_list assign_stm_list ENDMODULE
+    (13) signal_decl_list -> signal_decl_list . signal_decl
+    (17) primitive_list -> . primitive_list primitive
+    (18) primitive_list -> . primitive
+    (15) signal_decl -> . WIRE VECTOR IDENTIFIER ;
+    (16) signal_decl -> . WIRE IDENTIFIER ;
+    (19) primitive -> . IDENTIFIER IDENTIFIER ( primitive_port_list ) ;
+    (20) primitive -> . IDENTIFIER IDENTIFIER ( primitive_port_list ) ; defparam
+
+    WIRE            shift and go to state 11
+    IDENTIFIER      shift and go to state 26
+
+    signal_decl                    shift and go to state 23
+    primitive                      shift and go to state 24
+    primitive_list                 shift and go to state 25
+
+state 14
+
+    (9) port_decl -> OUTPUT IDENTIFIER . ;
+
+    ;               shift and go to state 27
+
+
+state 15
+
+    (10) port_decl -> OUTPUT VECTOR . IDENTIFIER ;
+
+    IDENTIFIER      shift and go to state 28
+
+
+state 16
+
+    (7) port_decl -> INPUT IDENTIFIER . ;
+
+    ;               shift and go to state 29
+
+
+state 17
+
+    (8) port_decl -> INPUT VECTOR . IDENTIFIER ;
+
+    IDENTIFIER      shift and go to state 30
+
+
+state 18
+
+    (11) port_decl -> INOUT IDENTIFIER . ;
+
+    ;               shift and go to state 31
+
+
+state 19
+
+    (12) port_decl -> INOUT VECTOR . IDENTIFIER ;
+
+    IDENTIFIER      shift and go to state 32
+
+
+state 20
+
+    (2) module_decl -> MODULE IDENTIFIER ( . pipo_list ) ;
+    (3) pipo_list -> . pipo_list IDENTIFIER
+    (4) pipo_list -> . IDENTIFIER
+
+    IDENTIFIER      shift and go to state 34
+
+    pipo_list                      shift and go to state 33
+
+state 21
+
+    (16) signal_decl -> WIRE IDENTIFIER . ;
+
+    ;               shift and go to state 35
+
+
+state 22
+
+    (15) signal_decl -> WIRE VECTOR . IDENTIFIER ;
+
+    IDENTIFIER      shift and go to state 36
+
+
+state 23
+
+    (13) signal_decl_list -> signal_decl_list signal_decl .
+
+    WIRE            reduce using rule 13 (signal_decl_list -> signal_decl_list signal_decl .)
+    IDENTIFIER      reduce using rule 13 (signal_decl_list -> signal_decl_list signal_decl .)
+
+
+state 24
+
+    (18) primitive_list -> primitive .
+
+    IDENTIFIER      reduce using rule 18 (primitive_list -> primitive .)
+    ASSIGN          reduce using rule 18 (primitive_list -> primitive .)
+
+
+state 25
+
+    (1) vm_file -> module_decl port_decl_list signal_decl_list primitive_list . assign_stm_list ENDMODULE
+    (17) primitive_list -> primitive_list . primitive
+    (25) assign_stm_list -> . assign_stm_list assign_stm
+    (26) assign_stm_list -> . assign_stm
+    (19) primitive -> . IDENTIFIER IDENTIFIER ( primitive_port_list ) ;
+    (20) primitive -> . IDENTIFIER IDENTIFIER ( primitive_port_list ) ; defparam
+    (27) assign_stm -> . ASSIGN IDENTIFIER = IDENTIFIER ;
+
+    IDENTIFIER      shift and go to state 26
+    ASSIGN          shift and go to state 38
+
+    primitive                      shift and go to state 37
+    assign_stm                     shift and go to state 39
+    assign_stm_list                shift and go to state 40
+
+state 26
+
+    (19) primitive -> IDENTIFIER . IDENTIFIER ( primitive_port_list ) ;
+    (20) primitive -> IDENTIFIER . IDENTIFIER ( primitive_port_list ) ; defparam
+
+    IDENTIFIER      shift and go to state 41
+
+
+state 27
+
+    (9) port_decl -> OUTPUT IDENTIFIER ; .
+
+    INPUT           reduce using rule 9 (port_decl -> OUTPUT IDENTIFIER ; .)
+    OUTPUT          reduce using rule 9 (port_decl -> OUTPUT IDENTIFIER ; .)
+    INOUT           reduce using rule 9 (port_decl -> OUTPUT IDENTIFIER ; .)
+    WIRE            reduce using rule 9 (port_decl -> OUTPUT IDENTIFIER ; .)
+
+
+state 28
+
+    (10) port_decl -> OUTPUT VECTOR IDENTIFIER . ;
+
+    ;               shift and go to state 42
+
+
+state 29
+
+    (7) port_decl -> INPUT IDENTIFIER ; .
+
+    INPUT           reduce using rule 7 (port_decl -> INPUT IDENTIFIER ; .)
+    OUTPUT          reduce using rule 7 (port_decl -> INPUT IDENTIFIER ; .)
+    INOUT           reduce using rule 7 (port_decl -> INPUT IDENTIFIER ; .)
+    WIRE            reduce using rule 7 (port_decl -> INPUT IDENTIFIER ; .)
+
+
+state 30
+
+    (8) port_decl -> INPUT VECTOR IDENTIFIER . ;
+
+    ;               shift and go to state 43
+
+
+state 31
+
+    (11) port_decl -> INOUT IDENTIFIER ; .
+
+    INPUT           reduce using rule 11 (port_decl -> INOUT IDENTIFIER ; .)
+    OUTPUT          reduce using rule 11 (port_decl -> INOUT IDENTIFIER ; .)
+    INOUT           reduce using rule 11 (port_decl -> INOUT IDENTIFIER ; .)
+    WIRE            reduce using rule 11 (port_decl -> INOUT IDENTIFIER ; .)
+
+
+state 32
+
+    (12) port_decl -> INOUT VECTOR IDENTIFIER . ;
+
+    ;               shift and go to state 44
+
+
+state 33
+
+    (2) module_decl -> MODULE IDENTIFIER ( pipo_list . ) ;
+    (3) pipo_list -> pipo_list . IDENTIFIER
+
+    )               shift and go to state 45
+    IDENTIFIER      shift and go to state 46
+
+
+state 34
+
+    (4) pipo_list -> IDENTIFIER .
+
+    )               reduce using rule 4 (pipo_list -> IDENTIFIER .)
+    IDENTIFIER      reduce using rule 4 (pipo_list -> IDENTIFIER .)
+
+
+state 35
+
+    (16) signal_decl -> WIRE IDENTIFIER ; .
+
+    WIRE            reduce using rule 16 (signal_decl -> WIRE IDENTIFIER ; .)
+    IDENTIFIER      reduce using rule 16 (signal_decl -> WIRE IDENTIFIER ; .)
+
+
+state 36
+
+    (15) signal_decl -> WIRE VECTOR IDENTIFIER . ;
+
+    ;               shift and go to state 47
+
+
+state 37
+
+    (17) primitive_list -> primitive_list primitive .
+
+    IDENTIFIER      reduce using rule 17 (primitive_list -> primitive_list primitive .)
+    ASSIGN          reduce using rule 17 (primitive_list -> primitive_list primitive .)
+
+
+state 38
+
+    (27) assign_stm -> ASSIGN . IDENTIFIER = IDENTIFIER ;
+
+    IDENTIFIER      shift and go to state 48
+
+
+state 39
+
+    (26) assign_stm_list -> assign_stm .
+
+    ENDMODULE       reduce using rule 26 (assign_stm_list -> assign_stm .)
+    ASSIGN          reduce using rule 26 (assign_stm_list -> assign_stm .)
+
+
+state 40
+
+    (1) vm_file -> module_decl port_decl_list signal_decl_list primitive_list assign_stm_list . ENDMODULE
+    (25) assign_stm_list -> assign_stm_list . assign_stm
+    (27) assign_stm -> . ASSIGN IDENTIFIER = IDENTIFIER ;
+
+    ENDMODULE       shift and go to state 49
+    ASSIGN          shift and go to state 38
+
+    assign_stm                     shift and go to state 50
+
+state 41
+
+    (19) primitive -> IDENTIFIER IDENTIFIER . ( primitive_port_list ) ;
+    (20) primitive -> IDENTIFIER IDENTIFIER . ( primitive_port_list ) ; defparam
+
+    (               shift and go to state 51
+
+
+state 42
+
+    (10) port_decl -> OUTPUT VECTOR IDENTIFIER ; .
+
+    INPUT           reduce using rule 10 (port_decl -> OUTPUT VECTOR IDENTIFIER ; .)
+    OUTPUT          reduce using rule 10 (port_decl -> OUTPUT VECTOR IDENTIFIER ; .)
+    INOUT           reduce using rule 10 (port_decl -> OUTPUT VECTOR IDENTIFIER ; .)
+    WIRE            reduce using rule 10 (port_decl -> OUTPUT VECTOR IDENTIFIER ; .)
+
+
+state 43
+
+    (8) port_decl -> INPUT VECTOR IDENTIFIER ; .
+
+    INPUT           reduce using rule 8 (port_decl -> INPUT VECTOR IDENTIFIER ; .)
+    OUTPUT          reduce using rule 8 (port_decl -> INPUT VECTOR IDENTIFIER ; .)
+    INOUT           reduce using rule 8 (port_decl -> INPUT VECTOR IDENTIFIER ; .)
+    WIRE            reduce using rule 8 (port_decl -> INPUT VECTOR IDENTIFIER ; .)
+
+
+state 44
+
+    (12) port_decl -> INOUT VECTOR IDENTIFIER ; .
+
+    INPUT           reduce using rule 12 (port_decl -> INOUT VECTOR IDENTIFIER ; .)
+    OUTPUT          reduce using rule 12 (port_decl -> INOUT VECTOR IDENTIFIER ; .)
+    INOUT           reduce using rule 12 (port_decl -> INOUT VECTOR IDENTIFIER ; .)
+    WIRE            reduce using rule 12 (port_decl -> INOUT VECTOR IDENTIFIER ; .)
+
+
+state 45
+
+    (2) module_decl -> MODULE IDENTIFIER ( pipo_list ) . ;
+
+    ;               shift and go to state 52
+
+
+state 46
+
+    (3) pipo_list -> pipo_list IDENTIFIER .
+
+    )               reduce using rule 3 (pipo_list -> pipo_list IDENTIFIER .)
+    IDENTIFIER      reduce using rule 3 (pipo_list -> pipo_list IDENTIFIER .)
+
+
+state 47
+
+    (15) signal_decl -> WIRE VECTOR IDENTIFIER ; .
+
+    WIRE            reduce using rule 15 (signal_decl -> WIRE VECTOR IDENTIFIER ; .)
+    IDENTIFIER      reduce using rule 15 (signal_decl -> WIRE VECTOR IDENTIFIER ; .)
+
+
+state 48
+
+    (27) assign_stm -> ASSIGN IDENTIFIER . = IDENTIFIER ;
+
+    =               shift and go to state 53
+
+
+state 49
+
+    (1) vm_file -> module_decl port_decl_list signal_decl_list primitive_list assign_stm_list ENDMODULE .
+
+    $end            reduce using rule 1 (vm_file -> module_decl port_decl_list signal_decl_list primitive_list assign_stm_list ENDMODULE .)
+
+
+state 50
+
+    (25) assign_stm_list -> assign_stm_list assign_stm .
+
+    ENDMODULE       reduce using rule 25 (assign_stm_list -> assign_stm_list assign_stm .)
+    ASSIGN          reduce using rule 25 (assign_stm_list -> assign_stm_list assign_stm .)
+
+
+state 51
+
+    (19) primitive -> IDENTIFIER IDENTIFIER ( . primitive_port_list ) ;
+    (20) primitive -> IDENTIFIER IDENTIFIER ( . primitive_port_list ) ; defparam
+    (22) primitive_port_list -> . primitive_port_list primitive_port
+    (23) primitive_port_list -> . primitive_port
+    (24) primitive_port -> . . IDENTIFIER ( IDENTIFIER )
+
+    .               shift and go to state 54
+
+    primitive_port                 shift and go to state 55
+    primitive_port_list            shift and go to state 56
+
+state 52
+
+    (2) module_decl -> MODULE IDENTIFIER ( pipo_list ) ; .
+
+    INPUT           reduce using rule 2 (module_decl -> MODULE IDENTIFIER ( pipo_list ) ; .)
+    OUTPUT          reduce using rule 2 (module_decl -> MODULE IDENTIFIER ( pipo_list ) ; .)
+    INOUT           reduce using rule 2 (module_decl -> MODULE IDENTIFIER ( pipo_list ) ; .)
+
+
+state 53
+
+    (27) assign_stm -> ASSIGN IDENTIFIER = . IDENTIFIER ;
+
+    IDENTIFIER      shift and go to state 57
+
+
+state 54
+
+    (24) primitive_port -> . . IDENTIFIER ( IDENTIFIER )
+
+    IDENTIFIER      shift and go to state 58
+
+
+state 55
+
+    (23) primitive_port_list -> primitive_port .
+
+    )               reduce using rule 23 (primitive_port_list -> primitive_port .)
+    .               reduce using rule 23 (primitive_port_list -> primitive_port .)
+
+
+state 56
+
+    (19) primitive -> IDENTIFIER IDENTIFIER ( primitive_port_list . ) ;
+    (20) primitive -> IDENTIFIER IDENTIFIER ( primitive_port_list . ) ; defparam
+    (22) primitive_port_list -> primitive_port_list . primitive_port
+    (24) primitive_port -> . . IDENTIFIER ( IDENTIFIER )
+
+    )               shift and go to state 59
+    .               shift and go to state 54
+
+    primitive_port                 shift and go to state 60
+
+state 57
+
+    (27) assign_stm -> ASSIGN IDENTIFIER = IDENTIFIER . ;
+
+    ;               shift and go to state 61
+
+
+state 58
+
+    (24) primitive_port -> . IDENTIFIER . ( IDENTIFIER )
+
+    (               shift and go to state 62
+
+
+state 59
+
+    (19) primitive -> IDENTIFIER IDENTIFIER ( primitive_port_list ) . ;
+    (20) primitive -> IDENTIFIER IDENTIFIER ( primitive_port_list ) . ; defparam
+
+    ;               shift and go to state 63
+
+
+state 60
+
+    (22) primitive_port_list -> primitive_port_list primitive_port .
+
+    )               reduce using rule 22 (primitive_port_list -> primitive_port_list primitive_port .)
+    .               reduce using rule 22 (primitive_port_list -> primitive_port_list primitive_port .)
+
+
+state 61
+
+    (27) assign_stm -> ASSIGN IDENTIFIER = IDENTIFIER ; .
+
+    ENDMODULE       reduce using rule 27 (assign_stm -> ASSIGN IDENTIFIER = IDENTIFIER ; .)
+    ASSIGN          reduce using rule 27 (assign_stm -> ASSIGN IDENTIFIER = IDENTIFIER ; .)
+
+
+state 62
+
+    (24) primitive_port -> . IDENTIFIER ( . IDENTIFIER )
+
+    IDENTIFIER      shift and go to state 64
+
+
+state 63
+
+    (19) primitive -> IDENTIFIER IDENTIFIER ( primitive_port_list ) ; .
+    (20) primitive -> IDENTIFIER IDENTIFIER ( primitive_port_list ) ; . defparam
+    (21) defparam -> . DEFPARAM IDENTIFIER . IDENTIFIER = HEX_NUMBER ;
+
+    IDENTIFIER      reduce using rule 19 (primitive -> IDENTIFIER IDENTIFIER ( primitive_port_list ) ; .)
+    ASSIGN          reduce using rule 19 (primitive -> IDENTIFIER IDENTIFIER ( primitive_port_list ) ; .)
+    DEFPARAM        shift and go to state 66
+
+    defparam                       shift and go to state 65
+
+state 64
+
+    (24) primitive_port -> . IDENTIFIER ( IDENTIFIER . )
+
+    )               shift and go to state 67
+
+
+state 65
+
+    (20) primitive -> IDENTIFIER IDENTIFIER ( primitive_port_list ) ; defparam .
+
+    IDENTIFIER      reduce using rule 20 (primitive -> IDENTIFIER IDENTIFIER ( primitive_port_list ) ; defparam .)
+    ASSIGN          reduce using rule 20 (primitive -> IDENTIFIER IDENTIFIER ( primitive_port_list ) ; defparam .)
+
+
+state 66
+
+    (21) defparam -> DEFPARAM . IDENTIFIER . IDENTIFIER = HEX_NUMBER ;
+
+    IDENTIFIER      shift and go to state 68
+
+
+state 67
+
+    (24) primitive_port -> . IDENTIFIER ( IDENTIFIER ) .
+
+    )               reduce using rule 24 (primitive_port -> . IDENTIFIER ( IDENTIFIER ) .)
+    .               reduce using rule 24 (primitive_port -> . IDENTIFIER ( IDENTIFIER ) .)
+
+
+state 68
+
+    (21) defparam -> DEFPARAM IDENTIFIER . . IDENTIFIER = HEX_NUMBER ;
+
+    .               shift and go to state 69
+
+
+state 69
+
+    (21) defparam -> DEFPARAM IDENTIFIER . . IDENTIFIER = HEX_NUMBER ;
+
+    IDENTIFIER      shift and go to state 70
+
+
+state 70
+
+    (21) defparam -> DEFPARAM IDENTIFIER . IDENTIFIER . = HEX_NUMBER ;
+
+    =               shift and go to state 71
+
+
+state 71
+
+    (21) defparam -> DEFPARAM IDENTIFIER . IDENTIFIER = . HEX_NUMBER ;
+
+    HEX_NUMBER      shift and go to state 72
+
+
+state 72
+
+    (21) defparam -> DEFPARAM IDENTIFIER . IDENTIFIER = HEX_NUMBER . ;
+
+    ;               shift and go to state 73
+
+
+state 73
+
+    (21) defparam -> DEFPARAM IDENTIFIER . IDENTIFIER = HEX_NUMBER ; .
+
+    IDENTIFIER      reduce using rule 21 (defparam -> DEFPARAM IDENTIFIER . IDENTIFIER = HEX_NUMBER ; .)
+    ASSIGN          reduce using rule 21 (defparam -> DEFPARAM IDENTIFIER . IDENTIFIER = HEX_NUMBER ; .)
+

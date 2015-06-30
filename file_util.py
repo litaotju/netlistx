@@ -100,7 +100,8 @@ def extract_m_list(fname,verbose=False):
     if verbose:
         print "Info: Top module is :"+module_list[0].name
     print 'Note: extact_m list() successfully !'
-    return signal_list,module_list,defparam_init_list
+    info= (module_list,defparam_init_list,signal_list)
+    return info
 
 ###############################################################################
 def print_module_list(module_list):

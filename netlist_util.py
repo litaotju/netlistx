@@ -35,9 +35,8 @@ def get_all_fd(m_list,verbose=False):
     print "Note: get_all_fd() sucessfully !"
     return all_fd_dict
 ###############################################################################
-def get_all_lut(m_list,verbose=False):
+def get_all_lut(m_list,lut_type_cnt,verbose=False):
     all_lut_dict={} 
-    all_lut_cnt =[0,0,0,0,0,0] #every LUT type's cnt 
     if verbose:
         print '-----------------------------------------'
         print 'Info: all the LUT and its name Are:'
@@ -46,9 +45,9 @@ def get_all_lut(m_list,verbose=False):
             #record eachLUT's name and its type
             all_lut_dict[eachModule.name]=eachModule.cellref
             lut_kind=int(eachModule.cellref[3])-1
-            all_lut_cnt[lut_kind]=all_lut_cnt[lut_kind]+1 
-    assert len(all_lut_dict.keys())==sum(all_lut_cnt),'Assertion Error: LUT cnt error'
-    return all_lut_dict,all_lut_cnt
+            lut_type_cnt[lut_kind]=lut_type_cnt[lut_kind]+1 
+    assert len(all_lut_dict.keys())==sum(lut_type_cnt),'Assertion Error: LUT cnt error'
+    return all_lut_dict
     
     
 ###############################################################################
