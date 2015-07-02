@@ -233,18 +233,18 @@ def parse_to_parse_list(input_file):
     #--------------------------------
 #    console=sys.stdout
 #    sys.stdout=fobj2
-    p[0].print_module()
-    for eachPort_decl in p[1]:
-        eachPort_decl.__print__(pipo_decl=True)
-    for eachSignal in p[2]:
-        eachSignal.__print__(is_wire_decl=True)
-    for eachPrimitive in p[3]:
-        eachPrimitive.print_module()
-    if len(p)==5:
-        assign_stm_list=p[4]
-        for eachAssign in p[4]:
-            eachAssign.__print__()
-    print "endmodule;"
+#    p[0].print_module()
+#    for eachPort_decl in p[1]:
+#        eachPort_decl.__print__(pipo_decl=True)
+#    for eachSignal in p[2]:
+#        eachSignal.__print__(is_wire_decl=True)
+#    for eachPrimitive in p[3]:
+#        eachPrimitive.print_module()
+#    if len(p)==5:
+#        assign_stm_list=p[4]
+#        for eachAssign in p[4]:
+#            eachAssign.__print__()
+#    print "endmodule;"
 #    sys.stdout=console
     #------------------------------------
     #解析完完全打印出来

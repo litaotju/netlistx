@@ -11,7 +11,9 @@ class port:
             ("Error: add non-signal obj to port:%s"%self.port_name)
         self.port_assign=port_assign #assign_signal
         self.port_width =port_assign.width #每一个signal类型的变量会自动的计算出宽度
-        
+        ##featured 7.2,为1取port_name的方便,与其他类的名字很类似
+        ##主要为了打印边的方便       
+        self.name=self.port_name
     def edit_port_assign(self,new_assign):
         assert isinstance(new_assign,(signal,joint_signal)),\
             ("Error: non-signal obj assgin to port %s"%self.port_name)
@@ -31,7 +33,7 @@ class port:
             print "    .%s("% self.port_name,
             self.port_assign.__print__()
             print ")",
-            
+
 class circut_module:
     '--this is a class of circut module in verilog--'
     def __init__(self,name='default',m_type='default',cellref='--top--',been_searched=False):
@@ -53,7 +55,9 @@ class circut_module:
             if isinstance(eachPort.port_assign,signal):
                 port_assign_list.append(eachPort.port_assign.string)
             else:
-                port_assign_list.append("__JOINT_SIGNAL__")
+                assert isinstance(eachPort.port_assign,joint_signal)
+                for eachSubsignal in eachPort.port_assign.sub_signal_list:
+                    port_assign_list.append(eachSubsignal.string)
         self.port_assign_list=port_assign_list
         
     def add_param_list(self,param_list):
@@ -112,12 +116,20 @@ class signal:
         self.name  =name
         self.vector=vector #如果非空,就是字符串类型的[nm1:num2]或者[num]
         self.width =1
+        
+        ##featured 7.2
+        self.lsb=0
+        self.msb=0
+        self.bit_loc=0
+        ##feature 7.2
+
         if vector==None:
             self.string=name
         else:
             self.string=name+vector;
         if not self.vector==None:
             self.get_width()
+
     def get_width(self):
         vector_match=re.match('\[(\d+):(\d+)\]',self.vector)
         bit_match=re.match('\[(\d+)\]',self.vector)
@@ -126,8 +138,12 @@ class signal:
             r=int(vector_match.groups()[1])
             assert l>=r
             self.width=l-r+1
+            ##featured 7.2,将信号的高位与低位两个数字存下来,之后在判断Prim端口是否向连接,有作用
+            self.lsb=l
+            self.msb=r
         else:
             assert (bit_match is not None)
+            self.bit_loc=int(bit_match.groups()[0])
             self.width=1
     
     def signal_2_port(self):

@@ -8,7 +8,11 @@ import matplotlib.pyplot as plt
 import circut_class as cc
 ###############################################################################
 def get_edge_vertex(m_list,verbose=False):
-    '---this func is to construct a s-graph of a circut---'
+    '''---this func is to construct a s-graph of a circut---
+        now we cannot handle the grapg construction problem with concering DSP
+        because, in hardware fault injection emulaiton process, when signal passing 
+        DSP, we cannot compute the signal correctly
+    '''
     pipo_vertex_list=[]
     prim_vertex_list=[]
     vertex_set=[]
@@ -27,11 +31,25 @@ def get_edge_vertex(m_list,verbose=False):
     #-----------PI PO edge excluding clock and  reset
     print "Process: searching PI and PO edges..."
     for eachPrim in prim_vertex_list:
+        ##featured 7.2,为了防止DSP构成图的一系列问题,在进行parse的过程中
+        ##如果出现cellref为DSP的时候,报错误.
+        assert eachPrim.cellref not in ['DSP48','DSP48E1','DSP48E']
         for eachPort in eachPrim.port_list:
             for eachPPort in pipo_vertex_list:
+                cnt_flag=False
                 #信号名称等于端口名称,可能prim port的信号是Pipo的某一bit
-                if eachPort.port_assign.name==eachPPort.port_name:
-                    cnt={'connection':eachPort.port_assign.name}                    
+                if isinstance(eachPort.port_assign,cc.signal) and \
+                        eachPort.port_assign.name==eachPPort.port_name:
+                    cnt={'connection':eachPort.port_assign.name}
+                    cnt_flag=True                    
+#                elif isinstance(eachPort.port_assign,cc.joint_signal):
+#                    for eachSubsignal in eachPort.port_assign.sub_signal_list:
+#                        if eachSubsignal.name==eachPPort.port_name:
+#                            cnt_flag=True
+#                            break
+#                        else:
+#                            continue
+                if cnt_flag:
                     if eachPPort.port_type=='input':
                         assert eachPort.port_type in ['input','un_kown','clock'],\
                             (":port:%s,port_type:%s"%(eachPort.port_name,eachPort.port_type))
@@ -41,6 +59,9 @@ def get_edge_vertex(m_list,verbose=False):
                             po_edge_list.append([[eachPrim,eachPPort],[eachPort,eachPPort],cnt])
                         else:
                             prim_edge_list.append([[eachPPort,eachPrim],[eachPPort,eachPort],cnt])
+                else:
+                    continue
+    #---------------------------prim edge ------------------------------------           
     for eachPrim in prim_vertex_list:
         for eachPrim2 in prim_vertex_list:
             if eachPrim2==eachPrim:
@@ -73,6 +94,7 @@ def get_edge_vertex(m_list,verbose=False):
         for eachEdge in edge_set:
             print eachEdge[2]['connection']
     return vertex_set,edge_set
+    
 ###############################################################################
 #画图,只画出基本的节点,边和标签,不判断图是什么类型的
 #与s_graph class中定义的画图相比,没有层次化,只是spring_layout

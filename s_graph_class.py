@@ -13,7 +13,6 @@ import os.path
 class s_graph(nx.DiGraph):
     def __init__(self,name,edge_set,vertex_set,verbose=False):
         care_vertex_type=('FD')
-
         edge_set_cpy   =copy.copy(edge_set)
         vertex_set_cpy =copy.copy(vertex_set)
         vertex_set_tmp =copy.copy(vertex_set_cpy)
@@ -26,7 +25,7 @@ class s_graph(nx.DiGraph):
             if  (isinstance(eachVertex,cc.circut_module) and eachVertex.m_type not in care_vertex_type):
                 if (verbose):
                     print "Process:%d node %s %s being erased..." \
-                            %(i,eachVertex.m_type,eachVertex),            
+                            %(i,eachVertex.m_type,eachVertex.name),            
                 s_node=[]
                 d_node=[]
                 ##把一个所有非FD PI PO的点的所有出与入相连接
@@ -132,15 +131,15 @@ class s_graph(nx.DiGraph):
         plt.savefig(pic_full_name) 
     ###########################################################################
     def info(self):
-        print 'Info: s_vertex:-----------------------------------------------------'
+        print '\nInfo: s_vertex:-----------------------------------------------------'
         for eachVertex in self.nodes_iter():
             if isinstance(eachVertex,cc.circut_module):
-                print eachVertex.m_type+'::::'+eachVertex.name
+                print eachVertex.m_type+':'+eachVertex.name
             else:
-                print eachVertex.port_type+'::::'+eachVertex.port_name
+                print eachVertex.port_type+':'+eachVertex.port_name
         print 'Info: s_edge  :-----------------------------------------------------'
         for eachEdge in self.edges_iter():
-            print str(eachEdge)
+            print "%s --->>%s "%(eachEdge[0].name,eachEdge[1].name)
         print "S_graph info:nx.info(self)----------------------------------------------"             
         print nx.info(self)
         print "Info: nodes with selfloops ARE:----------------------------"
@@ -165,5 +164,6 @@ class s_graph(nx.DiGraph):
             #if has_cnt2_pi==True:
             self.fd_depth_dict[eachFD]=(tmp_depth,has_cnt2_pi,tmp_path)
             if (verbose):
-                print "Node:%s .depth is: %d. path is :%s" %(eachFD,tmp_depth,str(tmp_path))
+                print "\nNode:%s %s .depth is: %d. path is :" \
+                    %(eachFD.cellref,eachFD.name,tmp_depth)
                       
