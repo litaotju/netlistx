@@ -6,6 +6,7 @@ import os.path
 import re
 import netlist_util as nu
 import file_util    as fu
+import netlist_parser as np
 #import generate_testbench as gt
 #############################################################################################
 def insert_scan_chain(fname,verbose=False,presult=True,\
@@ -16,7 +17,6 @@ def insert_scan_chain(fname,verbose=False,presult=True,\
     #file -->> m_list
     info=fu.extract_m_list(input_file,verbose)
     m_list=info[0]  #info[1] defparam_init_list info[2] signal_list
-    
     #m_list -->>all info need 
     lut_type_cnt=[0,0,0,0,0,0]
     all_fd_dict =nu.get_all_fd(m_list,verbose)

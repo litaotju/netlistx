@@ -1,22 +1,19 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Sun Jun 28 15:22:50 2015
-
-@author: litao
-"""
 import lex
 states = (
-   ('linecomment','exclusive'),
-   ('blockcomment','exclusive'),
    ('timescale','exclusive'),
+   ('string','exclusive')
 )
 
-literals = ['.',';','(',')','[',':',']','=',"'"]
+literals = [',','.',';','(',')','[',':',']','=',"'",'{','}','"']
 token_raw = [
    'NUMBER',
    'IDENTIFIER',
    'VECTOR',
-   'HEX_NUMBER'
+   'BIT',
+   'HEX_NUMBER',
+   'BIN_NUMBER',
+   'STRING_CON'
    ]
 reserved={
    'module' : 'MODULE',
@@ -25,53 +22,73 @@ reserved={
    'output' : 'OUTPUT',
    'inout' :'INOUT',
    'defparam':'DEFPARAM',
+   'INIT'   :'INIT',
    'assign':'ASSIGN',
-   'endmoule':'ENDMOULE'   
+   'endmodule':'ENDMODULE',   
 }
 tokens=token_raw+list(reserved.values())
-##########################################################
+###############################################################################
 #注释与timescale部分,没有返回token
 def t_timescale(t):
-    r'\`'
+    r'(\`timescale.*)'
     t.lexer.begin('timescale')
-#comment section
-def t_linecomment(t):
-    r'\/\/.*'
-    t.lexer.begin('linecomment')
-def t_timescale_linecomment_error(t):
-    t.lexer.skip(1)
-    pass
-def t_timescale_linecomment_end(t):
+def t_timescale_end(t):
     r'\n'
     t.lexer.lineno += 1
     t.lexer.begin('INITIAL') 
-
+#comment section
+def t_linecomment(t):
+    r'//.*\n'
+    t.lexer.lineno += 1
 def t_blockcomment(t):
-    r'\/\*'
-    t.lexer.begin('blockcomment')
-def t_blockcomment_error(t):
-    t.lexer.skip(1)
-    pass
-def t_blockcomment_end(t):
-    r'\*\/'
+    r'/\*(.|\n)*?\*/'
+    t.lexer.lineno += t.value.count('\n')
+#literal string section 
+def t_to_string(t):
+    r'"'
+    t.type='"'
+    t.lexer.begin('string')
+    return t
+def t_string_STRING_CON(t):
+    r'[^"]+'
+    return t
+def t_string_end(t):
+    r'"'
+    t.type='"'
     t.lexer.begin('INITIAL')
-##########################################################
+    return t
+###############################################################################
+#有返回值的部分,除过纯数字之外,返回值都是text
+def t_BIN_NUMBER(t):
+    r'\d+\'b[0-1]+'
+    return t
+def t_HEX_NUMBER(t):
+    r'\d+\'h[0-9A-F]+'
+    return t
 def t_words(t):
-    '\\\\?[\w]+[\\\\\w\d_\.\[\]]*'
+    '\\\\?[a-zA-Z_]+[\\\\\w\.]*'
     t.type = reserved.get(t.value,'IDENTIFIER')
     return t
 def t_NUMBER(t):
     r'\d+'
     t.value=int(t.value)
     return t
-def t_HEX_NUMBER(t):
-    r'\d+\'[0-9A-F]+'
-    return t
 def t_VECTOR(t):
     r'\[\d+\:\d+\]'
     return t
-##########################################################
-#标点符号部分    
+def t_BIT(t):
+    r'\[\d+\]'
+    return t
+###############################################################################
+#标点符号部分
+def t_flbracket(t):
+    r'\{'
+    t.type='{'
+    return t
+def t_frbracket(t):
+    r'\}'
+    t.type='}'
+    return t    
 def t_lbracket(t):
     r'\('
     t.type='('
@@ -88,10 +105,8 @@ def t_rseqbracket(t):
     r'\]'
     t.type=']'
     return t
-#def t_comma(t):
-#    r'\,'
-#    t.type=','
-#    return t
+def t_comma(t):
+    r'\,'
 def t_period(t):
     r'\.'
     t.type='.'
@@ -112,32 +127,17 @@ def t_singlequote(t):
     r'\''
     t.type="'"
     return t
-def t_newline(t):
+def t_ANY_newline(t):
     r'\n+'
     t.lexer.lineno += len(t.value)    
-##########################################################
+###############################################################################
 #忽略空白 和 打印错误
 def t_userignore(t):
     r'\s'
     pass
-def t_error(t):
-    print("Illegal character '%s'" % t.value[0])
+def t_ANY_error(t):
+    #print "Illegal character '%s' in line : %d %s " %(t.value[0],t.lexer.lineno,lexer.lexstate)
     t.lexer.skip(1)
 # Build the lexer
 lexer = lex.lex()
 
-
-##########################################################
-if __name__=="__main__":
-    # Give the lexer some input
-    fname=raw_input("plz enter file name:")
-    fobj=open(fname)
-    fobj2=open(fname+"rewrite",'w+')
-    all_lines=fobj.read()
-    #print all_lines
-    lexer.input(all_lines)
-    for tok in lexer:
-        fobj2.write(tok.value)
-        print tok.value
-    fobj2.close()
-    fobj.close()

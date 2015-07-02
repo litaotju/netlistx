@@ -5,9 +5,9 @@ _tabversion = '3.5'
 
 _lr_method = 'LALR'
 
-_lr_signature = '6E642FE0E4FCEE2441E5B4FC2F72F963'
+_lr_signature = '09C076E54859206453127B4933136C1D'
     
-_lr_action_items = {'NUMBER':([115,],[120,]),'INOUT':([1,4,5,12,27,29,31,43,44,45,56,],[8,-7,8,-6,-10,-8,-12,-11,-9,-13,-3,]),'STRING_CON':([119,],[123,]),'WIRE':([4,5,10,12,13,23,27,29,31,35,43,44,45,48,],[-7,11,-15,-6,11,-14,-10,-8,-12,-17,-11,-9,-13,-16,]),')':([33,34,47,61,62,69,70,71,78,79,86,87,88,89,96,97,98,],[46,-5,-4,-34,68,-33,76,77,86,87,-38,-35,96,97,-37,-36,-39,]),'(':([9,42,54,55,67,],[20,53,63,64,74,]),'.':([53,61,62,63,64,69,70,71,86,87,93,96,97,101,103,],[60,-34,60,60,60,-33,60,60,-38,-35,100,-37,-36,105,107,]),'INIT':([100,105,107,],[104,109,112,]),'ENDMODULE':([24,25,37,40,41,52,72,73,75,81,83,84,92,94,95,111,117,122,124,125,127,],[-19,38,-18,-46,51,-45,-47,-48,-20,-22,-26,-21,-25,-23,-24,-27,-28,-30,-31,-29,-32,]),'BIT':([42,50,79,93,],[54,58,89,103,]),'IDENTIFIER':([2,6,7,8,10,11,13,15,17,19,20,22,23,24,25,26,33,34,35,37,39,47,48,50,57,58,59,60,74,75,80,81,82,83,84,90,91,92,94,95,99,105,111,117,122,124,125,127,],[9,14,16,18,-15,21,26,28,30,32,34,36,-14,-19,26,42,47,-5,-17,-18,50,-4,-16,-44,50,-42,-43,67,79,-20,50,-22,93,-26,-21,50,-41,-25,-23,-24,-40,110,-27,-28,-30,-31,-29,-32,]),'=':([49,50,58,59,93,104,109,110,112,],[57,-44,-42,-43,102,108,114,115,116,]),'ASSIGN':([24,25,37,40,41,52,72,73,75,81,83,84,92,94,95,111,117,122,124,125,127,],[-19,39,-18,-46,39,-45,-47,-48,-20,-22,-26,-21,-25,-23,-24,-27,-28,-30,-31,-29,-32,]),'$end':([3,38,51,],[0,-2,-1,]),'MODULE':([0,],[2,]),'"':([115,123,],[119,126,]),'INPUT':([1,4,5,12,27,29,31,43,44,45,56,],[7,-7,7,-6,-10,-8,-12,-11,-9,-13,-3,]),';':([14,16,18,21,28,30,32,36,46,50,58,59,65,66,68,76,77,106,113,118,120,121,126,],[27,29,31,35,43,44,45,48,56,-44,-42,-43,72,73,75,84,85,111,117,122,124,125,127,]),'BIN_NUMBER':([57,],[66,]),'DEFPARAM':([75,81,83,84,85,92,94,95,111,117,122,124,125,127,],[82,82,-26,82,82,-25,82,82,-27,-28,-30,-31,-29,-32,]),'VECTOR':([6,7,8,11,42,50,79,93,],[15,17,19,22,55,59,88,101,]),'OUTPUT':([1,4,5,12,27,29,31,43,44,45,56,],[6,-7,6,-6,-10,-8,-12,-11,-9,-13,-3,]),'{':([74,],[80,]),'HEX_NUMBER':([102,108,114,116,],[106,113,118,121,]),'}':([50,58,59,90,91,99,],[-44,-42,-43,98,-41,-40,]),}
+_lr_action_items = {'NUMBER':([110,],[115,]),'INOUT':([1,4,5,12,27,29,31,43,44,45,56,],[8,-7,8,-6,-10,-8,-12,-11,-9,-13,-3,]),'STRING_CON':([114,],[118,]),'WIRE':([4,5,10,12,13,23,27,29,31,35,43,44,45,48,],[-7,11,-15,-6,11,-14,-10,-8,-12,-17,-11,-9,-13,-16,]),')':([33,34,47,50,58,59,61,62,69,70,71,79,87,93,98,],[46,-5,-4,-33,-31,-32,-26,68,-25,76,77,87,-27,98,-28,]),'(':([9,42,54,55,67,],[20,53,63,64,74,]),'.':([53,61,62,63,64,69,70,71,87,89,95,97,98,],[60,-26,60,60,60,-25,60,60,-27,94,100,102,-28,]),'INIT':([94,100,102,],[99,104,107,]),'ENDMODULE':([24,25,37,40,41,52,72,73,75,80,82,83,88,90,91,106,112,117,119,120,122,],[-19,38,-18,-43,51,-42,-44,-45,-20,-22,-35,-21,-34,-23,-24,-36,-37,-39,-40,-38,-41,]),'BIT':([42,50,89,],[54,58,97,]),'IDENTIFIER':([2,6,7,8,10,11,13,15,17,19,20,22,23,24,25,26,33,34,35,37,39,47,48,50,57,58,59,60,74,75,78,80,81,82,83,85,86,88,90,91,92,100,106,112,117,119,120,122,],[9,14,16,18,-15,21,26,28,30,32,34,36,-14,-19,26,42,47,-5,-17,-18,50,-4,-16,-33,50,-31,-32,67,50,-20,50,-22,89,-35,-21,-30,50,-34,-23,-24,-29,105,-36,-37,-39,-40,-38,-41,]),'=':([49,50,58,59,89,99,104,105,107,],[57,-33,-31,-32,96,103,109,110,111,]),'ASSIGN':([24,25,37,40,41,52,72,73,75,80,82,83,88,90,91,106,112,117,119,120,122,],[-19,39,-18,-43,39,-42,-44,-45,-20,-22,-35,-21,-34,-23,-24,-36,-37,-39,-40,-38,-41,]),'$end':([3,38,51,],[0,-2,-1,]),'MODULE':([0,],[2,]),'"':([110,118,],[114,121,]),'INPUT':([1,4,5,12,27,29,31,43,44,45,56,],[7,-7,7,-6,-10,-8,-12,-11,-9,-13,-3,]),';':([14,16,18,21,28,30,32,36,46,50,58,59,65,66,68,76,77,101,108,113,115,116,121,],[27,29,31,35,43,44,45,48,56,-33,-31,-32,72,73,75,83,84,106,112,117,119,120,122,]),'BIN_NUMBER':([57,],[66,]),'DEFPARAM':([75,80,82,83,84,88,90,91,106,112,117,119,120,122,],[81,81,-35,81,81,-34,81,81,-36,-37,-39,-40,-38,-41,]),'VECTOR':([6,7,8,11,42,50,89,],[15,17,19,22,55,59,95,]),'OUTPUT':([1,4,5,12,27,29,31,43,44,45,56,],[6,-7,6,-6,-10,-8,-12,-11,-9,-13,-3,]),'{':([74,],[78,]),'HEX_NUMBER':([96,103,109,111,],[101,108,113,116,]),'}':([50,58,59,85,86,92,],[-33,-31,-32,-30,93,-29,]),}
 
 _lr_action = {}
 for _k, _v in _lr_action_items.items():
@@ -16,7 +16,7 @@ for _k, _v in _lr_action_items.items():
       _lr_action[_x][_k] = _y
 del _lr_action_items
 
-_lr_goto_items = {'signal_decl':([5,13,],[10,23,]),'primitive':([13,25,],[24,37,]),'module_decl':([0,],[1,]),'port_decl':([1,5,],[4,12,]),'primitive_port':([53,62,63,64,70,71,],[61,69,61,61,69,69,]),'defparam_stm':([75,81,84,85,94,95,],[83,92,83,83,92,92,]),'primitive_list':([13,],[25,]),'port_decl_list':([1,],[5,]),'defparam_list':([75,84,85,],[81,94,95,]),'signal_decl_list':([5,],[13,]),'joint_signal_list':([80,],[90,]),'vm_file':([0,],[3,]),'pipo_list':([20,],[33,]),'assign_stm':([25,41,],[40,52,]),'joint_signal':([74,],[78,]),'assign_stm_list':([25,],[41,]),'primitive_port_list':([53,63,64,],[62,70,71,]),'signal_element':([39,57,80,90,],[49,65,91,99,]),}
+_lr_goto_items = {'signal_decl':([5,13,],[10,23,]),'primitive':([13,25,],[24,37,]),'module_decl':([0,],[1,]),'port_decl':([1,5,],[4,12,]),'primitive_port':([53,62,63,64,70,71,],[61,69,61,61,69,69,]),'defparam_stm':([75,80,83,84,90,91,],[82,88,82,82,88,88,]),'primitive_list':([13,],[25,]),'port_decl_list':([1,],[5,]),'defparam_list':([75,83,84,],[80,90,91,]),'signal_decl_list':([5,],[13,]),'vm_file':([0,],[3,]),'pipo_list':([20,],[33,]),'assign_stm':([25,41,],[40,52,]),'joint_signal_list':([78,],[86,]),'assign_stm_list':([25,],[41,]),'primitive_port_list':([53,63,64,],[62,70,71,]),'signal_element':([39,57,74,78,86,],[49,65,79,85,92,]),}
 
 _lr_goto = {}
 for _k, _v in _lr_goto_items.items():
@@ -26,52 +26,49 @@ for _k, _v in _lr_goto_items.items():
 del _lr_goto_items
 _lr_productions = [
   ("S' -> vm_file","S'",1,None,None,None),
-  ('vm_file -> module_decl port_decl_list signal_decl_list primitive_list assign_stm_list ENDMODULE','vm_file',6,'p_vmfile',u'netlist_parser.py',156),
-  ('vm_file -> module_decl port_decl_list signal_decl_list primitive_list ENDMODULE','vm_file',5,'p_vmfile',u'netlist_parser.py',157),
-  ('module_decl -> MODULE IDENTIFIER ( pipo_list ) ;','module_decl',6,'p_module_decl',u'netlist_parser.py',161),
-  ('pipo_list -> pipo_list IDENTIFIER','pipo_list',2,'p_pipo_list',u'netlist_parser.py',165),
-  ('pipo_list -> IDENTIFIER','pipo_list',1,'p_pipo_list',u'netlist_parser.py',166),
-  ('port_decl_list -> port_decl_list port_decl','port_decl_list',2,'p_port_decl',u'netlist_parser.py',170),
-  ('port_decl_list -> port_decl','port_decl_list',1,'p_port_decl',u'netlist_parser.py',171),
-  ('port_decl -> INPUT IDENTIFIER ;','port_decl',3,'p_port_decl',u'netlist_parser.py',172),
-  ('port_decl -> INPUT VECTOR IDENTIFIER ;','port_decl',4,'p_port_decl',u'netlist_parser.py',173),
-  ('port_decl -> OUTPUT IDENTIFIER ;','port_decl',3,'p_port_decl',u'netlist_parser.py',174),
-  ('port_decl -> OUTPUT VECTOR IDENTIFIER ;','port_decl',4,'p_port_decl',u'netlist_parser.py',175),
-  ('port_decl -> INOUT IDENTIFIER ;','port_decl',3,'p_port_decl',u'netlist_parser.py',176),
-  ('port_decl -> INOUT VECTOR IDENTIFIER ;','port_decl',4,'p_port_decl',u'netlist_parser.py',177),
-  ('signal_decl_list -> signal_decl_list signal_decl','signal_decl_list',2,'p_signal_decl_list',u'netlist_parser.py',181),
-  ('signal_decl_list -> signal_decl','signal_decl_list',1,'p_signal_decl_list',u'netlist_parser.py',182),
-  ('signal_decl -> WIRE VECTOR IDENTIFIER ;','signal_decl',4,'p_signal_decl_list',u'netlist_parser.py',183),
-  ('signal_decl -> WIRE IDENTIFIER ;','signal_decl',3,'p_signal_decl_list',u'netlist_parser.py',184),
-  ('primitive_list -> primitive_list primitive','primitive_list',2,'p_primitive_list',u'netlist_parser.py',188),
-  ('primitive_list -> primitive','primitive_list',1,'p_primitive_list',u'netlist_parser.py',189),
-  ('primitive -> IDENTIFIER IDENTIFIER ( primitive_port_list ) ;','primitive',6,'p_primitive_list',u'netlist_parser.py',190),
-  ('primitive -> IDENTIFIER IDENTIFIER BIT ( primitive_port_list ) ;','primitive',7,'p_primitive_list',u'netlist_parser.py',191),
-  ('primitive -> IDENTIFIER IDENTIFIER ( primitive_port_list ) ; defparam_list','primitive',7,'p_primitive_list',u'netlist_parser.py',192),
-  ('primitive -> IDENTIFIER IDENTIFIER BIT ( primitive_port_list ) ; defparam_list','primitive',8,'p_primitive_list',u'netlist_parser.py',193),
-  ('primitive -> IDENTIFIER IDENTIFIER VECTOR ( primitive_port_list ) ; defparam_list','primitive',8,'p_primitive_list',u'netlist_parser.py',194),
-  ('defparam_list -> defparam_list defparam_stm','defparam_list',2,'p_primitive_list',u'netlist_parser.py',195),
-  ('defparam_list -> defparam_stm','defparam_list',1,'p_primitive_list',u'netlist_parser.py',196),
-  ('defparam_stm -> DEFPARAM IDENTIFIER = HEX_NUMBER ;','defparam_stm',5,'p_primitive_list',u'netlist_parser.py',197),
-  ('defparam_stm -> DEFPARAM IDENTIFIER . INIT = HEX_NUMBER ;','defparam_stm',7,'p_primitive_list',u'netlist_parser.py',198),
-  ('defparam_stm -> DEFPARAM IDENTIFIER BIT . INIT = HEX_NUMBER ;','defparam_stm',8,'p_primitive_list',u'netlist_parser.py',199),
-  ('defparam_stm -> DEFPARAM IDENTIFIER VECTOR . INIT = HEX_NUMBER ;','defparam_stm',8,'p_primitive_list',u'netlist_parser.py',200),
-  ('defparam_stm -> DEFPARAM IDENTIFIER VECTOR . IDENTIFIER = NUMBER ;','defparam_stm',8,'p_primitive_list',u'netlist_parser.py',201),
-  ('defparam_stm -> DEFPARAM IDENTIFIER VECTOR . IDENTIFIER = " STRING_CON " ;','defparam_stm',10,'p_primitive_list',u'netlist_parser.py',202),
-  ('primitive_port_list -> primitive_port_list primitive_port','primitive_port_list',2,'p_primitive_port_list',u'netlist_parser.py',206),
-  ('primitive_port_list -> primitive_port','primitive_port_list',1,'p_primitive_port_list',u'netlist_parser.py',207),
-  ('primitive_port -> . IDENTIFIER ( IDENTIFIER )','primitive_port',5,'p_primitive_port_list',u'netlist_parser.py',208),
-  ('primitive_port -> . IDENTIFIER ( IDENTIFIER BIT )','primitive_port',6,'p_primitive_port_list',u'netlist_parser.py',209),
-  ('primitive_port -> . IDENTIFIER ( IDENTIFIER VECTOR )','primitive_port',6,'p_primitive_port_list',u'netlist_parser.py',210),
-  ('primitive_port -> . IDENTIFIER ( joint_signal )','primitive_port',5,'p_primitive_port_list',u'netlist_parser.py',211),
-  ('joint_signal -> { joint_signal_list }','joint_signal',3,'p_joint_signal',u'netlist_parser.py',215),
-  ('joint_signal_list -> joint_signal_list signal_element','joint_signal_list',2,'p_joint_signal',u'netlist_parser.py',216),
-  ('joint_signal_list -> signal_element','joint_signal_list',1,'p_joint_signal',u'netlist_parser.py',217),
-  ('signal_element -> IDENTIFIER BIT','signal_element',2,'p_signal_element',u'netlist_parser.py',220),
-  ('signal_element -> IDENTIFIER VECTOR','signal_element',2,'p_signal_element',u'netlist_parser.py',221),
-  ('signal_element -> IDENTIFIER','signal_element',1,'p_signal_element',u'netlist_parser.py',222),
-  ('assign_stm_list -> assign_stm_list assign_stm','assign_stm_list',2,'p_assign_stm_list',u'netlist_parser.py',227),
-  ('assign_stm_list -> assign_stm','assign_stm_list',1,'p_assign_stm_list',u'netlist_parser.py',228),
-  ('assign_stm -> ASSIGN signal_element = signal_element ;','assign_stm',5,'p_assign_stm_list',u'netlist_parser.py',229),
-  ('assign_stm -> ASSIGN signal_element = BIN_NUMBER ;','assign_stm',5,'p_assign_stm_list',u'netlist_parser.py',230),
+  ('vm_file -> module_decl port_decl_list signal_decl_list primitive_list assign_stm_list ENDMODULE','vm_file',6,'p_vmfile',u'netlist_parser.py',16),
+  ('vm_file -> module_decl port_decl_list signal_decl_list primitive_list ENDMODULE','vm_file',5,'p_vmfile',u'netlist_parser.py',17),
+  ('module_decl -> MODULE IDENTIFIER ( pipo_list ) ;','module_decl',6,'p_module_decl',u'netlist_parser.py',33),
+  ('pipo_list -> pipo_list IDENTIFIER','pipo_list',2,'p_pipo_list',u'netlist_parser.py',38),
+  ('pipo_list -> IDENTIFIER','pipo_list',1,'p_pipo_list',u'netlist_parser.py',39),
+  ('port_decl_list -> port_decl_list port_decl','port_decl_list',2,'p_port_decl_list',u'netlist_parser.py',46),
+  ('port_decl_list -> port_decl','port_decl_list',1,'p_port_decl_list',u'netlist_parser.py',47),
+  ('port_decl -> INPUT IDENTIFIER ;','port_decl',3,'p_port_decl',u'netlist_parser.py',57),
+  ('port_decl -> INPUT VECTOR IDENTIFIER ;','port_decl',4,'p_port_decl',u'netlist_parser.py',58),
+  ('port_decl -> OUTPUT IDENTIFIER ;','port_decl',3,'p_port_decl',u'netlist_parser.py',59),
+  ('port_decl -> OUTPUT VECTOR IDENTIFIER ;','port_decl',4,'p_port_decl',u'netlist_parser.py',60),
+  ('port_decl -> INOUT IDENTIFIER ;','port_decl',3,'p_port_decl',u'netlist_parser.py',61),
+  ('port_decl -> INOUT VECTOR IDENTIFIER ;','port_decl',4,'p_port_decl',u'netlist_parser.py',62),
+  ('signal_decl_list -> signal_decl_list signal_decl','signal_decl_list',2,'p_signal_decl_list',u'netlist_parser.py',71),
+  ('signal_decl_list -> signal_decl','signal_decl_list',1,'p_signal_decl_list',u'netlist_parser.py',72),
+  ('signal_decl -> WIRE VECTOR IDENTIFIER ;','signal_decl',4,'p_signal_decl',u'netlist_parser.py',82),
+  ('signal_decl -> WIRE IDENTIFIER ;','signal_decl',3,'p_signal_decl',u'netlist_parser.py',83),
+  ('primitive_list -> primitive_list primitive','primitive_list',2,'p_primitive_list',u'netlist_parser.py',93),
+  ('primitive_list -> primitive','primitive_list',1,'p_primitive_list',u'netlist_parser.py',94),
+  ('primitive -> IDENTIFIER IDENTIFIER ( primitive_port_list ) ;','primitive',6,'p_primitive',u'netlist_parser.py',103),
+  ('primitive -> IDENTIFIER IDENTIFIER BIT ( primitive_port_list ) ;','primitive',7,'p_primitive',u'netlist_parser.py',104),
+  ('primitive -> IDENTIFIER IDENTIFIER ( primitive_port_list ) ; defparam_list','primitive',7,'p_primitive',u'netlist_parser.py',105),
+  ('primitive -> IDENTIFIER IDENTIFIER BIT ( primitive_port_list ) ; defparam_list','primitive',8,'p_primitive',u'netlist_parser.py',106),
+  ('primitive -> IDENTIFIER IDENTIFIER VECTOR ( primitive_port_list ) ; defparam_list','primitive',8,'p_primitive',u'netlist_parser.py',107),
+  ('primitive_port_list -> primitive_port_list primitive_port','primitive_port_list',2,'p_primitive_port_list',u'netlist_parser.py',125),
+  ('primitive_port_list -> primitive_port','primitive_port_list',1,'p_primitive_port_list',u'netlist_parser.py',126),
+  ('primitive_port -> . IDENTIFIER ( signal_element )','primitive_port',5,'p_primitive_port',u'netlist_parser.py',135),
+  ('primitive_port -> . IDENTIFIER ( { joint_signal_list } )','primitive_port',7,'p_primitive_port',u'netlist_parser.py',136),
+  ('joint_signal_list -> joint_signal_list signal_element','joint_signal_list',2,'p_joint_signal',u'netlist_parser.py',146),
+  ('joint_signal_list -> signal_element','joint_signal_list',1,'p_joint_signal',u'netlist_parser.py',147),
+  ('signal_element -> IDENTIFIER BIT','signal_element',2,'p_signal_element',u'netlist_parser.py',156),
+  ('signal_element -> IDENTIFIER VECTOR','signal_element',2,'p_signal_element',u'netlist_parser.py',157),
+  ('signal_element -> IDENTIFIER','signal_element',1,'p_signal_element',u'netlist_parser.py',158),
+  ('defparam_list -> defparam_list defparam_stm','defparam_list',2,'p_defparam_list',u'netlist_parser.py',165),
+  ('defparam_list -> defparam_stm','defparam_list',1,'p_defparam_list',u'netlist_parser.py',166),
+  ('defparam_stm -> DEFPARAM IDENTIFIER = HEX_NUMBER ;','defparam_stm',5,'p_defparam_',u'netlist_parser.py',175),
+  ('defparam_stm -> DEFPARAM IDENTIFIER . INIT = HEX_NUMBER ;','defparam_stm',7,'p_defparam_',u'netlist_parser.py',176),
+  ('defparam_stm -> DEFPARAM IDENTIFIER BIT . INIT = HEX_NUMBER ;','defparam_stm',8,'p_defparam_',u'netlist_parser.py',177),
+  ('defparam_stm -> DEFPARAM IDENTIFIER VECTOR . INIT = HEX_NUMBER ;','defparam_stm',8,'p_defparam_',u'netlist_parser.py',178),
+  ('defparam_stm -> DEFPARAM IDENTIFIER VECTOR . IDENTIFIER = NUMBER ;','defparam_stm',8,'p_defparam_',u'netlist_parser.py',179),
+  ('defparam_stm -> DEFPARAM IDENTIFIER VECTOR . IDENTIFIER = " STRING_CON " ;','defparam_stm',10,'p_defparam_',u'netlist_parser.py',180),
+  ('assign_stm_list -> assign_stm_list assign_stm','assign_stm_list',2,'p_assign_stm_list',u'netlist_parser.py',197),
+  ('assign_stm_list -> assign_stm','assign_stm_list',1,'p_assign_stm_list',u'netlist_parser.py',198),
+  ('assign_stm -> ASSIGN signal_element = signal_element ;','assign_stm',5,'p_assign_stm',u'netlist_parser.py',207),
+  ('assign_stm -> ASSIGN signal_element = BIN_NUMBER ;','assign_stm',5,'p_assign_stm',u'netlist_parser.py',208),
 ]

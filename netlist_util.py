@@ -6,8 +6,75 @@ Created on Thu Jun 18 16:30:03 2015
 '--this file is composed of a lot of functions to parse and util the Src file--'
 import os
 import copy
+import re
 import generate_testbench as gt
 import file_util as fu
+
+###############################################################################
+def mark_the_circut(m_list,verbose=False):
+    
+    #mark all the module with a type
+    for eachModule in m_list[1:]:
+        #FD--------------------------------------------------------------------
+        if re.match('FD\w*',eachModule.cellref) is not None:
+            eachModule.m_type='FD'
+            for eachPort in eachModule.port_list:
+                if eachPort.port_name=='D':
+                    eachPort.port_type='input'
+                elif eachPort.port_name=='Q':
+                    eachPort.port_type='output'
+                elif eachPort.port_name=='C':
+                    eachPort.port_type='clock'
+                elif eachPort.port_name=='CE':
+                    eachPort.port_type='input'
+                else:
+                    eachPort.port_type='input'
+        
+        # LUT------------------------------------------------------------------
+        elif re.match('LUT\w+',eachModule.cellref) is not None:
+            eachModule.m_type='LUT'
+            assert eachModule.port_list[-1].port_name in ['O','LO']
+            for eachPort in eachModule.port_list[:-1]:
+                eachPort.port_type='input'
+            eachModule.port_list[-1].port_type='output'
+
+        # MUX and XOR----------------------------------------------------------
+        elif re.match('MUX\w+|XOR\w+|INV|MULT_AND',eachModule.cellref) is not None:
+            eachModule.m_type=eachModule.cellref
+            for eachPort in eachModule.port_list[:-1]:
+                eachPort.port_type='input'
+            eachModule.port_list[-1].port_type='output'
+            
+        #BUF------------------------------------------------------------------
+        elif re.match('\w*BUF\w*',eachModule.cellref) is not None:
+            eachModule.m_type='BUF'
+            for eachPort in eachModule.port_list:
+                if eachPort.port_name=='I':
+                    eachPort.port_type='input'
+                elif eachPort.port_name=='O':
+                    eachPort.port_type='output'
+                else:
+                    print 'Error: in netlist_util.mark_the_circut()',
+                    print '       buf %s has a port is neither I nor O' % eachModule.name
+        #GND VCC---------------------------------------------------------------
+        elif (eachModule.cellref=='GND' or eachModule.cellref=='VCC'):
+            eachModule.m_type=eachModule.name
+            assert len(eachModule.port_list)==1
+            for eachPort in eachModule.port_list:
+                eachPort.port_type='output'
+
+        #DSP48E---------------------------------------------------------------
+        elif re.match('DSP48|DSP48E\w*',eachModule.cellref) is not None:
+            eachModule.m_type='DSP'
+        else:
+            print 'Warning:unknown cellref:'+eachModule.cellref+eachModule.name
+    print "Note: mark_the_circut() successfully !"
+    if verbose:        
+        print 'Note:module list is:'
+        for eachModule in m_list:
+            eachModule.print_module()
+    return True
+
 ###############################################################################
 def get_all_fd(m_list,verbose=False):
     '--get all the FD and its D_Q port--'
@@ -19,19 +86,13 @@ def get_all_fd(m_list,verbose=False):
         if eachModule.m_type=='FD':
             port_info={}
             for eachPort in eachModule.port_list:
-                if eachPort.port_name=='D':
-                    port_info['D']=eachPort.port_assign
-                elif eachPort.port_name=='C':
-                    port_info['C']=eachPort.port_assign
-                elif eachPort.port_name=='Q':
-                    port_info['Q']=eachPort.port_assign
-                elif eachPort.port_name=='CE':
-                    port_info['CE']=eachPort.port_assign
-                elif eachPort.port_name=='CLR':
-                    port_info['CLR']=eachPort.port_assign
+                port_info[eachPort.port_name]=eachPort.port_assign
             all_fd_dict[eachModule.name]=port_info
             if verbose:
-                print eachModule.name +str(port_info)
+                print eachModule.name
+                for eachPort in port_info.keys():
+                    print eachPort,
+                    port_info[eachPort].__print__()
     print "Note: get_all_fd() sucessfully !"
     return all_fd_dict
 ###############################################################################
@@ -62,7 +123,7 @@ def get_lut_cnt2_FD(m_list,all_fd_dict,verbose,K=6):
     for each_FD in all_fd_dict.keys():   
         for eachModule in m_list[1:]:
             if eachModule.m_type=='LUT' and eachModule.been_searched==False :
-                if eachModule.port_list[-1].port_assign==all_fd_dict[each_FD]['D']\
+                if eachModule.port_list[-1].port_assign.string==all_fd_dict[each_FD]['D'].string\
                     and int(eachModule.cellref[3])<=(K-2):
                         eachModule.been_searched=True
                         FD_din_lut_list.append(each_FD)
@@ -87,7 +148,7 @@ def get_clk_in_fd(all_fd_dict,verbose):
 #                        continue
     for eachFD in all_fd_dict.keys():
         assert all_fd_dict.has_key("C"),"Error:FD %s has no C port" % eachFD
-        current_clk=all_fd_dict[eachFD]['C']
+        current_clk=all_fd_dict[eachFD]['C'].string
         if current_clk not in clock_list:
             clock_list.append(current_clk)
     assert len(clock_list)==1,\
@@ -106,7 +167,7 @@ def get_ce_in_fd(all_fd_dict,verbose):
     for eachFD in all_fd_dict.keys():
          if all_fd_dict[eachFD].has_key('CE'):
              fd_has_ce_list.append(eachFD)
-             current_ce=all_fd_dict[eachFD]['CE']
+             current_ce=all_fd_dict[eachFD]['CE'].string
              if current_ce not in ce_signal_list:
                  ce_signal_list.append(current_ce)
     if verbose:
@@ -120,13 +181,12 @@ def get_ce_in_fd(all_fd_dict,verbose):
 def get_lut_cnt2_ce(m_list,ce_signal_list,K=6,verbose=False):
     "get for lut combine for ce signal"
     lut_cnt2_ce=[]
-    
     opt_ce_flag=False
     un_opt_ce_list=copy.deepcopy(ce_signal_list)
     for eachCE in ce_signal_list:
         for eachModule in m_list[1:]:
             if eachModule.m_type=="LUT" and  eachModule.been_searched==False :
-                if eachModule.port_list[-1].port_assign==eachCE \
+                if eachModule.port_list[-1].port_assign.string==eachCE \
                 and int(eachModule.cellref[3])<=(K-1):
                     eachModule.been_searched=True
                     opt_ce_flag=True
