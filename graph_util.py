@@ -3,8 +3,8 @@
 Created on Tue Mar 31 21:27:23 2015
 @author: litao
 """
-import os.path
-import netlist_util as nu
+import networkx as nx
+import matplotlib.pyplot as plt
 import circut_class as cc
 ###############################################################################
 def get_edge_vertex(m_list,verbose=False):
@@ -55,15 +55,17 @@ def get_edge_vertex(m_list,verbose=False):
                                     eachPort2.port_type!=eachPort.port_type:
                                 cnt_dict={"connection":eachPort.port_assign.string}
                                 if eachPort.port_type=='input':
-                                    prim_edge_list.append([[eachPrim,eachPrim2],[eachPort,eachPort2],cnt_dict])
-                                else:
                                     prim_edge_list.append([[eachPrim2,eachPrim],[eachPort2,eachPort],cnt_dict])
+                                else:
+                                    prim_edge_list.append([[eachPrim,eachPrim2],[eachPort,eachPort2],cnt_dict])
                 else:
                     continue
 
 
     #--------merge all the edge
     edge_set=pi_edge_list+po_edge_list+prim_edge_list
+    #edge_set的每一个元素是 一个([],[],{})类型的变量,
+    #第一个列表存储prim,第二个存储port,第三个存储连接信号
     print 'Note: get_edge_vertex() successfully !'
     if verbose:
         for eachVertex in vertex_set:
@@ -71,4 +73,28 @@ def get_edge_vertex(m_list,verbose=False):
         for eachEdge in edge_set:
             print eachEdge[2]['connection']
     return vertex_set,edge_set
-
+###############################################################################
+#画图,只画出基本的节点,边和标签,不判断图是什么类型的
+#与s_graph class中定义的画图相比,没有层次化,只是spring_layout
+def get_vertex_label(vertex_set):
+    label_dict={}
+    for eachVertex in vertex_set:
+        if isinstance(eachVertex,cc.circut_module):
+            label_dict[eachVertex]=eachVertex.cellref+" : "+eachVertex.name
+        else:
+            assert isinstance(eachVertex,cc.port)
+            label_dict[eachVertex]=eachVertex.port_type+" : "+eachVertex.port_name
+    return label_dict
+    
+def display_graph(name,vertex_set,edge_set):
+    graph1=nx.DiGraph()
+    graph1.add_nodes_from(vertex_set)
+    for eachEdge in edge_set:
+        graph1.add_edge(eachEdge[0][0],eachEdge[0][1])
+    label_dict=get_vertex_label(vertex_set)
+    ps=nx.spring_layout(graph1)
+    nx.draw_networkx_nodes(graph1,pos=ps,nodelist=vertex_set,node_color='g')
+    nx.draw_networkx_edges(graph1,ps)
+    nx.draw_networkx_labels(graph1,ps,labels=label_dict)
+    plt.savefig(name+".jpg")
+    return True

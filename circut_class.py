@@ -50,7 +50,10 @@ class circut_module:
         for eachPort in self.port_list:
             assert isinstance(eachPort,port),\
                 ("Error: add non-port obj to port_list in module %s"%self.name)
-            port_assign_list.append(eachPort.port_assign.string)
+            if isinstance(eachPort.port_assign,signal):
+                port_assign_list.append(eachPort.port_assign.string)
+            else:
+                port_assign_list.append("__JOINT_SIGNAL__")
         self.port_assign_list=port_assign_list
         
     def add_param_list(self,param_list):

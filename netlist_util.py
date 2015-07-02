@@ -7,9 +7,8 @@ Created on Thu Jun 18 16:30:03 2015
 import os
 import copy
 import re
+import netlist_parser     as np
 import generate_testbench as gt
-import file_util as fu
-
 ###############################################################################
 def mark_the_circut(m_list,verbose=False):
     
@@ -204,13 +203,22 @@ def get_lut_cnt2_ce(m_list,ce_signal_list,K=6,verbose=False):
 if __name__=='__main__':
     print "Current PATH is:"+os.getcwd()
     print [file for file in os.listdir(os.getcwd())]    
+    
     fname=raw_input('plz enter the file name:') 
     K=int(raw_input('plz enter the K parameter of FPGA:K='))
-    signal_list,m_list,defparam_list=fu.extract_m_list(fname,True)
+    
+    info=np.parse_to_parse_list(fname,True)
+    signal_list=info[2]
+    m_list=[]
+    m_list.append(info[0])
+    m_list+=info[3]
+    
     all_fd_dict=get_all_fd(m_list,False)
     lut_out2_FD_dict,FD_din_lut_list=get_lut_cnt2_FD(m_list,all_fd_dict,True,K)
+    
     ce_signal_list=get_ce_in_fd(all_fd_dict,False)
     clock_signal_list=get_clk_in_fd(all_fd_dict,verbose=True)
+    
     gt.generate_testbench(m_list[0],len(all_fd_dict),os.getcwd())
 
 

@@ -25,6 +25,7 @@ def insert_scan_chain_new(fname,verbose=False,presult=True,\
     if len(info)==5:
         assign_stm_list=info[4]
     nu.mark_the_circut(m_list)
+    
     #m_list -->>all info need 
     lut_type_cnt=[0,0,0,0,0,0]
     all_fd_dict =nu.get_all_fd(m_list,verbose)
@@ -40,7 +41,6 @@ def insert_scan_chain_new(fname,verbose=False,presult=True,\
     
     #gt.generate_testbench(m_list[0],fd_cnt=len(all_fd_dict),output_dir=output_file_dir)    
     #####################################################################    
-    #some global variable in this function
     counter=0
     scan_out_dict={}
     
@@ -49,7 +49,6 @@ def insert_scan_chain_new(fname,verbose=False,presult=True,\
     cnt_edited_lut=0
     #cnt for debug only 
     
-    ##get all lines ready for match and do
     name_base=os.path.splitext(fname)[0]
     output_file=os.path.join(output_file_dir,name_base+'_insert_scan_chain.v')
     try:
@@ -113,8 +112,8 @@ def insert_scan_chain_new(fname,verbose=False,presult=True,\
                 pass
     #--------------------------------------------------------------------------
     #检查是否成功
+    #check all the numbers ,insure all wanted LUT and FD been handled
     #--------------------------------------------------------------------------
-    #check all the numbers ,insure all wanted LUT and FD been handled   
     assert (fd_replace_cnt+cnt_edited_lut)==len(all_fd_dict),"not all the FD has been scaned !!"
     assert (cnt_edited_lut==len(FD_din_lut_list)),"There is Usefully LUT not edited !!"
     #--------------------------------------------------------------------------
