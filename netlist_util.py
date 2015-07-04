@@ -32,10 +32,12 @@ def mark_the_circut(m_list,verbose=False):
         # LUT------------------------------------------------------------------
         elif re.match('LUT\w+',eachModule.cellref) is not None:
             eachModule.m_type='LUT'
-            assert eachModule.port_list[-1].port_name in ['O','LO']
-            for eachPort in eachModule.port_list[:-1]:
-                eachPort.port_type='input'
-            eachModule.port_list[-1].port_type='output'
+            for eachPort in eachModule.port_list:
+                if eachPort.port_name[0]=='I':
+                    eachPort.port_type='input'
+                else:
+                    assert eachPort.port_name[0]=='O',eachModule.name+eachPort.port_name
+                    eachModule.port_list[-1].port_type='output'
 
         # MUX and XOR----------------------------------------------------------
         elif re.match('MUX\w+|XOR\w+|INV|MULT_AND',eachModule.cellref) is not None:
@@ -65,6 +67,7 @@ def mark_the_circut(m_list,verbose=False):
         #DSP48E---------------------------------------------------------------
         elif re.match('DSP48|DSP48E\w*',eachModule.cellref) is not None:
             eachModule.m_type='DSP'
+            print "Warning:find %s : %s in this netlist"%(eachModule.cellref,eachModule.name)
         else:
             print 'Warning:unknown cellref:'+eachModule.cellref+eachModule.name
     print "Note: mark_the_circut() successfully !"

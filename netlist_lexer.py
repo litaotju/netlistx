@@ -136,8 +136,45 @@ def t_userignore(t):
     r'\s'
     pass
 def t_ANY_error(t):
-    #print "Illegal character '%s' in line : %d %s " %(t.value[0],t.lexer.lineno,lexer.lexstate)
+    print "Warning Illegal character '%s' in line : %d %s " %(t.value[0],t.lexer.lineno,lexer.lexstate)
     t.lexer.skip(1)
 # Build the lexer
 lexer = lex.lex()
-
+###############################################################################
+if __name__=='__main__':
+    import sys
+    import os
+    if len(sys.argv)==1:
+        print "Just handle one simple verilog netlist in os.get_cwd() dir"
+        fname=raw_input("plz enter the file name:")
+        try:
+            fobj=open(fname,'r')
+        except IOError,e:
+            print "Error: file open error:",e
+        else:
+            all_lines=fobj.read()
+            lex.runmain(lexer,all_lines)
+            fobj.close()
+    elif sys.argv[1]=='many': 
+        parent_dir=os.getcwd()
+        while(1):
+            tmp1=raw_input('Plz enter the verilog source sub dir:')
+            input_file_dir=parent_dir+"\\test_input_netlist\\"+tmp1
+            if os.path.exists(input_file_dir)==False:
+                print 'Error : this dir dont exists!'
+                continue
+            else:
+                break
+        for eachFile in os.listdir(input_file_dir):
+            print  eachFile
+            if os.path.splitext(eachFile)[1]=='.v':
+                try:
+                    fobj=open(fname,'r')
+                except IOError,e:
+                    print "Error: file open error:",e
+                else:
+                    all_lines=fobj.read()             
+                    lex.runmain(lexer,all_lines)
+                    fobj.close()
+            else:
+                continue

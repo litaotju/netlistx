@@ -83,7 +83,7 @@ class circut_module:
         
     def print_module(self):
         '--不同的模块,默认的打印方式不同,顶层模块打印时,端口没有.name(assign)--'
-        print self.cellref+"  "+self.name+"("
+        print self.cellref+"  "+self.name+" ("
         assert(not self.port_list==None)
         #顶层模块的端口打印
         if self.m_type=='top_module':
@@ -100,7 +100,7 @@ class circut_module:
                 if not self.port_list.index(eachPort)==len(self.port_list)-1:
                     print ","
         print "\n);"
-        if not self.param_list==None:
+        if self.param_list!=None:
             for eachParam in self.param_list:
                 eachParam.__print__()
         return True
@@ -114,7 +114,7 @@ class signal:
     def __init__(self,s_type='wire',name=None,vector=None):
         self.s_type=s_type
         self.name  =name
-        self.vector=vector #如果非空,就是字符串类型的[nm1:num2]或者[num]
+        self.vector=vector #None,or string 类型的[nm1:num2]或者[num]
         self.width =1
         
         ##featured 7.2
@@ -164,7 +164,7 @@ class signal:
             if self.vector==None:
                 print self.s_type+" "+self.name+" ;"
             else:
-                print self.s_type+" "+self.vector+" "+self.name+";"
+                print self.s_type+" "+self.vector+" "+self.name+" ;"
 class joint_signal:
     '--this is a special signal type for signal concut in { }--'
     def __init__(self):
@@ -206,7 +206,33 @@ class assign:
         self.right_signal=right_signal        
     def __print__(self):
         print self.kwd+" ",
-        self.left_signal.__print__()
+        if isinstance(self.left_signal,signal):
+            self.left_signal.__print__()
+        else:
+            assert type(self.left_signal)==str
+            print self.left_signal,
         print " = ",
-        self.right_signal.__print__()
+        if isinstance(self.right_signal,signal):
+            self.right_signal.__print__()
+        else:
+            assert type(self.right_signal)==str,"%s,type %s "%(self.right_signal,type(self.right_signal))
+            print self.right_signal,
         print " ;"
+        
+###featured 7.3--------------------------------------------------------------
+###
+class vertex:
+    def __init__(self,obj):
+        if isinstance(obj,port):
+            self.entity=obj
+            self.type =obj.port_type
+        else:
+            assert isinstance(obj,circut_module)
+            self.entity=obj
+            self.type  =obj.cellref
+        self.label=self.type+"  "+self.obj.name
+class edge:
+    def __init__(self,s,d):
+        pass
+###featured 7.3--------------------------------------------------------------
+            
