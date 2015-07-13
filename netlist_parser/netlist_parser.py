@@ -6,7 +6,7 @@ Created on Mon Jun 29 21:13:37 2015
 """
 import sys
 import os
-import circut_class as cc
+import class_circuit as cc
 import netlist_lexer
 
 tokens=netlist_lexer.tokens
@@ -238,6 +238,7 @@ def vm_parse(input_file):
         fobj=open(input_file,'r')
     except IOError,e:
         print "Error: file open error:",e
+        return None
     else:
         all_lines=fobj.read()
         fobj.close()

@@ -4,16 +4,60 @@ Created on Thu Jun 18 16:30:03 2015
 @author: litao
 """
 '--this file is composed of a lot of functions to parse and util the Src file--'
-import os
-import copy
-import re
-import netlist_parser     as np
-import generate_testbench as gt
+import os, re ,copy
+import testbench_generate as gt
+
 ###############################################################################
-def mark_the_circut(m_list,verbose=False):
-    
-    #mark all the module with a type
+def vm_parse(input_file):
+    from netlist_parser.netlist_parser import parser
+    '''returns info of input vm file as a list,
+        info[0] is a instance of cc.circut_module which is top_module in vm,
+        info[1] is the input_ouput decl list of vm file,
+        info[2] is the wire        decl list,
+        info[3] is the primitive instances(cc.circut_module obj) list,and the defparam of primitive(if exist)
+        info[4] is the assign list of a file 
+    '''
+    try:
+        fobj=open(input_file,'r')
+    except IOError,e:
+        print "Error: file open error:",e
+        return None
+    else:
+        all_lines=fobj.read()
+        fobj.close()
+        p=parser.parse(all_lines)
+        #--------------------------------
+        #打印部分
+        #--------------------------------
+    #    console=sys.stdout
+    #    sys.stdout=fobj2
+    #    p[0].print_module()
+    #    for eachPort_decl in p[1]:
+    #        eachPort_decl.__print__(pipo_decl=True)
+    #    for eachSignal in p[2]:
+    #        eachSignal.__print__(is_wire_decl=True)
+    #    for eachPrimitive in p[3]:
+    #        eachPrimitive.print_module()
+    #    if len(p)==5:
+    #        assign_stm_list=p[4]
+    #        for eachAssign in p[4]:
+    #            eachAssign.__print__()
+    #    print "endmodule;"
+    #    sys.stdout=console
+        #------------------------------------
+        #解析完完全打印出来
+        #------------------------------------
+        parser.restart()
+        print "Job: parse the vm file %s finished."% input_file
+        return p
+
+###############################################################################
+def mark_the_circut(m_list,allow_dsp=False,allow_unkown=True,verbose=False):
+    'mark all the module with a type'
+    cellref_list=[]
     for eachModule in m_list[1:]:
+        if eachModule.cellref not in cellref_list:
+            cellref_list.append(eachModule.cellref)
         #FD--------------------------------------------------------------------
         if re.match('FD\w*',eachModule.cellref) is not None:
             eachModule.m_type='FD'
@@ -36,8 +80,9 @@ def mark_the_circut(m_list,verbose=False):
                 if eachPort.port_name[0]=='I':
                     eachPort.port_type='input'
                 else:
-                    assert eachPort.port_name[0]=='O',eachModule.name+eachPort.port_name
-                    eachModule.port_list[-1].port_type='output'
+                    assert eachPort.port_name in ['O','LO','O5','O6'],\
+                        eachModule.cellref+"  "+eachModule.name+"  "+eachPort.port_name
+                    eachPort.port_type='output'
 
         # MUX and XOR----------------------------------------------------------
         elif re.match('MUX\w+|XOR\w+|INV|MULT_AND',eachModule.cellref) is not None:
@@ -50,13 +95,12 @@ def mark_the_circut(m_list,verbose=False):
         elif re.match('\w*BUF\w*',eachModule.cellref) is not None:
             eachModule.m_type='BUF'
             for eachPort in eachModule.port_list:
+                assert eachPort.port_name in ['I','O'],\
+                    "BUF:%s has a port neither I or O" %eachModule.name
                 if eachPort.port_name=='I':
                     eachPort.port_type='input'
                 elif eachPort.port_name=='O':
                     eachPort.port_type='output'
-                else:
-                    print 'Error: in netlist_util.mark_the_circut()',
-                    print '       buf %s has a port is neither I nor O' % eachModule.name
         #GND VCC---------------------------------------------------------------
         elif (eachModule.cellref=='GND' or eachModule.cellref=='VCC'):
             eachModule.m_type=eachModule.name
@@ -67,23 +111,33 @@ def mark_the_circut(m_list,verbose=False):
         #DSP48E---------------------------------------------------------------
         elif re.match('DSP48|DSP48E\w*',eachModule.cellref) is not None:
             eachModule.m_type='DSP'
-            print "Warning:find %s : %s in this netlist"%(eachModule.cellref,eachModule.name)
+            if not allow_dsp:
+                raise AssertionError,"Warning:find %s : %s in this netlist"\
+                    %(eachModule.cellref,eachModule.name)
+            else:
+                print "Warning:find %s : %s in this netlist"\
+                        %(eachModule.cellref,eachModule.name)
         else:
-            print 'Warning:unknown cellref:'+eachModule.cellref+eachModule.name
-    print "Note: mark_the_circut() successfully !"
+            if not allow_unkown:
+                raise AssertionError,\
+                 'Error:unknown cellref:'+eachModule.cellref+"  "+eachModule.name+'\n'+\
+                      "plz update the mark_the_circut() to keep this programe pratical"
+            else:
+                print 'Warning:unknown cellref:'+eachModule.cellref+"  "+eachModule.name+'\n'+\
+                      "plz update the mark_the_circut() to keep this programe pratical"
     if verbose:        
         print 'Note:module list is:'
         for eachModule in m_list:
-            eachModule.print_module()
-    return True
+            eachModule.__print__()    
+    print "Note: mark_the_circut() successfully !"
+    return cellref_list
 
 ###############################################################################
 def get_all_fd(m_list,verbose=False):
     '--get all the FD and its D_Q port--'
     all_fd_dict={}
     if verbose:
-        print '-----------------------------------------'
-        print 'Note:all the FD and its D port assign Are:'
+        print 'Info: all the FD and its D port assign Are:'
     for eachModule in m_list[1:]:
         if eachModule.m_type=='FD':
             port_info={}
@@ -95,13 +149,13 @@ def get_all_fd(m_list,verbose=False):
                 for eachPort in port_info.keys():
                     print eachPort,
                     port_info[eachPort].__print__()
+                print '\n'
     print "Note: get_all_fd() sucessfully !"
     return all_fd_dict
 ###############################################################################
 def get_all_lut(m_list,lut_type_cnt,verbose=False):
     all_lut_dict={} 
     if verbose:
-        print '-----------------------------------------'
         print 'Info: all the LUT and its name Are:'
     for eachModule in m_list[1:]:
         if eachModule.m_type=='LUT':
@@ -120,8 +174,7 @@ def get_lut_cnt2_FD(m_list,all_fd_dict,verbose,K=6):
     FD_din_lut_list=[]
     lut_out2_FD_dict={}
     if verbose:
-        print '-----------------------------------------------------'
-        print 'Note:all the Lut has output connect to FD\'s .D port Are:'
+        print 'Info: all the Lut has output connect to FD\'s .D port Are:'
     for each_FD in all_fd_dict.keys():   
         for eachModule in m_list[1:]:
             if eachModule.m_type=='LUT' and eachModule.been_searched==False :
@@ -134,7 +187,7 @@ def get_lut_cnt2_FD(m_list,all_fd_dict,verbose,K=6):
                             print '%s.D <--- %s %s'%(each_FD,eachModule.cellref,eachModule.name)                       
             else:
                 continue
-    print 'Note: get_lut_cnt2_FD() successfully !'
+    print '\nNote: get_lut_cnt2_FD() successfully !'
     return lut_out2_FD_dict,FD_din_lut_list
 ###############################################################################
 def get_clk_in_fd(all_fd_dict,verbose):
@@ -149,16 +202,17 @@ def get_clk_in_fd(all_fd_dict,verbose):
 #                    else:
 #                        continue
     for eachFD in all_fd_dict.keys():
-        assert all_fd_dict.has_key("C"),"Error:FD %s has no C port" % eachFD
+        assert all_fd_dict[eachFD].has_key("C"),"Error:FD %s has no C port" % eachFD
         current_clk=all_fd_dict[eachFD]['C'].string
         if current_clk not in clock_list:
             clock_list.append(current_clk)
     assert len(clock_list)==1,\
-        "Warning: has >1 clock domain. clock cnt is %d" % len(clock_list)
+        "Warning: has %d clock domain" % len(clock_list)
     if verbose:
         print "Info:all clock signals are as follows:"
         for clock in  clock_list:
-            print clock
+            print clock+",",
+        print '\n'
     print "Note: get_all_clock() successfully !"
     return clock_list
     
@@ -173,9 +227,12 @@ def get_ce_in_fd(all_fd_dict,verbose):
              if current_ce not in ce_signal_list:
                  ce_signal_list.append(current_ce)
     if verbose:
-        print "Note:all ce signal are as follows:"
-        for ce in ce_signal_list:    
-            print ce
+        if ce_signal_list:
+            print "Info: all ce signal are as follows:"
+            for ce in ce_signal_list:    
+                print ce
+        else:
+            print "Info: no ce found in netlist"
     print"Note: get_ce_in_fd() successfully !"
     return ce_signal_list,fd_has_ce_list
     
@@ -204,25 +261,23 @@ def get_lut_cnt2_ce(m_list,ce_signal_list,K=6,verbose=False):
     
 ###############################################################################  
 if __name__=='__main__':
-    print "Current PATH is:"+os.getcwd()
-    print [file for file in os.listdir(os.getcwd())]    
-    
+    '--the test func of this module--'
+    import netlist_parser.netlist_parser     as np
+    verbose=False
+    gene_tb=False
+    print "Current PATH is:"+os.getcwd() 
     fname=raw_input('plz enter the file name:') 
-    K=int(raw_input('plz enter the K parameter of FPGA:K='))
-    
-    info=np.parse_to_parse_list(fname,True)
-    signal_list=info[2]
-    m_list=[]
-    m_list.append(info[0])
-    m_list+=info[3]
-    
-    all_fd_dict=get_all_fd(m_list,False)
-    lut_out2_FD_dict,FD_din_lut_list=get_lut_cnt2_FD(m_list,all_fd_dict,True,K)
-    
-    ce_signal_list=get_ce_in_fd(all_fd_dict,False)
-    clock_signal_list=get_clk_in_fd(all_fd_dict,verbose=True)
-    
-    gt.generate_testbench(m_list[0],len(all_fd_dict),os.getcwd())
+    K=int(raw_input('plz enter the K parameter of FPGA:K='))  
+    info=np.vm_parse(fname)
+    signal_list=info['signal_decl_list']
+    m_list=info['m_list']
+    mark_the_circut(m_list,True,verbose)    
+    all_fd_dict=get_all_fd(m_list,verbose)
+    lut_out2_FD_dict,FD_din_lut_list=get_lut_cnt2_FD(m_list,all_fd_dict,verbose,K) 
+    ce_signal_list=get_ce_in_fd(all_fd_dict,verbose)
+    clock_signal_list=get_clk_in_fd(all_fd_dict,verbose=verbose)
+    if gene_tb:
+        gt.generate_testbench(m_list[0],len(all_fd_dict),os.getcwd())
 
 
 

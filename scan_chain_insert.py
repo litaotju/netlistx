@@ -5,7 +5,7 @@ import os
 import os.path
 import re
 import netlist_util   as nu
-import netlist_parser as np
+import netlist_parser.netlist_parser as np
 import circut_class   as cc
 #import generate_testbench as gt
 #############################################################################################

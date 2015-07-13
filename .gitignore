@@ -1,5 +1,7 @@
 *.v
 *.txt
+*.png
+*.jpg
 test_output_dir/
 #################
 ## Eclipse

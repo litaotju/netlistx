@@ -22,8 +22,10 @@ def generate_testbench(top_module,fd_cnt,output_dir):
             if port.port_width!=1:
                 WIDTH=port.port_width
                 x="wire ["+str(WIDTH)+":0] "+port.port_name+";\n"
+                x=x+"wire ["+str(WIDTH)+":0] "+port.port_name+"_g;\n"
             else:
                 x="wire "+port.port_name+";\n"
+                x=x+"wire "+port.port_name+"_g;\n" 
         fobj.writelines(x)
 
     ################################################

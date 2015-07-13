@@ -4,25 +4,26 @@ Created on Sun Jun 21 13:35:57 2015
 
 @author: litao
 """
-import circut_class as cc
 import networkx as nx
 import matplotlib.pyplot as plt
 import copy
 import os.path
 
+import class_circuit as cc
 ###############################################################################
 class s_graph(nx.DiGraph):
     def __init__(self,name,edge_set,vertex_set,include_pipo=True,verbose=False): 
-        ##设置所留下来的节点类型,如果m_type在该list中,就不进行ignore
+        nx.DiGraph.__init__(self)
+        self.include_pipo=include_pipo
+        ##设置保留下来的节点类型,如果m_type在该list中,就不进行ignore
         care_vertex_type=('FD')
-        
         ##因为只需要对新的列表的元素进行操作,而不需要关心元素的内容到底是什么
         ##所以只需要进行copy.copy而不需要进行更深程度的复制
         vertex_set_cpy =copy.copy(vertex_set)
         vertex_set_tmp =copy.copy(vertex_set_cpy)
-        
         edge_set_cpy   =copy.copy(edge_set)
-        i=1        
+        i=1 
+        print "Process: erasing not cared nodes of the circuit"
         #######################################################################
         # travrse all the nodes and deal with non-FD PI PO nodes 
         for eachVertex in vertex_set_tmp:
@@ -56,26 +57,28 @@ class s_graph(nx.DiGraph):
                     print "done!"
                 i=i+1
         ###########################################################################
-        self.graph_name =name
-        self.include_pipo=include_pipo
+        self.name =name
+        self.fd_nodes=[]
         self.pi_nodes=[]
         self.po_nodes=[]
-        self.fd_nodes=[]
         for eachVertex in vertex_set_cpy:
             if isinstance(eachVertex,cc.circut_module) and (eachVertex.m_type in care_vertex_type):
                 self.fd_nodes.append(eachVertex)
+                node_type=eachVertex.cellref
             elif isinstance(eachVertex,cc.port) and eachVertex.port_type=='input':
                 self.pi_nodes.append(eachVertex)
+                node_type=eachVertex.port_type
             else:
                 assert (isinstance(eachVertex,cc.port) and eachVertex.port_type=='output'),\
                     "vertex type:%s" % (eachVertex.__class__())
+                node_type=eachVertex.port_type
                 self.po_nodes.append(eachVertex)
-        nx.DiGraph.__init__(self)
-        self.add_nodes_from(vertex_set_cpy)
+            self.add_node(eachVertex,node_type=node_type,name=eachVertex.name)
         for eachEdge in edge_set_cpy:
-            self.add_edge(eachEdge[0][0],eachEdge[0][1])
+            self.add_edge(eachEdge[0][0],eachEdge[0][1],\
+                            port_pair=[eachEdge[1][0],eachEdge[1][1]])
         self.fd_depth_dict={}
-        if include_pipo:
+        if self.include_pipo:
             self.compu_fds_depth(verbose)
     ###############################################################################
     def paint(self,display_pipo=True,order=False):
@@ -144,7 +147,7 @@ class s_graph(nx.DiGraph):
         ##---------------------------------------------------------------------
         ##保存绘图到当前路径下的 tmp/文件夹
         pic_dir=os.getcwd()+"//tmp//"
-        pic_full_name=pic_dir+self.graph_name+".png"
+        pic_full_name=pic_dir+self.name+"_s_graph.png"
         plt.savefig(pic_full_name) 
         
     ###########################################################################
@@ -179,7 +182,6 @@ class s_graph(nx.DiGraph):
                             tmp_path =(eachPi,eachFD)
                         else:
                             continue
-            #if has_cnt2_pi==True:
             self.fd_depth_dict[eachFD]=(tmp_depth,has_cnt2_pi,tmp_path)
             if (verbose):
                 print "Node:%s %s .depth is: %d. path is :" \
