@@ -16,7 +16,7 @@ class s_graph(nx.DiGraph):
         nx.DiGraph.__init__(self)
         self.include_pipo=include_pipo
         ##设置保留下来的节点类型,如果m_type在该list中,就不进行ignore
-        care_vertex_type=('FD')
+        self.care_vertex_type=('FD')
         ##因为只需要对新的列表的元素进行操作,而不需要关心元素的内容到底是什么
         ##所以只需要进行copy.copy而不需要进行更深程度的复制
         vertex_set_cpy =copy.copy(vertex_set)
@@ -31,7 +31,7 @@ class s_graph(nx.DiGraph):
             #使用上一次的迭代结果,更新了边集,进行下一次的迭代
             edge_set_tmp  =copy.copy(edge_set_cpy)  
             if  (isinstance(eachVertex,cc.circut_module) \
-                    and eachVertex.m_type not in care_vertex_type):
+                    and eachVertex.m_type not in self.care_vertex_type):
                 if (verbose):
                     print "Process:%d node %s %s being erased..." \
                             %(i,eachVertex.m_type,eachVertex.name),            
@@ -62,7 +62,7 @@ class s_graph(nx.DiGraph):
         self.pi_nodes=[]
         self.po_nodes=[]
         for eachVertex in vertex_set_cpy:
-            if isinstance(eachVertex,cc.circut_module) and (eachVertex.m_type in care_vertex_type):
+            if isinstance(eachVertex,cc.circut_module) and (eachVertex.m_type in self.care_vertex_type):
                 self.fd_nodes.append(eachVertex)
                 node_type=eachVertex.cellref
             elif isinstance(eachVertex,cc.port) and eachVertex.port_type=='input':

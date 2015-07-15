@@ -14,11 +14,13 @@ class circuit_graph(nx.DiGraph):
            self.include_pipo self.vertex_set,self.edge_set
        Node attr :
            node_type ,which is a cellref or the port_type if node is pipo
+           name , which is the module.name or port.port_name
        Edge attr :
            connection,which is the string of wire signal name which connect prim
            port_pair, which records the port instance pair
     '''
-    def __init__(self,m_list,include_pipo=False,):
+    
+    def __init__(self,m_list,include_pipo=False):
         nx.DiGraph.__init__(self)
         self.m_list=m_list
         self.include_pipo=include_pipo
@@ -31,7 +33,7 @@ class circuit_graph(nx.DiGraph):
             because, in hardware fault injection emulaiton process, when signal passing 
             DSP, we cannot compute the signal correctly
         '''
-        print "Process :func  __add_edge_vertex_from_m_list__()"
+        print "Process: gu.circuit_graph()..searching the vertex and edges of netlist..."
         pipo_vertex_list=[]
         prim_vertex_list=[]
         vertex_set=[]
@@ -118,21 +120,22 @@ class circuit_graph(nx.DiGraph):
             connection=eachEdge[2],port_pair=eachEdge[1])
             
     #------------------------------------------------------------------------------   
-    def info(self) :
+    def info(self,verbose=False) :
         print "Circuit graph info:"
         print nx.info(self)
-        print "Info :%d nodes in graph. Node Set Are:"% self.number_of_nodes()
-        for eachNode in self.nodes_iter():
-            node_type=nx.get_node_attributes(self,'node_type')
-            name=nx.get_node_attributes(self,'name')
-            print "    %s %s"%(node_type[eachNode],name[eachNode])
-        print "Info :%d edges in graph. Edge Set Are:"% self.number_of_edges()
-        for eachEdge in self.edges_iter():
-            connection=nx.get_edge_attributes(self,'connection')
-            port_pair =nx.get_edge_attributes(self,'port_pair')
-            print "    (%s -> %s):(wire %s, port:%s->%s)"% \
-            (eachEdge[0].name,eachEdge[1].name,connection[eachEdge]\
-            ,port_pair[eachEdge][0].name,port_pair[eachEdge][1].name)
+        if verbose:
+            print "Info :%d nodes in graph. Node Set Are:"% self.number_of_nodes()        
+            for eachNode in self.nodes_iter():
+                node_type=nx.get_node_attributes(self,'node_type')
+                name=nx.get_node_attributes(self,'name')
+                print "    %s %s"%(node_type[eachNode],name[eachNode])
+            print "Info :%d edges in graph. Edge Set Are:"% self.number_of_edges()
+            for eachEdge in self.edges_iter():
+                connection=nx.get_edge_attributes(self,'connection')
+                port_pair =nx.get_edge_attributes(self,'port_pair')
+                print "    (%s -> %s):(wire %s, port:%s->%s)"% \
+                (eachEdge[0].name,eachEdge[1].name,connection[eachEdge]\
+                ,port_pair[eachEdge][0].name,port_pair[eachEdge][1].name)
         return True
     #------------------------------------------------------------------------------   
     def paint(self):
@@ -165,8 +168,8 @@ class circuit_graph(nx.DiGraph):
         return True
         
 ##———————————————————————————————————————————————————————————————————————————————————————
-#featured 7.13        
-###progressing the cloud and registerize the original circuit graph
+    #featured 7.13        
+    ###progressing the cloud and registerize the original circuit graph
     def get_cloud_reg_graph(self):
         ''' Model the circuit graph to a cloud(combinational cone) and register(FD)
             graph,add a .cloud_reg_graph data to self. which is a DiGraph instance
@@ -174,7 +177,7 @@ class circuit_graph(nx.DiGraph):
             现有的cloud_register图中没有包含pipo节点，只是prim的节点
         '''
         #g2 is a undirected version of g1
-        print "Processing: func get_cloud_reg_graph()"
+        print "Process: func get_cloud_reg_graph()"
         g2=nx.Graph()
         g2.add_nodes_from(self.prim_vertex_list)
         for eachEdge in self.prim_edge_list:
@@ -195,6 +198,7 @@ class circuit_graph(nx.DiGraph):
         #step2.1 将每一个连通分量，也就是子图恢复为有向图，这样做的目的是搞清楚组合逻辑之间的连接关系
         #由于不存在组合逻辑回路，所以理论上，将全是组合的子图转换成有向图，边的数目完全相等
         #这可以通过下面的打印信息来查看
+        l2=[]        
         for eachSubgraph in l1:
 #            print "before:"
 #            print nx.info(eachSubgraph)
@@ -205,43 +209,57 @@ class circuit_graph(nx.DiGraph):
                     cores_node1=vertex_in_graph(eachEdge[1],self)
                     if not self.has_edge(cores_node0,cores_node1):
                         h.remove_edge(eachEdge[0],eachEdge[1])
+            l2.append(h)
 #            print "after:"
 #            print nx.info(h)
 
         
         
         #------------------------------------------------------
-        #step3 记录下fd 与组合逻辑的有向边，以及节点
-        reg_edges=[]
+        #step3 记录下fd的D Q 端口与其他FD以及 与组合逻辑的有向边，以及节点
+        special_edges=[]
+        reg_reg_edges=[]
         fd_linked_nodes_edges={}
         for x in self.prim_edge_list:
            for eachNode in x[0]:
                if eachNode.m_type=='FD':
                   tmp= 1 if x[0].index(eachNode)==0 else 0
-                  ##以非D触发器的节点作为字典的key,该点与D触发器相连接的边作为
-                  non_fd_prim=x[0][tmp]
-                  if not fd_linked_nodes_edges.has_key(non_fd_prim):
-                      fd_linked_nodes_edges[non_fd_prim]=[]
-                  fd_linked_nodes_edges[non_fd_prim].append(x)
-                  reg_edges.append(x[0])
-
+                  fd_port=x[1][1-tmp] #记录下来现在的FD的端口
+                  other_prim=x[0][tmp]
+                  other_port=x[1][tmp] 
+                  if (other_prim.m_type!='FD') and (fd_port.name in ['D','Q']):
+                      non_fd_prim=other_prim
+                      if not fd_linked_nodes_edges.has_key(non_fd_prim):
+                          fd_linked_nodes_edges[non_fd_prim]=[]
+                      fd_linked_nodes_edges[non_fd_prim].append(x)
+                  elif other_prim.m_type=='FD' and (fd_port.name in ['D','Q'] ) and\
+                      other_port.port_name in ['D','Q']:
+                      reg_reg_edges.append(x)
+                  else:
+                      special_edges.append(x)
+                      
         #------------------------------------------------------
         #step4 
         #新建一个有向图，节点为 cloud（step2获得的连通分量）+fd（step1获得）
         #              边为fd-cloud的有向连接（step3获得）
         g3=cloud_reg_graph()
-        g3.add_clouds_from(l1)
+        g3.add_clouds_from(l2)
         g3.add_regs_from(fd_list)
-        for eachSubgraph in l1: 
-            for eachNode in fd_linked_nodes_edges.keys():
-                if vertex_in_graph(eachNode,eachSubgraph):
-                    tmp_edge=fd_linked_nodes_edges[eachNode]
-                    for eachEdge in tmp_edge:
-                        if eachEdge[0][0]==eachNode:
-                            g3.add_edge(eachSubgraph,eachEdge[0][1])
+        for eachSubgraph in l2: 
+            for eachNonFdPrim in fd_linked_nodes_edges.keys():
+                if vertex_in_graph(eachNonFdPrim,eachSubgraph):
+                    tmp_edge_list=fd_linked_nodes_edges[eachNonFdPrim]
+                    for eachEdge in tmp_edge_list:
+                        if eachEdge[0][0]==eachNonFdPrim:
+                            ##注意，在这用等号是合法的，因为他们两都是原来的prim_vertex_set
+                            ##在新添加边的时候，保留了在原图中的边的信息
+                            g3.add_edge(eachSubgraph,eachEdge[0][1],original_edge=eachEdge)
                         else:
-                            assert eachEdge[0][1]==eachNode
-                            g3.add_edge(eachEdge[0][0],eachSubgraph)
+                            assert eachEdge[0][1]==eachNonFdPrim
+                            g3.add_edge(eachEdge[0][0],eachSubgraph,original_edge=eachEdge)
+        ##注意，在reg_reg_edges当中，边的元素，就是fd_list当中的module对象。所以这样做不会增加新的边
+        for eachEdge in reg_reg_edges:
+            g3.add_edge(eachEdge[0][0],eachEdge[0][1],original_edge=eachEdge)
         self.cloud_reg_graph=g3        
 #        for eachNode in g3.nodes_iter():
 #            print eachNode.__class__
@@ -272,7 +290,6 @@ def vertex_in_graph(vertex,graph):
     
     
 #--------------------------------------------------------------------------------------
-#featured 7.13 maynot be  useful
 class cloud_reg_graph(nx.DiGraph):
     '''
         本图的节点分为两类，一类是cloud,也就是一个有向子图。一类是reg,也就是FD primitive
@@ -284,20 +301,14 @@ class cloud_reg_graph(nx.DiGraph):
         self.regs=[]
     def add_clouds_from(self,list1):
         for eachCloud in list1:
-            assert isinstance(eachCloud,nx.classes.graph.Graph)
+            assert isinstance(eachCloud,nx.DiGraph)
             self.clouds.append(eachCloud)
             self.add_node(eachCloud)
     def add_regs_from(self,list1):
         for eachFD in list1:
             assert isinstance(eachFD,cc.circut_module) and eachFD.m_type=='FD',eachFD.name
             self.add_node(eachFD)
-            self.regs.append(eachFD)
-
-    def clouds(self):
-        return self.clouds
-    def regs(self):
-        return self.regs
-        
+            self.regs.append(eachFD)    
     def paint(self):
         label_dict={}
         for eachCloud in self.clouds:
@@ -315,6 +326,16 @@ class cloud_reg_graph(nx.DiGraph):
         nx.draw_networkx_labels(self,ps,labels=label_dict)
         return True
     def info(self):
+        print "Cloud_Reg_graph info:-----------------"
         print nx.info(self)
         print "Number of cloud:%d "%len(self.clouds)
         print "Number of register:%d"% len(self.regs)
+        print "--------------------------------------"
+
+###featured 7.14
+    def check_rules(self):
+        ''' to make sure the every reg in cloud_reg_graph has just  1-indegree 
+        '''
+        for x in list(self.in_degree(self.regs).values):
+            assert x<=1
+            

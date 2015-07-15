@@ -192,7 +192,7 @@ if __name__=='__main__':
         fname=raw_input("plz enter the file name:")
         k=int(raw_input("plz enter K:"))
         insert_scan_chain_new(fname,K=k)
-    elif sys.argv[1]=='many':    
+    elif sys.argv[1]=='-many':    
         parent_dir=os.getcwd()
         while(1):
             tmp1=raw_input('Plz enter the verilog source sub dir:')
@@ -222,7 +222,7 @@ if __name__=='__main__':
     #    sys.stdout=log_obj
         for eachFile in os.listdir(input_file_dir):
             print  eachFile
-            if os.path.splitext(eachFile)[1]=='.v':
+            if os.path.splitext(eachFile)[1] in ['.v','.vm']:
                 insert_scan_chain_new(eachFile,False,True,input_file_dir,output_file_dir,K)
             else:
                 continue

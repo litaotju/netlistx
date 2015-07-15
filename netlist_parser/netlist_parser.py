@@ -29,7 +29,7 @@ def p_vmfile(p):
     if len(p)==7:
         p[0]['assign_stm_list']=p[5]
     else:
-        print "Info :no assign statement find in this vm file"
+        print "Info: no assign statement find in this vm file"
 #---------------------------------------------------------------------
 #----顶层模块声明区
 #---------------------------------------------------------------------    

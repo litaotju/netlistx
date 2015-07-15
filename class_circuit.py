@@ -128,9 +128,9 @@ class signal:
         else:
             self.string=name+vector;
         if not self.vector==None:
-            self.get_width()
+            self.__get_width__()
 
-    def get_width(self):
+    def __get_width__(self):
         vector_match=re.match('\[(\d+):(\d+)\]',self.vector)
         bit_match=re.match('\[(\d+)\]',self.vector)
         if vector_match is not None:
