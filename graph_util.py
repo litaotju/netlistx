@@ -7,7 +7,8 @@ class  circuit_graph
 import networkx as nx
 import matplotlib.pyplot as plt
 import class_circuit as cc
-
+from graph_s_graph import s_graph
+###########################################################################
 class circuit_graph(nx.DiGraph):
     '''This class is a sonclass of nx.DiGraph and construct with a m_list[]
        Property new added :
@@ -26,6 +27,7 @@ class circuit_graph(nx.DiGraph):
         self.include_pipo=include_pipo
         self.__add_edge_vertex_from_m_list__(m_list,self.include_pipo)
         self.cloud_reg_graph=None
+        self.s_graph=None
         print "Note: circuit_graph() build successfully"
     def __add_edge_vertex_from_m_list__(self,m_list,include_pipo):
         '''
@@ -171,12 +173,17 @@ class circuit_graph(nx.DiGraph):
     #featured 7.13        
     ###progressing the cloud and registerize the original circuit graph
     def get_cloud_reg_graph(self):
-        ''' Model the circuit graph to a cloud(combinational cone) and register(FD)
-            graph,add a .cloud_reg_graph data to self. which is a DiGraph instance
-            return : cloud_reg_graph
-            现有的cloud_register图中没有包含pipo节点，只是prim的节点
+        ''' 
+            -->>self.cloud_reg_graph.copy()
+            Model the circuit graph to a cloud(combinational cone) and register(FD)
+            graph,add a .cloud_reg_graph data to self.
+            注意：1.现有的cloud_register图中没有包含pipo节点，只是prim的节点
+                 2.函数不仅为调用它的对象增加了一个 cloud_reg_graph数据，最终返回了该图的深度复制
+            待续：现有的算法是先去掉所有的FD，将剩下的连通分量合并成一个cloud。实际上如果剩下的图不
+                连通，那么它们在电路中可以合并成一个子图吗?
         '''
-        #g2 is a undirected version of g1
+        #g2是一个用self中的点和边建立的无向图，所以基本的节点和self的节点是完全一致的，
+        #每一个节点都指向了m_list当中的原语的  cc.circuit_module() 对象的实例化
         print "Process: func get_cloud_reg_graph()"
         g2=nx.Graph()
         g2.add_nodes_from(self.prim_vertex_list)
@@ -192,12 +199,17 @@ class circuit_graph(nx.DiGraph):
         g2.remove_nodes_from(fd_list)
         
         #------------------------------------------------------
-        #step2 找出连通分量
-        l1=nx.connected_component_subgraphs(g2)
+        #step2 找出连通分量,建立子图
+        l1=[]
+        cc=nx.connected_components(g2)
+        for c in cc:
+            ccsub=g2.subgraph(c)
+            l1.append(ccsub)
         #print "Info:%d connected_componenent subgraph after remove FD"%len(l1)
         #step2.1 将每一个连通分量，也就是子图恢复为有向图，这样做的目的是搞清楚组合逻辑之间的连接关系
         #由于不存在组合逻辑回路，所以理论上，将全是组合的子图转换成有向图，边的数目完全相等
         #这可以通过下面的打印信息来查看
+        #l2是L1的有向图版
         l2=[]        
         for eachSubgraph in l1:
 #            print "before:"
@@ -205,9 +217,10 @@ class circuit_graph(nx.DiGraph):
             h=nx.DiGraph(eachSubgraph)
             if eachSubgraph.number_of_nodes()>1:
                 for eachEdge in h.edges():
-                    cores_node0=vertex_in_graph(eachEdge[0],self)
-                    cores_node1=vertex_in_graph(eachEdge[1],self)
-                    if not self.has_edge(cores_node0,cores_node1):
+#                    cores_node0=vertex_in_graph(eachEdge[0],self)
+#                    cores_node1=vertex_in_graph(eachEdge[1],self)
+#                    if not self.has_edge(cores_node0,cores_node1):
+                    if not self.has_edge(eachEdge[0],eachEdge[1]):
                         h.remove_edge(eachEdge[0],eachEdge[1])
             l2.append(h)
 #            print "after:"
@@ -247,7 +260,8 @@ class circuit_graph(nx.DiGraph):
         g3.add_regs_from(fd_list)
         for eachSubgraph in l2: 
             for eachNonFdPrim in fd_linked_nodes_edges.keys():
-                if vertex_in_graph(eachNonFdPrim,eachSubgraph):
+                #if vertex_in_graph(eachNonFdPrim,eachSubgraph):
+                if eachSubgraph.has_node(eachNonFdPrim):
                     tmp_edge_list=fd_linked_nodes_edges[eachNonFdPrim]
                     for eachEdge in tmp_edge_list:
                         if eachEdge[0][0]==eachNonFdPrim:
@@ -265,8 +279,56 @@ class circuit_graph(nx.DiGraph):
 #            print eachNode.__class__
 #            if isinstance(eachNode,cc.circut_module):
 #                print "%s %s "%(eachNode.cellref,eachNode.name)
-        return self.cloud_reg_graph
+        return self.cloud_reg_graph.copy()
+##———————————————————————————————————————————————————————————————————————————————————————
+##featured 7.16
+    def get_s_graph(self):
+        '''
+           >>>self.s_graph.copy(),根据已有的图来生成s-graph
+           生成的s图完全是nx.DiGraph类的，不是自定义类，初步评估发现，用这种方法
+           生成s图比 原先graph_s_graph中的只处理边集和点集更快速。所以有必要修改
+           该类的定义和构造函数。
+        '''
+        care_type=('FD')
+        ##无聊的初始化过程，先建一个s_graph的对象，然后直接对数据属性进行赋值
+        s1=s_graph(self.include_pipo)
+        s1.name=self.name
+        if self.include_pipo:
+            for x in self.pipo_vertex_list:
+                if x.port_type=='input':
+                    s1.pi_nodes.append(x) 
+                else:
+                    s1.po_nodes.append(x)
+        for fd in self.prim_vertex_list:
+            if fd.m_type=='FD':
+                s1.fd_nodes.append(fd)
+        ##为DiGraph内核添加节点与图
+        s1.add_nodes_from(self.vertex_set)
+        for eachEdge in self.edge_set:
+            s1.add_edge(eachEdge[0][0],eachEdge[0][1],\
+                    port_pair=eachEdge[1],cnt=eachEdge[2])
+        node_type_dict=nx.get_node_attributes(self,'node_type')   
         
+        ##ignore 每一个非FD的primitive节点
+        new_edge=[]
+        for eachNode in self.nodes_iter():
+            if node_type_dict[eachNode] not in ['input','output']:
+                if eachNode.m_type not in care_type:
+                    pre=[]
+                    suc=[]
+                    pre=s1.predecessors(eachNode)
+                    suc=s1.successors(eachNode)
+                    s1.remove_node(eachNode)
+                    if pre and suc:
+                        for eachS in pre:
+                            for eachD in suc:
+                                new_edge.append(eachS,eachD)
+                                s1.add_edge(eachS,eachD)
+        #新添加的边
+        s1.new_edges=new_edge
+        self.s_graph=s1
+        return s1.copy()
+    
 def vertex_in_graph(vertex,graph):
     '''判断一个cc.module类型的vertex是否在一个nx.Graph或者nx.DiGraph图中
         判断的标准是检查图中是否有相同.cellref 相同.name的节点，
@@ -336,6 +398,9 @@ class cloud_reg_graph(nx.DiGraph):
     def check_rules(self):
         ''' to make sure the every reg in cloud_reg_graph has just  1-indegree 
         '''
-        for x in list(self.in_degree(self.regs).values):
-            assert x<=1
-            
+        in_dict=self.in_degree(self.regs)
+        for x in list(in_dict.values()):
+            if x>1:
+                print "Error: check_rules failed. There are FD with %d in_degree"%x
+                return False
+        return True
