@@ -12,7 +12,17 @@ import os.path
 import class_circuit as cc
 ###############################################################################
 class s_graph(nx.DiGraph):
-    def __init__(self,name,edge_set,vertex_set,include_pipo=True,verbose=False): 
+    '''
+        S-图，只有D触发器以及它们之间的依赖关系的图
+    '''
+    def __init__(self,include_pipo):
+        nx.DiGraph.__init__(self)
+        self.include_pipo=include_pipo
+        self.name=None
+        self.pi_nodes=[]
+        self.po_nodes=[]
+        self.fd_nodes=[]
+    def old__init__(self,name,edge_set,vertex_set,include_pipo=True,verbose=False): 
         nx.DiGraph.__init__(self)
         self.include_pipo=include_pipo
         ##设置保留下来的节点类型,如果m_type在该list中,就不进行ignore
@@ -151,21 +161,22 @@ class s_graph(nx.DiGraph):
         plt.savefig(pic_full_name) 
         
     ###########################################################################
-    def info(self):
-        print 'Info: s_vertex:---------------------------------------------'
-        for eachVertex in self.nodes_iter():
-            if isinstance(eachVertex,cc.circut_module):
-                print eachVertex.m_type+':'+eachVertex.name
-            else:
-                print eachVertex.port_type+':'+eachVertex.port_name
-        print 'Info: s_edge  :--------------------------------------------'
-        for eachEdge in self.edges_iter():
-            print "%s --->>%s "%(eachEdge[0].name,eachEdge[1].name)
-        print "S_graph info:nx.info(self)---------------------------------"             
+    def info(self,verbose=False):
+        if verbose:
+            print 'Info: s_vertex:---------------------------------------------'
+            for eachVertex in self.nodes_iter():
+                if isinstance(eachVertex,cc.circut_module):
+                    print eachVertex.m_type+':'+eachVertex.name
+                else:
+                    print eachVertex.port_type+':'+eachVertex.port_name
+            print 'Info: s_edge  :--------------------------------------------'
+            for eachEdge in self.edges_iter():
+                print "%s --->>%s "%(eachEdge[0].name,eachEdge[1].name)
+            print "S_graph info:nx.info(self)---------------------------------"             
         print nx.info(self)
         print "Info: nodes with selfloops ARE:----------------------------"
         for eachNode in self.nodes_with_selfloops():
-            print eachNode
+            print eachNode.name
     ###########################################################################        
     def compu_fds_depth(self,verbose):
         for eachFD in self.fd_nodes:
