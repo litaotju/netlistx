@@ -22,6 +22,7 @@ class s_graph(nx.DiGraph):
         self.pi_nodes=[]
         self.po_nodes=[]
         self.fd_nodes=[]
+        self.new_edges=[]
     def old__init__(self,name,edge_set,vertex_set,include_pipo=True,verbose=False): 
         nx.DiGraph.__init__(self)
         self.include_pipo=include_pipo

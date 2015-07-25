@@ -13,7 +13,6 @@ import matplotlib.pylab as plt
 import networkx       as nx
 import netlist_util   as nu
 from   graph_util    import circuit_graph 
-from   graph_s_graph import s_graph
 ###############################################################################
 def get_graph(fname):
 
@@ -34,16 +33,57 @@ def get_graph(fname):
 #    s2.info()
     s1=g1.get_s_graph()
     print nx.info(s1)
-#    ##显示原始的电路结构图
+    s_graph_reduction(s1)
+#   ##显示原始的电路结构图
 #    plt.figure("Original_Circut")
 #    g1.paint()
 #    plt.figure("Cloud_reg")
 #    cloud_reg1.paint()
 #    plt.figure("S_Graph")    
 #    s1.paint(display_pipo,paint_order)
-    
+
     return True
     
+###############################################################################    
+def s_graph_reduction(g1):
+    '''
+        >>>8 reduction strategy of the cloud and reg graph
+    '''
+    g=nx.DiGraph()
+    g=g1
+    ind_dict=g.in_degree()
+    oud_dict=g.out_degree()
+    loop_nodes=g.nodes_with_selfloops()
+    cut_set=[]
+    cut_set+=loop_nodes
+    for eachNode in g.nodes():
+        if ind_dict[eachNode]==0 or oud_dict[eachNode]==0:
+            g.remove_node(eachNode)
+    for eachNode in g.nodes():
+        if ind_dict[eachNode]==1 and eachNode not in loop_nodes:
+            tmp=g.predecessors(eachNode)
+            #merge
+            assert len(tmp)==1
+            if g.has_node(tmp[0]):
+                g.remove_node(tmp[0])
+                tmp_edge=g.out_edges(eachNode)
+                for eachEdge in tmp_edge:
+                    eachEdge=(tmp,eachEdge[1])
+                g.add_edges_from(tmp_edge)
+        elif oud_dict[eachNode]==1 and eachNode not in loop_nodes:
+            tmp=g.successors(eachNode)
+            #merge
+            assert len(tmp)==1
+            if g.has_node(tmp[0]):
+                g.remove_node(tmp[0])
+                tmp_edge=g.in_edges(eachNode)
+                for eachEdge in tmp_edge:
+                    eachEdge=(eachEdge[0],tmp)
+                g.add_edges_from(tmp_edge)
+    for eachNode in g.nodes_with_selfloops():    
+        g.remove_node(eachNode)
+    print nx.info(g)
+    return True
 ###############################################################################
 if __name__=="__main__":
     fname= raw_input("plz enter fname:")
