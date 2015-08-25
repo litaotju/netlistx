@@ -294,6 +294,7 @@ class circuit_graph(nx.DiGraph):
            该类的定义和构造函数。
         '''
         care_type=('FD')
+        ##step1
         ##无聊的初始化过程，先建一个s_graph的对象，然后直接对数据属性进行赋值
         s1=s_graph(self.include_pipo)
         s1.name=self.name
@@ -306,13 +307,19 @@ class circuit_graph(nx.DiGraph):
         for fd in self.prim_vertex_list:
             if fd.m_type=='FD':
                 s1.fd_nodes.append(fd)
-        ##为DiGraph内核添加节点与图
+        ##为DiGraph内核添加节点与边
         s1.add_nodes_from(self.vertex_set)
         for eachEdge in self.edge_set:
             s1.add_edge(eachEdge[0][0],eachEdge[0][1],\
                     port_pair=eachEdge[1],cnt=eachEdge[2])
+<<<<<<< HEAD
         node_type_dict=nx.get_node_attributes(self,'node_type')
 
+=======
+        node_type_dict=nx.get_node_attributes(self,'node_type')   
+        
+        ##step2
+>>>>>>> master
         ##ignore 每一个非FD的primitive节点
         new_edge=[]
         for eachNode in self.nodes_iter():
@@ -326,13 +333,23 @@ class circuit_graph(nx.DiGraph):
                     if pre and suc:
                         for eachS in pre:
                             for eachD in suc:
+<<<<<<< HEAD
                                 new_edge.append((eachS,eachD))
+=======
+                                new_edge.append([eachS,eachD])
+>>>>>>> master
                                 s1.add_edge(eachS,eachD)
-        #新添加的边
+        ##为新添加的边归类，
         s1.new_edges=new_edge
         self.s_graph=s1
         return s1.copy()
+<<<<<<< HEAD
 
+=======
+        
+        
+#--------------------------------------------------------------------------------------    
+>>>>>>> master
 def vertex_in_graph(vertex,graph):
     '''
         判断一个cc.module类型的vertex是否在一个nx.Graph或者nx.DiGraph图中
