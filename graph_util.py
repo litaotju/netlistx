@@ -6,8 +6,8 @@ class  circuit_graph
 """
 import networkx as nx
 import matplotlib.pyplot as plt
-import netlist.class_circuit as cc
-from sgraph import SGraph as s_graph
+import class_circuit as cc
+from graph_s_graph import s_graph
 
 
 class CircuitGraph(nx.DiGraph):
