@@ -10,7 +10,7 @@ import class_circuit as cc
 from graph_s_graph import s_graph
 
 
-class circuit_graph(nx.DiGraph):
+class CircuitGraph(nx.DiGraph):
     '''
        This class is a sonclass of nx.DiGraph and construct with a m_list[]
        Property new added :
@@ -27,12 +27,12 @@ class circuit_graph(nx.DiGraph):
         nx.DiGraph.__init__(self)
         self.m_list = m_list
         self.include_pipo = include_pipo
-        self._add_edge_vertex_from_m_list_(m_list, self.include_pipo)
+        self.__add_edge_vertex_from_m_list(m_list, self.include_pipo)
         self.cloud_reg_graph = None
         self.s_graph = None
         print "Note: circuit_graph() build successfully"
 
-    def _add_edge_vertex_from_m_list_(self, m_list, include_pipo):
+    def __add_edge_vertex_from_m_list(self, m_list, include_pipo):
         '''
             now we cannot handle the graph construction problem with concering DSP
             because, in hardware fault injection emulaiton process, when signal passing
@@ -132,24 +132,27 @@ class circuit_graph(nx.DiGraph):
             connection=eachEdge[2] , port_pair=eachEdge[1])
 
     #------------------------------------------------------------------------------
+
     def info(self,verbose = False) :
         print "Circuit graph info:"
         print nx.info(self)
         if verbose:
             print "Info :%d nodes in graph. Node Set Are:"% self.number_of_nodes()
+            node_type = nx.get_node_attributes(self, 'node_type')
+            name = nx.get_node_attributes(self, 'name')
             for eachNode in self.nodes_iter():
-                node_type=nx.get_node_attributes(self,'node_type')
-                name=nx.get_node_attributes(self,'name')
-                print "    %s %s" % (node_type[eachNode],name[eachNode])
+                print "    %s %s" % (node_type[eachNode], name[eachNode])
+
             print "Info :%d edges in graph. Edge Set Are:"% self.number_of_edges()
+            connection = nx.get_edge_attributes(self, 'connection')
+            port_pair = nx.get_edge_attributes(self, 'port_pair')
             for eachEdge in self.edges_iter():
-                connection=nx.get_edge_attributes(self,'connection')
-                port_pair =nx.get_edge_attributes(self,'port_pair')
-                print "    (%s -> %s):(wire %s, port:%s->%s)"% \
+                print "    (%s -> %s):(wire %s, port:%s->%s)" % \
                 (eachEdge[0].name,eachEdge[1].name,connection[eachEdge]\
                 ,port_pair[eachEdge][0].name,port_pair[eachEdge][1].name)
-        return True
+        return None
     #------------------------------------------------------------------------------
+    
     def paint(self):
         label_dict={}
         for eachVertex in self.nodes_iter():
@@ -179,9 +182,6 @@ class circuit_graph(nx.DiGraph):
         plt.savefig(self.m_list[0].name+"_original_.png")
         return True
 
-    ##———————————————————————————————————————————————————————————————————————————————————————
-    # featured 7.13
-    # progressing the cloud and registerize the original circuit graph
     def get_cloud_reg_graph(self):
         '''
             -->>self.cloud_reg_graph.copy()
@@ -257,7 +257,7 @@ class circuit_graph(nx.DiGraph):
         #step4
         #新建一个有向图，节点为 cloud（step2获得的连通分量）+fd（step1获得）
         #              边为fd-cloud的有向连接（step3获得）
-        g3=cloud_reg_graph()
+        g3=CloudRegGraph()
         g3.add_clouds_from(l2)
         g3.add_regs_from(fd_list)
         for eachSubgraph in l2:
@@ -284,8 +284,6 @@ class circuit_graph(nx.DiGraph):
         print "Note: get_cloud_reg_graph()"        
         return self.cloud_reg_graph.copy()
 
-    ##———————————————————————————————————————————————————————————————————————————————————————
-    ##featured 7.16
     def get_s_graph(self):
         '''
            >>>self.s_graph.copy(),根据已有的图来生成s-graph
@@ -312,14 +310,9 @@ class circuit_graph(nx.DiGraph):
         for eachEdge in self.edge_set:
             s1.add_edge(eachEdge[0][0],eachEdge[0][1],\
                     port_pair=eachEdge[1],cnt=eachEdge[2])
-<<<<<<< HEAD
-        node_type_dict=nx.get_node_attributes(self,'node_type')
-
-=======
         node_type_dict=nx.get_node_attributes(self,'node_type')   
         
         ##step2
->>>>>>> master
         ##ignore 每一个非FD的primitive节点
         new_edge=[]
         for eachNode in self.nodes_iter():
@@ -333,23 +326,15 @@ class circuit_graph(nx.DiGraph):
                     if pre and suc:
                         for eachS in pre:
                             for eachD in suc:
-<<<<<<< HEAD
                                 new_edge.append((eachS,eachD))
-=======
-                                new_edge.append([eachS,eachD])
->>>>>>> master
                                 s1.add_edge(eachS,eachD)
         ##为新添加的边归类，
         s1.new_edges=new_edge
         self.s_graph=s1
         return s1.copy()
-<<<<<<< HEAD
 
-=======
-        
-        
-#--------------------------------------------------------------------------------------    
->>>>>>> master
+
+###############################################################################
 def vertex_in_graph(vertex,graph):
     '''
         判断一个cc.module类型的vertex是否在一个nx.Graph或者nx.DiGraph图中
@@ -373,8 +358,51 @@ def vertex_in_graph(vertex,graph):
     return flag
 
 
-#--------------------------------------------------------------------------------------
-class cloud_reg_graph(nx.DiGraph):
+###############################################################################    
+def s_graph_reduction(g1):
+    '''
+        8 reduction strategy of the cloud and reg graph
+    '''
+    g=nx.DiGraph()
+    g=g1
+    ind_dict=g.in_degree()
+    oud_dict=g.out_degree()
+    loop_nodes=g.nodes_with_selfloops()
+    cut_set=[]
+    cut_set+=loop_nodes
+    for eachNode in g.nodes():
+        if ind_dict[eachNode]==0 or oud_dict[eachNode]==0:
+            g.remove_node(eachNode)
+    for eachNode in g.nodes():
+        if ind_dict[eachNode]==1 and eachNode not in loop_nodes:
+            tmp=g.predecessors(eachNode)
+            #merge
+            assert len(tmp)==1
+            if g.has_node(tmp[0]):
+                g.remove_node(tmp[0])
+                tmp_edge=g.out_edges(eachNode)
+                for eachEdge in tmp_edge:
+                    eachEdge=(tmp,eachEdge[1])
+                g.add_edges_from(tmp_edge)
+        elif oud_dict[eachNode]==1 and eachNode not in loop_nodes:
+            tmp=g.successors(eachNode)
+            #merge
+            assert len(tmp)==1
+            if g.has_node(tmp[0]):
+                g.remove_node(tmp[0])
+                tmp_edge=g.in_edges(eachNode)
+                for eachEdge in tmp_edge:
+                    eachEdge=(eachEdge[0],tmp)
+                g.add_edges_from(tmp_edge)
+    for eachNode in g.nodes_with_selfloops():    
+        g.remove_node(eachNode)
+    print nx.info(g)
+    return True
+
+###############################################################################
+
+
+class CloudRegGraph(nx.DiGraph):
     '''
         本图的节点分为两类，一类是cloud,也就是一个有向子图。一类是reg,也就是FD primitive
         子图中有存储了关于组合逻辑节点的互联信息

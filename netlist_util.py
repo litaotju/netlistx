@@ -5,7 +5,7 @@ Created on Thu Jun 18 16:30:03 2015
 this file is composed of a lot of functions to parse and util the netlist Src file
 """
 
-import os, re ,copy
+import os, re, copy
 ###############################################################################
 def vm_parse(input_file):
     '''returns info of input vm file as a dict
@@ -15,7 +15,7 @@ def vm_parse(input_file):
         fobj=open(input_file,'r')
     except IOError,e:
         print "Error: file open error:",e
-        return None
+        exit()
     else:
         all_lines=fobj.read()
         fobj.close()
@@ -42,14 +42,14 @@ def vm_parse(input_file):
         #解析完完全打印出来
         #------------------------------------
         parser.restart()
-        print "Job : parse the netlist file %s finished."% input_file
+        print "Note: parse the netlist file %s finished."% input_file
         return p
 
 ###############################################################################
 def mark_the_circut(m_list,allow_dsp=False,allow_unkown=True,verbose=False):
     'mark all the module with a type'
     cellref_list=[]
-    FD_TYPE=('FDCE','FDPE','FDRE','FDSE','FDC','FDP','FDR','FDS','FD')
+    FD_TYPE=('FDCE','FDPE','FDRE','FDSE','FDC','FDP','FDR','FDS','FDE', 'FD')
     LUT_TYPE=('LUT1','LUT2','LUT3','LUT4','LUT5','LUT6',
               'LUT1_L','LUT2_L','LUT3_L','LUT4_L','LUT5_L','LUT6_L',
               'LUT6_2')
@@ -321,27 +321,25 @@ def get_lut_cnt2_ce(m_list,ce_signal_list,K=6,verbose=False):
 ###############################################################################
 #featured 7.15    
 def rules_check(m_list):
-    '''The rules used to check the CLOCK and RESET ,Async RESET signal in the circuit.
-        To make sure that when you use graph to model a circuit netlist.its correctness.
-        保证只有一个时钟域，保证时钟和复位信号都是通过外部引脚进行控制的。
+    '''保证只有一个时钟域，保证时钟和复位信号都是通过外部引脚进行控制的。
     ''' 
     print "Process: check rules of netlist to construct graph..."
-    special_signal={}
-    all_fd_dict=get_all_fd(m_list)
-    clock_signal=get_clk_in_fd(all_fd_dict)
-    reset_list,async_reset_list=get_reset_in_fd(all_fd_dict)
+    special_signal = {}
+    print "Process: finding all fd in netlist..."
+    all_fd_dict = get_all_fd(m_list)
+    print "Process: finding all clks connect to fd..."
+    clock_signal = get_clk_in_fd(all_fd_dict, True)
+    print "Process: finding all reset and async reset of fd..."
+    reset_list, async_reset_list = get_reset_in_fd(all_fd_dict, True)
     ##注意一个潜在的问题，只有网表的端口宽度为1时，也就是信号与string相同时，规则检查才有效
-    clock_flag=False    
-    single_bit_pi=[]    
+    clock_flag = False    
+    single_bit_pi = []    
     for eachPi in m_list[0].port_list:
-        if eachPi.port_type=='input' and eachPi.port_width==1:
-            if clock_signal[0]==eachPi.name:
-                clock_flag==True
+        if eachPi.port_type == 'input' and eachPi.port_width == 1:
+            if clock_signal[0] == eachPi.name:
+                clock_flag = True
             single_bit_pi.append(eachPi.name)
-    if clock_signal:
-        print "Info: Rules check of CLOCK finished. Only 1 clock signal in design."
-        print "      clock name is :  %s " % clock_signal[0]
-    else:
+    if not clock_flag:
         raise AssertionError,"CLOCK signal is not cnnected to any PI"
     for anyReset in reset_list:
         if not anyReset in single_bit_pi:
