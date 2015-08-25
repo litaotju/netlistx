@@ -12,12 +12,8 @@ display_pipo = include_pipo
 import matplotlib.pylab as plt
 import networkx       as nx
 import netlist_util   as nu
-<<<<<<< HEAD
 from   graph_util    import circuit_graph
 
-=======
-from   graph_util    import circuit_graph 
->>>>>>> master
 ###############################################################################
 def get_graph(fname):
 
@@ -33,7 +29,6 @@ def get_graph(fname):
     # cloud_reg 图
     cloud_reg1=g1.get_cloud_reg_graph()
     cloud_reg1.info()
-<<<<<<< HEAD
     cloud_reg1.check_rules()
     
     # BALLAST
@@ -48,7 +43,7 @@ def get_graph(fname):
 #    s1=g1.get_s_graph()
 #    print nx.info(s1)
 
-=======
+
     if not cloud_reg1.check_rules():
         raise AssertionError
 #    s2=s_graph(fname,g1.edge_set,g1.vertex_set,g1.include_pipo,verbose=False)
@@ -56,25 +51,20 @@ def get_graph(fname):
     s1=g1.get_s_graph()
     print nx.info(s1)
     s_graph_reduction(s1)
+    
 #   ##显示原始的电路结构图
->>>>>>> master
 #    plt.figure("Original_Circut")
 #    g1.paint()
 #    plt.figure("Cloud_reg")
 #    cloud_reg1.paint()
 #    plt.figure("S_Graph")
 #    s1.paint(display_pipo,paint_order)
-<<<<<<< HEAD
-    return True
-
-=======
 
     return True
-    
 ###############################################################################    
 def s_graph_reduction(g1):
     '''
-        >>>8 reduction strategy of the cloud and reg graph
+        8 reduction strategy of the cloud and reg graph
     '''
     g=nx.DiGraph()
     g=g1
@@ -111,7 +101,7 @@ def s_graph_reduction(g1):
         g.remove_node(eachNode)
     print nx.info(g)
     return True
->>>>>>> master
+
 ###############################################################################
 if __name__=="__main__":
     fname= raw_input("plz enter fname:")
