@@ -9,7 +9,7 @@ Created on Mon Aug 24 13:16:27 2015
 """
 import networkx as nx
 import class_circuit as cc
-from graph_util import CloudRegGraph
+from crgraph import CloudRegGraph
 
 
 class Ballaster:
@@ -53,6 +53,14 @@ class Ballaster:
             intgraph.add_edge(intedge[0], intedge[1])
         return intgraph, nodes
         
+    def __mergefd_cloud(self, graph):
+        '''把self的cloud_reg_graph当中的FD和cloud合并使之满足ballast的条件'''        
+        for fd in graph.regs:
+            succ_clouds = graph.successors(fd)
+            for cloud in succ_clouds:
+                # 把这个两个合并成一个子图
+                pass
+         
     def feedbackset(self, graph):
         '''
         step1 找出给定的 cr 图的 feedback 集合
