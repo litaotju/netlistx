@@ -82,7 +82,8 @@ class Ballaster:
         return set1
 
     def check(self, graph):
-        
+        pass
+    
 if __name__ == '__main__':
     'test the ballaster'    
     b1 = Ballaster()
