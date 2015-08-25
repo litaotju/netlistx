@@ -11,7 +11,7 @@ import os.path
 
 import class_circuit as cc
 ###############################################################################
-class s_graph(nx.DiGraph):
+class SGraph(nx.DiGraph):
     '''
         S-图，只有D触发器以及它们之间的依赖关系的图
     '''

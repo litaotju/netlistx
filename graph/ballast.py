@@ -8,7 +8,7 @@ Created on Mon Aug 24 13:16:27 2015
 
 """
 import networkx as nx
-import class_circuit as cc
+#import netlist.class_circuit as cc
 from graph_util import CloudRegGraph
 
 
@@ -82,7 +82,8 @@ class Ballaster:
         return set1
 
     def check(self, graph):
-        
+        pass
+    
 if __name__ == '__main__':
     'test the ballaster'    
     b1 = Ballaster()
