@@ -9,9 +9,8 @@ address:Tianjin University
 import networkx as nx
 import matplotlib.pyplot as plt
 import class_circuit as cc
-
 from sgraph import s_graph
-from crgraph import CloudRegGraph
+
 
 class CircuitGraph(nx.DiGraph):
     '''

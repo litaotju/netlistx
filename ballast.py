@@ -72,7 +72,11 @@ class Ballaster:
         feedbackset_index = []
         for c in nx.simple_cycles(intgraph):
             print "Info: find cycle %s " % c
-            edge = (c[0],c[1])
+            if len(c) == 1: 
+            #self-loop
+                edge = (c[0], c[0])
+            else:
+                edge = (c[0], c[1])
             if not edge in feedbackset_index: # 因为edge是一个整数型元组，所以这是对的
                 feedbackset_index.append(edge)
         for index in feedbackset_index:
@@ -92,6 +96,8 @@ class Ballaster:
     def check(self, graph):
         pass
     
+    
+#------------------------------------------------------------------------------    
 if __name__ == '__main__':
     'test the ballaster'    
     b1 = Ballaster()

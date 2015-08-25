@@ -12,8 +12,8 @@ display_pipo = include_pipo
 import matplotlib.pylab as plt
 import networkx       as nx
 import netlist_util   as nu
-from   graph_util    import CircuitGraph
-
+from   circuitgraph    import CircuitGraph
+from crgraph import CloudRegGraph
 ###############################################################################
 def get_graph(fname):
 
@@ -25,8 +25,9 @@ def get_graph(fname):
     # 原图
     g1 = CircuitGraph(m_list, include_pipo = True)
     g1.info()
+    
     # cloud_reg 图
-    cloud_reg1=g1.get_cloud_reg_graph()
+    cloud_reg1=CloudRegGraph(g1)
     cloud_reg1.info()
     cloud_reg1.check_rules()
     

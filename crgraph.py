@@ -22,8 +22,8 @@ class CloudRegGraph(nx.DiGraph):
         self.regs=[]
         assert isinstance(basegraph, CircuitGraph) ,"%s" % basegraph.__class__
         self.__get_cloud_reg_graph(basegraph)
-    
-    def __get_cloud_reg_graph(basegraph):
+        
+    def __get_cloud_reg_graph(self, basegraph):
         '''
             -->>basegraph.cloud_reg_graph.copy()
             Model the circuit graph to a cloud(combinational cone) and register(FD)
@@ -99,44 +99,65 @@ class CloudRegGraph(nx.DiGraph):
         #------------------------------------------------------
         #step4
         #新建一个有向图，节点为 cloud（step2获得的连通分量）+fd（step1获得）
-        #              边为fd-cloud的有向连接（step3获得）
-        g3=CloudRegGraph()
-        g3.add_clouds_from(l2)
-        g3.add_regs_from(fd_list)
+        #              边为fd-cloud或者 fd-fd 的有向连接（step3获得）
+        # vertex
+        self.__add_clouds_from(l2)
+        self.__add_regs_from(fd_list)
+        # edge        
         for eachSubgraph in l2:
             for eachNonFdPrim in fd_linked_nodes_edges.keys():
-                #if vertex_in_graph(eachNonFdPrim,eachSubgraph):
                 if eachSubgraph.has_node(eachNonFdPrim):
-                    tmp_edge_list=fd_linked_nodes_edges[eachNonFdPrim]
+                    tmp_edge_list = fd_linked_nodes_edges[eachNonFdPrim]
                     for eachEdge in tmp_edge_list:
-                        if eachEdge[0][0]==eachNonFdPrim:
+                        if eachEdge[0][0] == eachNonFdPrim:
                             ##注意，在这用等号是合法的，因为他们两都是原来的prim_vertex_set
                             ##在新添加边的时候，保留了在原图中的边的信息
-                            g3.add_edge(eachSubgraph,eachEdge[0][1],original_edge=eachEdge)
+                            self.add_edge(eachSubgraph, eachEdge[0][1], original_edge=eachEdge)
                         else:
-                            assert eachEdge[0][1]==eachNonFdPrim
-                            g3.add_edge(eachEdge[0][0],eachSubgraph,original_edge=eachEdge)
+                            assert eachEdge[0][1] == eachNonFdPrim
+                            self.add_edge(eachEdge[0][0], eachSubgraph, original_edge=eachEdge)
         ##注意，在reg_reg_edges当中，边的元素，就是fd_list当中的module对象。所以这样做不会增加新的边
         for eachEdge in reg_reg_edges:
-            g3.add_edge(eachEdge[0][0],eachEdge[0][1],original_edge=eachEdge)
-        basegraph.cloud_reg_graph=g3
-        basegraph.__mergefd_cloud()
-#        for eachNode in g3.nodes_iter():
-#            print eachNode.__class__
-#            if isinstance(eachNode,cc.circut_module):
-#                print "%s %s "%(eachNode.cellref,eachNode.name)
-        print "Note: get_cloud_reg_graph()"        
-        return basegraph.cloud_reg_graph.copy()
+            # self.add_edge(eachEdge[0][0], eachEdge[0][1], original_edge=eachEdge)
+            # 在reg-reg 之间插入一个空的网络
+            empty_cloud = nx.DiGraph()
+            self.add_edge(eachEdge[0][0], empty_cloud, original_edge = eachEdge)
+            self.add_edge(empty_cloud, eachEdge[0][1], original_edge = eachEdge)
+            self.clouds.append(empty_cloud)
+        
+        # ---------------------------------------------------------------------
+        # step5 把FD合并成REG,把与之相连接的CLOUD 也合并
+        self.__mergefd_cloud()
+        
+        basegraph.cloud_reg_graph = self  #把新图 连接给旧图
+        print "Note: get_cloud_reg_graph()"     
+        return self.copy()
     
-    def add_clouds_from(self,list1):
+    # featured 8.26    
+    def __merge_fd_cloud(self):
+        '合并多个cloud，多个FD'
+        while(True):
+#            succ_clouds = [ succ_cloud for succ_cloud in self.successors(eachFD) \
+#                if succ_cloud in self.clouds ]
+#            succ_fds = [succ_fd for succ_fd in self.successors(eachFD) \
+#                if succ_fd in self.regs ]
+            #假定不会出现 Reg-Reg连接 
+            eachFD = self.regs.pop()
+            big_cloud = nx.union_all( self.successors(eachFD))
+            big_reg = set()
+            for succ in self.successors(eachFD):
+                self.remove_node(succ)
+                big_reg.union( set(self.predecessors(succ)) )
+                
+    def __add_clouds_from(self,list1):
         for eachCloud in list1:
             assert isinstance(eachCloud,nx.DiGraph)
             self.clouds.append(eachCloud)
             self.add_node(eachCloud)
 
-    def add_regs_from(self,list1):
+    def __add_regs_from(self,list1):
         for eachFD in list1:
-            assert isinstance(eachFD,cc.circut_module) and\
+            assert isinstance(eachFD, cc.circut_module) and\
                 eachFD.m_type=='FD',eachFD.name
             self.add_node(eachFD)
             self.regs.append(eachFD)
