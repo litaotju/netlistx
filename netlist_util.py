@@ -350,7 +350,7 @@ def rules_check(m_list):
     special_signal={'CLOCK':clock_signal[0],
                     'SYNC_RESET':reset_list,
                     'ASYNC_RESET':async_reset_list}
-    print "Info: Rules check successfully, no rules vialation to graph model"
+    print "Info: Rules check successfully, no rules vialation to model with a graph"
     return special_signal
 ###############################################################################  
 if __name__=='__main__':

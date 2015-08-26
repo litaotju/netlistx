@@ -25,7 +25,7 @@ class CircuitGraph(nx.DiGraph):
            port_pair, which records the port instance pair
     '''
 
-    def __init__(self,m_list,include_pipo=False):
+    def __init__(self, m_list, include_pipo = False):
         nx.DiGraph.__init__(self)
         self.m_list = m_list
         self.include_pipo = include_pipo
@@ -70,7 +70,7 @@ class CircuitGraph(nx.DiGraph):
         #第一个列表存储prim,第二个存储port,第三个存储连接信号
         #---------------------------pipo edge ------------------------------------
         if include_pipo:
-            print "Process: searching PI and PO edges..."
+            print "    Process: searching PI and PO edges..."
             for eachPrim in prim_vertex_list:
                 for eachPort in eachPrim.port_list:
                     for eachPPort in pipo_vertex_list:
@@ -92,34 +92,39 @@ class CircuitGraph(nx.DiGraph):
                             if eachPPort.port_type=='input':
                                 assert eachPort.port_type in ['input','un_kown','clock'],\
                                     (":port:%s,port_type:%s"%(eachPort.port_name,eachPort.port_type))
-                                pi_edge_list.append([[eachPPort,eachPrim],[eachPPort,eachPort],connection])
+                                pi_edge_list.append([[eachPPort,eachPrim], [eachPPort,eachPort], connection])
                             else:
-                                ##只有输prim 的输出端口 才能连接到po port上。否则只是PO的反馈，一定在Primedge中存在
+                                ##只有输prim 的输出端口 才能连接到po port上。否则只是PO的反馈，一定在prim_edge中存在
                                 if eachPort.port_type=='output':
-                                    po_edge_list.append([[eachPrim,eachPPort],[eachPort,eachPPort],connection])
-        print "Process: searching Prim edges..."
+                                    po_edge_list.append([[eachPrim,eachPPort], [eachPort,eachPPort], connection])
+        
+        print "    Process: searching Prim edges..."
+        self.fd_loop = []
         #---------------------------prim edge --------------------------------------------
         for eachPrim in prim_vertex_list:
             for eachPrim2 in prim_vertex_list:
-                if eachPrim2 is eachPrim:
+                # 存在prim与自身的连接
+                p_set = set(eachPrim.port_assign_list)
+                p_set2 = set(eachPrim2.port_assign_list)
+                if not p_set.intersection(p_set2):
                     continue
-                else:
-                    p_set = set(eachPrim.port_assign_list)
-                    p_set2 = set(eachPrim2.port_assign_list)
-                    if not p_set.intersection(p_set2):
-                        continue
-                    for eachPort in eachPrim.port_list:
-                        for eachPort2 in eachPrim2.port_list:
-                            sig1 = eachPort.port_assign.string
-                            sig2 = eachPort2.port_assign.string
-                            if sig2 == sig1 and\
-                                eachPort2.port_type != eachPort.port_type:
-                                connection = sig2
-                                if eachPort.port_type == 'input':
-                                    tmp_edge = [[eachPrim2 ,eachPrim], [eachPort2, eachPort], connection]
-                                else:
-                                    tmp_edge = [[eachPrim,eachPrim2], [eachPort ,eachPort2],  connection]
-                                prim_edge_list.append(tmp_edge)
+                for eachPort in eachPrim.port_list:
+                    for eachPort2 in eachPrim2.port_list:
+                        sig1 = eachPort.port_assign.string
+                        sig2 = eachPort2.port_assign.string
+                        if sig2 == sig1 and \
+                            eachPort2.port_type != eachPort.port_type:
+                            if eachPrim is eachPrim2 :
+                                assert eachPrim.m_type == 'FD' ,\
+                                "Combinational Prim loop: %s %s" % ( eachPrim.cellref, eachPrim.name )
+                                #print "        FD-self loop %s %s " % ( eachPrim.cellref, eachPrim.name )
+                                self.fd_loop.append( (eachPrim , eachPort, eachPort2) )
+                            connection = sig2
+                            if eachPort.port_type == 'input':
+                                tmp_edge = [[eachPrim2 ,eachPrim], [eachPort2, eachPort], connection]
+                            else:
+                                tmp_edge = [[eachPrim,eachPrim2], [eachPort ,eachPort2],  connection]
+                            prim_edge_list.append(tmp_edge)
         #--------merge all the edge-------------------------------------------------------
         edge_set = pi_edge_list + po_edge_list + prim_edge_list
         self.prim_vertex_list = prim_vertex_list
@@ -152,7 +157,7 @@ class CircuitGraph(nx.DiGraph):
                 print "    (%s -> %s):(wire %s, port:%s->%s)" % \
                 (eachEdge[0].name,eachEdge[1].name,connection[eachEdge]\
                 ,port_pair[eachEdge][0].name,port_pair[eachEdge][1].name)
-        return None
+        return True
     #------------------------------------------------------------------------------
     
     def paint(self):
@@ -186,7 +191,6 @@ class CircuitGraph(nx.DiGraph):
         
 
     ###############################################################################
-    #
     def get_s_graph(self):
         '''
            >>>self.s_graph.copy(),根据已有的图来生成s-graph
@@ -235,4 +239,17 @@ class CircuitGraph(nx.DiGraph):
         s1.new_edges=new_edge
         self.s_graph=s1
         return s1.copy()
-
+        
+#------------------------------------------------------------------------------
+if __name__ =='__main__':
+    import netlist_util as nu
+    fname = raw_input("plz enter file name:")
+    info = nu.vm_parse(fname)
+    m_list = info['m_list']
+    
+    nu.mark_the_circut(m_list)
+    nu.rules_check(m_list)
+    
+    g1 = CircuitGraph(m_list, include_pipo = True)
+    g1.info()
+    
