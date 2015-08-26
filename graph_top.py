@@ -29,7 +29,6 @@ def get_graph(fname):
     # cloud_reg 图
     cloud_reg1=CloudRegGraph(g1)
     cloud_reg1.info()
-    cloud_reg1.check_rules()
     
     # BALLAST
     import ballast
@@ -37,7 +36,7 @@ def get_graph(fname):
     bobj.reg2arc(cloud_reg1)
     print "After reg2arc "
     print nx.info(cloud_reg1)
-    bobj.feedbackset(cloud_reg1)
+    print bobj.feedbackset(cloud_reg1)
 #
 #    # S图
 #    s1=g1.get_s_graph()

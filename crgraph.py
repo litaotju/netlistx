@@ -22,7 +22,7 @@ class CloudRegGraph(nx.DiGraph):
         self.regs=[]
         assert isinstance(basegraph, CircuitGraph) ,"%s" % basegraph.__class__
         self.__get_cloud_reg_graph(basegraph)
-        
+
     def __get_cloud_reg_graph(self, basegraph):
         '''
             -->>basegraph.cloud_reg_graph.copy()
@@ -80,17 +80,17 @@ class CloudRegGraph(nx.DiGraph):
         fd_linked_nodes_edges={}
         for x in basegraph.prim_edge_list:
            for eachNode in x[0]:
-               if eachNode.m_type=='FD':
+               if eachNode.m_type == 'FD':
                   tmp= 1 if x[0].index(eachNode)==0 else 0
-                  fd_port=x[1][1-tmp] #记录下来现在的FD的端口
-                  other_prim=x[0][tmp]
-                  other_port=x[1][tmp]
-                  if (other_prim.m_type!='FD') and (fd_port.name in ['D','Q']):
-                      non_fd_prim=other_prim
+                  fd_port = x[1][1-tmp] #记录下来现在的FD的端口
+                  other_prim = x[0][tmp]
+                  other_port = x[1][tmp]
+                  if (other_prim.m_type != 'FD') and (fd_port.name in ['D','Q']):
+                      non_fd_prim = other_prim
                       if not fd_linked_nodes_edges.has_key(non_fd_prim):
-                          fd_linked_nodes_edges[non_fd_prim]=[]
+                          fd_linked_nodes_edges[non_fd_prim] = []
                       fd_linked_nodes_edges[non_fd_prim].append(x)
-                  elif other_prim.m_type=='FD' and (fd_port.name in ['D','Q'] ) and\
+                  elif other_prim.m_type == 'FD' and (fd_port.name in ['D','Q'] ) and\
                       other_port.port_name in ['D','Q']:
                       reg_reg_edges.append(x)
                   else:
@@ -127,41 +127,69 @@ class CloudRegGraph(nx.DiGraph):
         
         # ---------------------------------------------------------------------
         # step5 把FD合并成REG,把与之相连接的CLOUD 也合并
-        self.__mergefd_cloud()
-        
+        self.__check_rules()
+        self.__merge_fd_cloud()
+        self.__check_rules()
         basegraph.cloud_reg_graph = self  #把新图 连接给旧图
         print "Note: get_cloud_reg_graph()"     
-        return self.copy()
+        # return self.copy()
+        return None
     
     # featured 8.26    
     def __merge_fd_cloud(self):
-        '合并多个cloud，多个FD'
-        while(True):
-#            succ_clouds = [ succ_cloud for succ_cloud in self.successors(eachFD) \
-#                if succ_cloud in self.clouds ]
-#            succ_fds = [succ_fd for succ_fd in self.successors(eachFD) \
-#                if succ_fd in self.regs ]
-            #假定不会出现 Reg-Reg连接 
-            eachFD = self.regs.pop()
-            big_cloud = nx.union_all( self.successors(eachFD))
-            big_reg = set()
-            for succ in self.successors(eachFD):
-                self.remove_node(succ)
-                big_reg.union( set(self.predecessors(succ)) )
+        '合并多个cloud'
+        for eachFD in self.regs:
+            succs = self.successors(eachFD)
+            if len(succs) <= 1:
+                continue
+            else:
+                big_cloud = nx.union_all( succs )
+            pre_fds = set()
+            succ_fds = set()
+            for succ_cloud in self.successors(eachFD):
+                pre_fds = pre_fds.union( set(self.predecessors(succ_cloud) ))
+                succ_fds = succ_fds.union( set(self.successors(succ_cloud)) )
+                self.remove_node(succ_cloud)   
+            self.add_node(big_cloud)
+            for pre_fd in pre_fds:
+                self.add_edge(pre_fd, big_cloud)
+            for succ_fd in succ_fds:
+                self.add_edge(big_cloud, pre_fd)
+        # step2 合并所有的FD 成为一个REG
+#        self.big_regs = []
+        self.big_clouds = []
+#        rc_edge = [] # reg-cloud edges found
+        for node in self.nodes_iter():
+            if isinstance(node , nx.DiGraph):
+                cloud = node   
+                self.big_clouds.append( cloud )
+#                # cloud前与后的寄存器序列
+#                reg_pre = nx.DiGraph()
+#                reg_succ = nx.DiGraph()                
+#                reg_pre.add_nodes_from( self.predecessors(cloud) )
+#                reg_succ.add_nodes_from( self.successors(cloud) )
+#                # 将前一级寄存器
+#                self.big_regs.append( reg_pre )
+#                self.big_regs.append(reg_succ)
+#                #将reg-cloud 边存储下来
+#                rc_edge.append( (reg_pre, cloud) ) 
+#                rc_edge.append( (cloud, reg_succ) )
+#        self.remove_nodes_from(self.regs) #移去所有的小FD
+#        self.add_edges_from()
                 
-    def __add_clouds_from(self,list1):
+    def __add_clouds_from(self, list1):
         for eachCloud in list1:
-            assert isinstance(eachCloud,nx.DiGraph)
+            assert isinstance(eachCloud, nx.DiGraph)
             self.clouds.append(eachCloud)
             self.add_node(eachCloud)
 
-    def __add_regs_from(self,list1):
+    def __add_regs_from(self, list1):
         for eachFD in list1:
             assert isinstance(eachFD, cc.circut_module) and\
-                eachFD.m_type=='FD',eachFD.name
+                eachFD.m_type == 'FD', eachFD.name
             self.add_node(eachFD)
             self.regs.append(eachFD)
-
+ 
     def paint(self):
         label_dict={}
         for eachCloud in self.clouds:
@@ -182,23 +210,31 @@ class CloudRegGraph(nx.DiGraph):
     def info(self):
         print "Cloud_Reg_graph info:-----------------"
         print nx.info(self)
-        print "Number of cloud:%d "%len(self.clouds)
-        print "Number of register:%d"% len(self.regs)
+        ncloud = 0
+        nreg = 0
+        for node in self.nodes_iter():
+            if isinstance(node, nx.DiGraph): 
+                ncloud += 1
+            else:
+                nreg += 1
+        print "Number of cloud:%d == %d " % (ncloud, len(self.big_clouds))
+        print "Number of register:%d" % nreg
         print "--------------------------------------"
-
     ###featured 7.14
-    def check_rules(self):
+    def __check_rules(self):
         ''' to make sure the every reg in cloud_reg_graph has just  1-indegree
         '''
-        in_dict=self.in_degree(self.regs)
-        for x in list(in_dict.values()):
-            if x>1:
-                print "Error: check_rules failed. There are FD with %d in_degree"%x
-                raise AssertionError
         for reg in self.regs:
             if len(self.predecessors(reg)) > 1:
-                print "Rules Error : D has a predecessors more than 1"
-                for eachPre in self.predecessors(reg):
-                    print eachPre
-                raise AssertionError
+                print "Rules Error : %s %s has a predecessors more than 1" %\
+                    (reg.cellref, reg.name)
+                print ",".join([ str(eachPre.__class__) for eachPre in self.successors(reg)])
+                #raise AssertionError
         print "Info:Check Rules of cloud_reg_graph succfully"
+
+#------------------------------------------------------------------------------
+if __name__ == '__main__':
+    from circuitgraph import get_graph_from_raw_input
+    g = get_graph_from_raw_input()
+    cr1 = CloudRegGraph(g)
+    cr1.info()

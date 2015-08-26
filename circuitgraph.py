@@ -79,7 +79,7 @@ class CircuitGraph(nx.DiGraph):
                         if isinstance(eachPort.port_assign, cc.signal) and \
                                 eachPort.port_assign.name == eachPPort.port_name:
                             connection = eachPort.port_assign.name
-                            cnt_flag=True
+                            cnt_flag = True
                         # 这一部分用于多位端口的连接
         #                elif isinstance(eachPort.port_assign,cc.joint_signal):
         #                    for eachSubsignal in eachPort.port_assign.sub_signal_list:
@@ -90,7 +90,7 @@ class CircuitGraph(nx.DiGraph):
         #                            continue
                         if cnt_flag:
                             if eachPPort.port_type=='input':
-                                assert eachPort.port_type in ['input','un_kown','clock'],\
+                                assert eachPort.port_type in ['input', 'clock'],\
                                     (":port:%s,port_type:%s"%(eachPort.port_name,eachPort.port_type))
                                 pi_edge_list.append([[eachPPort,eachPrim], [eachPPort,eachPort], connection])
                             else:
@@ -123,7 +123,7 @@ class CircuitGraph(nx.DiGraph):
                             if eachPort.port_type == 'input':
                                 tmp_edge = [[eachPrim2 ,eachPrim], [eachPort2, eachPort], connection]
                             else:
-                                tmp_edge = [[eachPrim,eachPrim2], [eachPort ,eachPort2],  connection]
+                                tmp_edge = [[eachPrim, eachPrim2], [eachPort ,eachPort2],  connection]
                             prim_edge_list.append(tmp_edge)
         #--------merge all the edge-------------------------------------------------------
         edge_set = pi_edge_list + po_edge_list + prim_edge_list
@@ -140,8 +140,8 @@ class CircuitGraph(nx.DiGraph):
 
     #------------------------------------------------------------------------------
 
-    def info(self,verbose = False) :
-        print "Circuit graph info:"
+    def info(self, verbose = False) :
+        print "---- module %s -->> CircuitGraph info:----- " % self.m_list[0].name
         print nx.info(self)
         if verbose:
             print "Info :%d nodes in graph. Node Set Are:"% self.number_of_nodes()
@@ -161,31 +161,31 @@ class CircuitGraph(nx.DiGraph):
     #------------------------------------------------------------------------------
     
     def paint(self):
+        ''' 给电路图，分组画出来，不同的颜色和标签标明了不同的prim '''
         label_dict={}
+        fd_list  = []
+        pipo_list= []
+        others   = []
         for eachVertex in self.nodes_iter():
-            if isinstance(eachVertex,cc.circut_module):
-                label_dict[eachVertex]=eachVertex.cellref+" : "+eachVertex.name
+            if isinstance(eachVertex, cc.circut_module):
+                label_dict[eachVertex] = eachVertex.cellref + " : " + eachVertex.name
+                if eachVertex.m_type == 'FD':
+                    fd_list.append(eachVertex)
+                else:
+                    others.append(eachVertex)
             else:
-                assert isinstance(eachVertex,cc.port)
-                label_dict[eachVertex]=eachVertex.port_type+\
-                    " : "+eachVertex.port_name
-        ps=nx.spring_layout(self)
-        fd_list  =[]
-        pipo_list=[]
-        others   =[]
-        for eachNode in self.nodes_iter():
-            if isinstance(eachNode,cc.circut_module) and eachNode.m_type=='FD':
-                fd_list.append(eachNode)
-            elif isinstance(eachNode,cc.port):
-                pipo_list.append(eachNode)
-            else:
-                others.append(eachNode)
+                assert isinstance(eachVertex, cc.port)
+                label_dict[eachVertex] = eachVertex.port_type + \
+                    " : " + eachVertex.port_name
+                pipo_list.append(eachVertex)
+        ps = nx.spring_layout(self)
         if self.include_pipo:
             nx.draw_networkx_nodes(self,pos=ps,nodelist=pipo_list,node_color='r')
         nx.draw_networkx_nodes(self,pos=ps,nodelist=others,node_color='b')
         nx.draw_networkx_nodes(self,pos=ps,nodelist=fd_list,node_color='g')
         nx.draw_networkx_edges(self,ps)
         nx.draw_networkx_labels(self,ps,labels=label_dict)
+        plt.show()
         plt.savefig(self.m_list[0].name+"_original_.png")
         return True
         
@@ -239,9 +239,10 @@ class CircuitGraph(nx.DiGraph):
         s1.new_edges=new_edge
         self.s_graph=s1
         return s1.copy()
-        
 #------------------------------------------------------------------------------
-if __name__ =='__main__':
+        
+def get_graph_from_raw_input():
+    '''for test only'''
     import netlist_util as nu
     fname = raw_input("plz enter file name:")
     info = nu.vm_parse(fname)
@@ -251,5 +252,10 @@ if __name__ =='__main__':
     nu.rules_check(m_list)
     
     g1 = CircuitGraph(m_list, include_pipo = True)
+    return g1
+#------------------------------------------------------------------------------
+if __name__ =='__main__':
+    g1 = get_graph_from_raw_input()
     g1.info()
-    
+    plt.figure("Original_Circut")
+    g1.paint()
