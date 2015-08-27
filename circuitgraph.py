@@ -27,6 +27,7 @@ class CircuitGraph(nx.DiGraph):
 
     def __init__(self, m_list, include_pipo = False):
         nx.DiGraph.__init__(self)
+        self.name = m_list[0].name
         self.m_list = m_list
         self.include_pipo = include_pipo
         self.__add_edge_vertex_from_m_list(m_list, self.include_pipo)
@@ -91,7 +92,9 @@ class CircuitGraph(nx.DiGraph):
                         if cnt_flag:
                             if eachPPort.port_type=='input':
                                 assert eachPort.port_type in ['input', 'clock'],\
-                                    (":port:%s,port_type:%s"%(eachPort.port_name,eachPort.port_type))
+                                    ("%s %s  port:%s, port_type:%s"\
+                                    % (eachPrim.cellref, eachPrim.name, \
+                                       eachPort.port_name, eachPort.port_type))
                                 pi_edge_list.append([[eachPPort,eachPrim], [eachPPort,eachPort], connection])
                             else:
                                 ##只有输prim 的输出端口 才能连接到po port上。否则只是PO的反馈，一定在prim_edge中存在
@@ -124,6 +127,8 @@ class CircuitGraph(nx.DiGraph):
                                 tmp_edge = [[eachPrim2 ,eachPrim], [eachPort2, eachPort], connection]
                             else:
                                 tmp_edge = [[eachPrim, eachPrim2], [eachPort ,eachPort2],  connection]
+                            if tmp_edge in prim_edge_list:
+                                continue
                             prim_edge_list.append(tmp_edge)
         #--------merge all the edge-------------------------------------------------------
         edge_set = pi_edge_list + po_edge_list + prim_edge_list
@@ -137,7 +142,7 @@ class CircuitGraph(nx.DiGraph):
         for eachEdge in edge_set:
             self.add_edge(eachEdge[0][0], eachEdge[0][1],\
             connection=eachEdge[2] , port_pair=eachEdge[1])
-
+        # 
     #------------------------------------------------------------------------------
 
     def info(self, verbose = False) :
@@ -185,8 +190,7 @@ class CircuitGraph(nx.DiGraph):
         nx.draw_networkx_nodes(self,pos=ps,nodelist=fd_list,node_color='g')
         nx.draw_networkx_edges(self,ps)
         nx.draw_networkx_labels(self,ps,labels=label_dict)
-        plt.show()
-        plt.savefig(self.m_list[0].name+"_original_.png")
+        plt.savefig("test_output\\"+self.m_list[0].name+"_original_.png")
         return True
         
 
@@ -247,15 +251,35 @@ def get_graph_from_raw_input():
     fname = raw_input("plz enter file name:")
     info = nu.vm_parse(fname)
     m_list = info['m_list']
+    print "Top module is:"
+    m_list[0].__print__()
+    nu.mark_the_circut(m_list)
+    nu.rules_check(m_list)
+    g1 = CircuitGraph(m_list, include_pipo = True)
+    return g1
     
+def __test():
+    '''for test only'''
+    import netlist_util as nu
+    fname = raw_input("plz enter file name:")
+    info = nu.vm_parse(fname)
+    m_list = info['m_list']
+    for eachPrim in m_list:
+        eachPrim.__print__()
     nu.mark_the_circut(m_list)
     nu.rules_check(m_list)
     
     g1 = CircuitGraph(m_list, include_pipo = True)
-    return g1
-#------------------------------------------------------------------------------
-if __name__ =='__main__':
-    g1 = get_graph_from_raw_input()
+    g2 = CircuitGraph(m_list)
+    print "----NO PIPO-----------"
+    g2.info()
+    print "----Including PIPO----"    
     g1.info()
     plt.figure("Original_Circut")
     g1.paint()
+    return True
+#------------------------------------------------------------------------------
+if __name__ =='__main__':
+    __test()
+
+    

@@ -3,7 +3,7 @@
 *.jpg
 /*.vm
 /*.v
-test/
+*test/
 test_output/
 cell_construct/FD_SRC
 #################
