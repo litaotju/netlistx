@@ -21,7 +21,7 @@ class CloudRegGraph(nx.DiGraph):
         self.clouds=[]
         self.regs=[]
         self.name = basegraph.name
-        assert isinstance(basegraph, CircuitGraph) ,"%s" % basegraph.__class__
+        assert isinstance(basegraph, CircuitGraph) ,"%s" % str(basegraph.__class__)
         self.__get_cloud_reg_graph(basegraph)
 
     def __get_cloud_reg_graph(self, basegraph):
@@ -207,7 +207,7 @@ class CloudRegGraph(nx.DiGraph):
         for reg in self.regs:
             npre = len(self.predecessors(reg))
             nsuc = len(self.successors(reg))
-            if  npre> 1:
+            if  npre > 1:
                 print "Crgrpah Rules Error : %s %s has %d >1 predecessors" %\
                     (reg.cellref, reg.name, npre)
                 print ",".join([ str(eachPre.__class__) for eachPre in self.predecessors(reg)])
