@@ -20,18 +20,18 @@ class CloudRegGraph(nx.DiGraph):
         nx.DiGraph.__init__(self)
         self.clouds=[]
         self.regs=[]
+        self.name = basegraph.name
         assert isinstance(basegraph, CircuitGraph) ,"%s" % basegraph.__class__
         self.__get_cloud_reg_graph(basegraph)
 
     def __get_cloud_reg_graph(self, basegraph):
-        '''
-            -->>basegraph.cloud_reg_graph.copy()
-            Model the circuit graph to a cloud(combinational cone) and register(FD)
-            graph,add a .cloud_reg_graph data to basegraph.
+        ''' 
+            para: basegraph
+            return: None
+            add data attr -->> basegraph.cloud_reg_graph
+            Model the circuit graph to a cloud(combinational cone)_register(FDs) graph
+            add a .cloud_reg_graph data to basegraph.
             注意：1.现有的cloud_register图中没有包含pipo节点，只是prim的节点
-                 2.函数不仅为调用它的对象增加了一个 cloud_reg_graph数据，最终返回了该图的深度复制
-            待续：现有的算法是先去掉所有的FD，将剩下的连通分量合并成一个cloud。实际上如果剩下的图不
-                 连通，那么它们在电路中可以合并成一个子图吗?
         '''
         # g2是一个用basegraph中的点和边建立的无向图，
         # 所以基本的节点和basegraph的节点是完全一致的，
@@ -40,7 +40,6 @@ class CloudRegGraph(nx.DiGraph):
         g2.add_nodes_from(basegraph.prim_vertex_list)
         for eachEdge in basegraph.prim_edge_list:
             g2.add_edge(eachEdge[0][0],eachEdge[0][1])
-            
         #------------------------------------------------------
         #step1 找出所有FD节点，并移去FD节点
         fd_list=[]
@@ -78,13 +77,13 @@ class CloudRegGraph(nx.DiGraph):
         special_edges=[]
         reg_reg_edges=[]
         fd_linked_nodes_edges={}
-        for x in basegraph.prim_edge_list:
+        for x in basegraph.prim_edge_list: # 2倍的边的数量，因为每一个连接都被建立两次
            for eachNode in x[0]:
                if eachNode.m_type == 'FD':
                   tmp= 1 if x[0].index(eachNode)==0 else 0
-                  fd_port = x[1][1-tmp] #记录下来现在的FD的端口
-                  other_prim = x[0][tmp]
-                  other_port = x[1][tmp]
+                  fd_port = x[1][1-tmp]  # 记录下来现在的FD的端口
+                  other_prim = x[0][tmp] # 边的另一个prim
+                  other_port = x[1][tmp] # 边的另一个port
                   if (other_prim.m_type != 'FD') and (fd_port.name in ['D','Q']):
                       non_fd_prim = other_prim
                       if not fd_linked_nodes_edges.has_key(non_fd_prim):
@@ -93,7 +92,13 @@ class CloudRegGraph(nx.DiGraph):
                   elif other_prim.m_type == 'FD' and (fd_port.name in ['D','Q'] ) and\
                       other_port.port_name in ['D','Q']:
                       reg_reg_edges.append(x)
+                      break # 如果两个都是FD，那么建立连接之后，直接跳到下一条边
+                            # 防止reg-reg edges重复建立
                   else:
+                      # 特殊的边，包括其他原语的输出连接到D触发器的CE上
+                      # 在CircuitGraph构造函数中，rules_check不检查CE信号，允许内部CE
+                      # 但是这些信号对于构建CR图是没有作用的，所以这些边就不再加载到CR图中
+                      print "Info: special edge  %s %s" % (x[0][0].name, x[0][1].name)
                       special_edges.append(x)
 
         #------------------------------------------------------
@@ -127,15 +132,15 @@ class CloudRegGraph(nx.DiGraph):
         
         # ---------------------------------------------------------------------
         # step5 把FD合并成REG,把与之相连接的CLOUD 也合并
-        self.__check_rules()
         self.__merge_fd_cloud()
         self.__check_rules()
-        basegraph.cloud_reg_graph = self  #把新图 连接给旧图
-        print "Note: get_cloud_reg_graph()"     
-        # return self.copy()
+        
+        #basegraph添加新的cloud_reg_graph属性，也就是将两者绑定
+        basegraph.cloud_reg_graph = self
+        print "Note: get_cloud_reg_graph()"
         return None
     
-    # featured 8.26    
+    
     def __merge_fd_cloud(self):
         '合并多个cloud'
         for eachFD in self.regs:
@@ -178,63 +183,104 @@ class CloudRegGraph(nx.DiGraph):
 #        self.add_edges_from()
                 
     def __add_clouds_from(self, list1):
+        '''输入list1,判断list1当中的所有每一个元素的类型，之后nx.DiGraph类型才能
+            成为cloud
+        '''
         for eachCloud in list1:
             assert isinstance(eachCloud, nx.DiGraph)
             self.clouds.append(eachCloud)
             self.add_node(eachCloud)
 
     def __add_regs_from(self, list1):
+        '''输入list1,判断list1当中的每一个元素的类型，只有cc.circuitmodule类型
+        并且m_type == "FD"的元素才能成为reg
+        '''
         for eachFD in list1:
             assert isinstance(eachFD, cc.circut_module) and\
                 eachFD.m_type == 'FD', eachFD.name
             self.add_node(eachFD)
             self.regs.append(eachFD)
  
+    def __check_rules(self):
+        ''' 确保每一个D触发器只有一个扇入，一个扇出
+        '''
+        for reg in self.regs:
+            npre = len(self.predecessors(reg))
+            nsuc = len(self.successors(reg))
+            if  npre> 1:
+                print "Crgrpah Rules Error : %s %s has %d >1 predecessors" %\
+                    (reg.cellref, reg.name, npre)
+                print ",".join([ str(eachPre.__class__) for eachPre in self.predecessors(reg)])
+                raise AssertionError
+            if  nsuc > 1:
+                print "Crgrpah Rules Error : %s %s has  %d >1 successors" %\
+                    (reg.cellref, reg.name, nsuc)
+                print ",".join([ str(eachSuc.__class__) for eachSuc in self.successors(reg)])
+                raise AssertionError
+        print "Info:Check Rules of cloud_reg_graph succfully"
+        
     def paint(self):
         label_dict={}
-        for eachCloud in self.clouds:
+        for eachCloud in self.big_clouds:
             if eachCloud.number_of_nodes()>1:
-                label_dict[eachCloud]='cloud'
+                label_dict[eachCloud] = 'cloud'
+            elif eachCloud.number_of_nodes() == 1:
+                node = eachCloud.nodes()[0]
+                label_dict[eachCloud] = "cloud:"+ node.cellref + ":" + node.name
             else:
-                node=eachCloud.nodes()[0]
-                label_dict[eachCloud]=node.cellref+":"+node.name
+                label_dict[eachCloud] = 'empty_cloud'
         for eachReg in self.regs:
-            label_dict[eachReg]=eachReg.cellref+":"+eachReg.name
+            label_dict[eachReg] = eachReg.cellref + ":" + eachReg.name
         ps=nx.spring_layout(self)
-        nx.draw_networkx_nodes(self,pos=ps,nodelist=self.clouds,node_color='r')
-        nx.draw_networkx_nodes(self,pos=ps,nodelist=self.regs,node_color='g')
+        nx.draw_networkx_nodes(self, pos=ps, nodelist = self.big_clouds, node_color = 'r')
+        nx.draw_networkx_nodes(self, pos=ps, nodelist = self.regs, node_color = 'g')
         nx.draw_networkx_edges(self,ps)
         nx.draw_networkx_labels(self,ps,labels=label_dict)
+        plt.show()
         return True
 
-    def info(self):
-        print "Cloud_Reg_graph info:-----------------"
+    def info(self , verbose = False):
+        print "--------------Cloud_Reg_graph info:-----------------"
         print nx.info(self)
         ncloud = 0
         nreg = 0
         for node in self.nodes_iter():
             if isinstance(node, nx.DiGraph): 
                 ncloud += 1
+                if node.number_of_nodes() == 0:
+                    if verbose: print "cloud ::\n empty cloud\n"
+                    continue
+                if verbose: print "cloud ::"
+                for prim in node.nodes_iter():
+                    assert isinstance(prim, cc.circut_module), "cloud type %s " % str(prim.__class__)              
+                    if verbose: prim.__print__()
             else:
+                assert isinstance(node ,cc.circut_module) ,"reg type %s " % str(node.__class__)
+                if verbose:
+                    print "fd ::"                
+                    node.__print__()                
                 nreg += 1
-        print "Number of cloud:%d == %d " % (ncloud, len(self.big_clouds))
+        assert  len(self.big_clouds) == ncloud ,"%d %d"%(len(self.big_clouds),ncloud)
+        print "Number of cloud:%d " % ncloud
         print "Number of register:%d" % nreg
         print "--------------------------------------"
-    ###featured 7.14
-    def __check_rules(self):
-        ''' to make sure the every reg in cloud_reg_graph has just  1-indegree
-        '''
-        for reg in self.regs:
-            if len(self.predecessors(reg)) > 1:
-                print "Rules Error : %s %s has a predecessors more than 1" %\
-                    (reg.cellref, reg.name)
-                print ",".join([ str(eachPre.__class__) for eachPre in self.successors(reg)])
-                #raise AssertionError
-        print "Info:Check Rules of cloud_reg_graph succfully"
 
 #------------------------------------------------------------------------------
-if __name__ == '__main__':
+# 模块测试代码
+#------------------------------------------------------------------------------
+def __test():
+    '''crgraph本模块的测试
+    '''
     from circuitgraph import get_graph_from_raw_input
-    g = get_graph_from_raw_input()
-    cr1 = CloudRegGraph(g)
-    cr1.info()
+    g2 = get_graph_from_raw_input() # 输入netlist 文件，得到 CircuitGraph对象g2
+    g2.info() #打印原图的详细信息
+    cr2 = CloudRegGraph(g2) 
+    cr2.info(True)
+    plt.figure( cr2.name+"_crgraph")
+    cr2.paint()
+if __name__ == '__main__':
+    import matplotlib.pylab as plt
+    __test()
+
+    
+    
