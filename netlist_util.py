@@ -229,9 +229,8 @@ def get_clk_in_fd(all_fd_dict,verbose=False):
         current_clk=all_fd_dict[eachFD]['C'].string
         if current_clk not in clock_list:
             clock_list.append(current_clk)
-    assert len(clock_list)<=1,\
-        "AssertError: has %d clock domain\n %s " % (len(clock_list),\
-            ",".join(clock_list) )
+    assert len(clock_list)==1,\
+        "AssertError: has %d clock domain" % len(clock_list)
     if verbose:
         print "Info:all clock signals are as follows:"
         for clock in  clock_list:
@@ -333,23 +332,22 @@ def rules_check(m_list):
     print "Process: finding all reset and async reset of fd..."
     reset_list, async_reset_list = get_reset_in_fd(all_fd_dict, True)
     ##注意一个潜在的问题，只有网表的端口宽度为1时，也就是信号与string相同时，规则检查才有效
-    single_bit_pi = []
-    if len(clock_signal) == 1 : # 时钟个数为0时 ， 不用检查时钟了
-        clock_flag = False    
-        for eachPi in m_list[0].port_list:
-            if eachPi.port_type == 'input' and eachPi.port_width == 1:
-                if clock_signal[0] == eachPi.name:
-                    clock_flag = True
-                single_bit_pi.append(eachPi.name)
-        if not clock_flag:
-            raise AssertionError,"CLOCK signal is not cnnected to any PI"
+    clock_flag = False    
+    single_bit_pi = []    
+    for eachPi in m_list[0].port_list:
+        if eachPi.port_type == 'input' and eachPi.port_width == 1:
+            if clock_signal[0] == eachPi.name:
+                clock_flag = True
+            single_bit_pi.append(eachPi.name)
+    if not clock_flag:
+        raise AssertionError,"CLOCK signal is not cnnected to any PI"
     for anyReset in reset_list:
         if not anyReset in single_bit_pi:
             raise AssertionError,"Reset signal %s not connected to any PI"% anyReset
     for anyAsyncReset in async_reset_list:
         if not anyAsyncReset in single_bit_pi:
-            raise AssertionError,"Async Reset signal %s not connected to any PI"% anyAsyncReset
-    special_signal={ 'CLOCK':clock_signal,
+            raise AssertionError,"Async Reset signal %s not connected to any PI"% anyReset
+    special_signal={'CLOCK':clock_signal[0],
                     'SYNC_RESET':reset_list,
                     'ASYNC_RESET':async_reset_list}
     print "Info: Rules check successfully, no rules vialation to model with a graph"
