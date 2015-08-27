@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*- #
 
 '--this script is for verilog scan_cell lib construct--'
 
@@ -8,8 +9,16 @@ for root,dirs,files in os.walk(os.getcwd()):
     for file_name in files: 
         print file_name
     
+# 读取当前目录下的\FD_SRC目录里面的verilog文件
+for fdverilog in os.listdir(os.getcwd()+"\FD_SRC"):
+    
+
 fobj_scan_cell=open('scan_cells.v','w')
-in_out_del='input SCAN_EN;\ninput SCAN_IN;\noutput SCAN_OUT;\n'
+in_out_del='''\
+    input SCAN_EN;
+    input SCAN_IN;
+    output SCAN_OUT;
+'''
 counter=0
 all=[]
 print len(files)

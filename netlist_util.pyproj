@@ -1,0 +1,92 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+        <SchemaVersion>2.0</SchemaVersion>
+        <ProjectGuid>{95a23466-7140-43ac-b64d-a6563a679dfb}</ProjectGuid>
+        <ProjectHome />
+        <StartupFile>graph_top.py</StartupFile>
+        <SearchPath />
+        <WorkingDirectory>.</WorkingDirectory>
+        <OutputPath>.</OutputPath>
+        <InterpreterId>{2af0f10d-7135-4994-9156-5d01c9c11b7e}</InterpreterId>
+        <InterpreterVersion>2.7</InterpreterVersion>
+        <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">10.0</VisualStudioVersion>
+        <VSToolsPath Condition="'$(VSToolsPath)' == ''">$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)</VSToolsPath>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
+    <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
+    <ItemGroup>
+        <Content Include="README.md" />
+        <Compile Include="ballast.py" />
+        <Compile Include="circuitgraph.py" />
+        <Compile Include="class_circuit.py" />
+        <Compile Include="crgraph.py" />
+        <Compile Include="graph_top.py" />
+        <Compile Include="graph_util.py" />
+        <Compile Include="netlist_util.py" />
+        <Compile Include="scan_chain_full_replace.py" />
+        <Compile Include="scan_chain_insert.py" />
+        <Compile Include="sgraph.py" />
+        <Compile Include="testbench_generate.py" />
+        <Compile Include="cell_construct\construct_scan_lib.py" />
+        <Compile Include="cell_construct\faultfdlib.py" />
+        <Content Include="crtest\Readme.txt" />
+        <Content Include="crtest\cr1.vm" />
+        <Content Include="crtest\cr2.vm" />
+        <Content Include="crtest\cr3.vm" />
+        <Content Include="crtest\cr4.vm" />
+        <Content Include="crtest\cr5.vm" />
+        <Content Include="crtest\inv.vm" />
+        <Content Include="crtest\reg_inv.vm" />
+        <Content Include="crtest\reg_inv_reg.vm" />
+        <Content Include="crtest\reg_reg.vm" />
+        <Content Include="grhtest\Readme.txt" />
+        <Content Include="grhtest\b01.vm" />
+        <Content Include="grhtest\b02.vm" />
+        <Content Include="grhtest\b03.vm" />
+        <Content Include="grhtest\b17.vm" />
+        <Content Include="grhtest\b19.vm" />
+        <Content Include="grhtest\clk2domain.vm" />
+        <Content Include="grhtest\interreset.vm" />
+        <Content Include="grhtest\onlyfd.vm" />
+        <Content Include="grhtest\portnowire.vm" />
+        <Content Include="grhtest\reset2.vm" />
+        <Compile Include="netlist_parser\lex.py" />
+        <Compile Include="netlist_parser\netlist_lexer.py" />
+        <Compile Include="netlist_parser\netlist_parser.py" />
+        <Compile Include="netlist_parser\parsetab.py" />
+        <Compile Include="netlist_parser\yacc.py" />
+        <Compile Include="netlist_parser\__init__.py" />
+        <Content Include="test\com_loop.vm" />
+        <Content Include="test\cr1.vm" />
+        <Content Include="test\cr2.vm" />
+        <Content Include="test\cr3.vm" />
+        <Content Include="test\cr4.vm" />
+        <Content Include="test\fd_loop.vm" />
+        <Content Include="test\simple.vm" />
+        <Content Include="test_output\onlyfd_original_.png" />
+        <Content Include="test_output\reg_inv_reg_original_.png" />
+        <Content Include="test\bench_virtex7\b01.vm" />
+        <Content Include="test\bench_virtex7\b02.vm" />
+        <Content Include="test\bench_virtex7\b03.vm" />
+        <Content Include="test\bench_virtex7\b17.vm" />
+        <Content Include="test\bench_virtex7\b19.vm" />
+        <Content Include="test_output\tmp\primitive_type_predefine.txt" />
+        <Compile Include="test_output\tmp\test.py" />
+    </ItemGroup>
+    <ItemGroup>
+        <Folder Include="cell_construct" />
+        <Folder Include="crtest" />
+        <Folder Include="grhtest" />
+        <Folder Include="netlist_parser" />
+        <Folder Include="test" />
+        <Folder Include="test\bench_virtex7" />
+        <Folder Include="test_output" />
+        <Folder Include="test_output\tmp" />
+    </ItemGroup>
+    <ItemGroup>
+        <InterpreterReference Include="{2af0f10d-7135-4994-9156-5d01c9c11b7e}\2.7" />
+    </ItemGroup>
+    <Import Project="$(MSBuildToolsPath)\Microsoft.Common.targets" />
+</Project>

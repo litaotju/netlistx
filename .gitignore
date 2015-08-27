@@ -3,8 +3,9 @@
 *.jpg
 /*.vm
 /*.v
-test_input_netlist/
-test_output_dir/
+*test/
+test_output/
+cell_construct/FD_SRC
 #################
 ## Eclipse
 #################
