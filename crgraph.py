@@ -17,13 +17,26 @@ class CloudRegGraph(nx.DiGraph):
         子图中有存储了关于组合逻辑节点的互联信息
     '''
     def __init__(self, basegraph ):
+        'parameter :basegraph ，a CircuitGraph Object'
         nx.DiGraph.__init__(self)
         self.clouds=[]
         self.regs=[]
         self.name = basegraph.name
         assert isinstance(basegraph, CircuitGraph) ,"%s" % str(basegraph.__class__)
-        self.debug = True  #调试的时候设置打印信息，调试完请改回False
-        self.__get_cloud_reg_graph(basegraph)
+        
+        # 调试的时候设置打印信息，调试完请改回False
+        self.debug = True 
+        
+        # 将所有的组合逻辑找到，相连接的归为一个Cloud
+        self.__get_cloud_reg_graph(basegraph) 
+        
+        # 将小的cloug 变为一个大的cloud函数里面，为图增加了 self.big_cloud的属性
+        self.__merge_fd_cloud()               
+        if self.debug:
+            print "------------info- After __merge_fd_cloud():------------------"
+            self.info(True)
+        # 确保构造出来的CloudRegGraph符合rules
+        self.__check_rules()
 
     def __get_cloud_reg_graph(self, basegraph):
         ''' 
@@ -131,31 +144,19 @@ class CloudRegGraph(nx.DiGraph):
                             self.add_edge(eachEdge[0][0], eachSubgraph, original_edge=eachEdge)
         ##注意，在reg_reg_edges当中，边的元素，就是fd_list当中的module对象。所以这样做不会增加新的边
         for eachEdge in reg_reg_edges:
-            # self.add_edge(eachEdge[0][0], eachEdge[0][1], original_edge=eachEdge)
             # 在reg-reg 之间插入一个空的网络
             empty_cloud = nx.DiGraph()
             self.add_edge(eachEdge[0][0], empty_cloud, original_edge = eachEdge)
             self.add_edge(empty_cloud, eachEdge[0][1], original_edge = eachEdge)
             self.clouds.append(empty_cloud)
             cloud_num += 1
-        
-        ## 调试代码，只有打印的功能      
             if self.debug == True: 
                 print "    ---- Cloud %d is empty cloud :----" % cloud_num
-                for eachPrim in eachSubgrapg.nodes_iter():
-                    eachPrim.__print__()
         if self.debug:
-            print "------------info- Before __merge_fd_cloud:"
+            print "------------info- Before __merge_fd_cloud()-----------------:"
             print "     %d cloud, %d regs, %d edges" %\
                 (len(self.clouds),len(self.regs),self.number_of_edges() )
         # ---------------------------------------------------------------------
-        # step5 把FD合并成REG,把与之相连接的CLOUD 也合并
-        self.__merge_fd_cloud()  #函数里面，为图增加了 self.big_cloud的属性
-        if self.debug:
-            print "------------info- After __merge_fd_cloud:"
-            self.info(True)
-        
-        self.__check_rules()
         #basegraph添加新的cloud_reg_graph属性，也就是将两者绑定
         basegraph.cloud_reg_graph = self
         print "Note: get_cloud_reg_graph()"
@@ -166,13 +167,19 @@ class CloudRegGraph(nx.DiGraph):
     #---------------------------------------------------------------------
     def __merge_fd_cloud(self):
         '合并多个cloud'
+        # ------------------------------------------------------------------
         # step 1 对每一个多扇出的FD，将FD的多个扇出succ cloud合并成一个大的cloud
         for eachFD in self.regs:
+            print "Processing %s ..." % eachFD.name
+            # 不论有没有扇入只有0-1个扇出的时候，查找下一个FD
+            # 有多于1个的扇出的时候，将它的后继节点的所有cloud合并为一个cloud
+            # 合并的大cloud的前驱结点，也就是与同级FD相邻的FD与大cloud相连接
+            # 合并的大cloud的所有后继结点，连接到大的cloud上面，进而完成的任务是
+            # 每一个D只有一个扇出
             succs = self.successors(eachFD) #其中的每一个succ都是nx.DiGraph()
             if len(succs) <= 1:
                 continue
             else: 
-                #能执行下去，就一定有big_cloud这一数据属性存在
                 big_cloud = nx.union_all( succs )
             pre_fds = set()
             succ_fds = set()
@@ -181,40 +188,46 @@ class CloudRegGraph(nx.DiGraph):
                 succ_fds = succ_fds.union( set(self.successors(succ_cloud)) )
                 self.remove_node(succ_cloud)
             self.add_node(big_cloud)
+            print "%d nodes in cuurent graph" % self.number_of_nodes()
+            print "%d egdes before adding edges-to bigclouds" % self.number_of_edges()
             for pre_fd in pre_fds:
                 self.add_edge(pre_fd, big_cloud)
             for succ_fd in succ_fds:
-                self.add_edge(big_cloud, pre_fd)
+                #self.add_edge(big_cloud, pre_fd) ######FUCK THIS BUGGGG
+                self.add_edge(big_cloud, succ_fd)
+            print "%d edges in current graph" % self.number_of_edges()
+        # ------------------------------------------------------------------
         # step2 合并所有的FD 成为一个REG
-#        self.big_regs = []
+        #self.big_regs = []
         self.big_clouds = []
-#        rc_edge = [] # reg-cloud edges found
+        #rc_edge = [] # reg-cloud edges found
         for node in self.nodes_iter(): #总终图上的nx.DiGraph类型只能是cloud
             if isinstance(node , nx.DiGraph):
                 cloud = node   
                 self.big_clouds.append( cloud )
-#                # cloud前与后的寄存器序列
-#                reg_pre = nx.DiGraph()
-#                reg_succ = nx.DiGraph()                
-#                reg_pre.add_nodes_from( self.predecessors(cloud) )
-#                reg_succ.add_nodes_from( self.successors(cloud) )
-#                # 将前一级寄存器
-#                self.big_regs.append( reg_pre )
-#                self.big_regs.append(reg_succ)
-#                #将reg-cloud 边存储下来
-#                rc_edge.append( (reg_pre, cloud) ) 
-#                rc_edge.append( (cloud, reg_succ) )
-#        self.remove_nodes_from(self.regs) #移去所有的小FD
-#        self.add_edges_from()
-        if self.debug:
-            print "-------debug info---------"
-            in_d = self.in_degree()
-            out_d = self.out_degree()
-            for eachFD in self.regs:
-                if in_d[eachFD] ==0:
-                    print "0 indegree  FD: %s,its out degree %d" % (eachFD.name,out_d[eachFD])
-                if out_d[eachFD] ==0:
-                    print "0 outdegree FD: %s " % eachFD.name
+        #        # cloud前与后的寄存器序列
+        #        reg_pre = nx.DiGraph()
+        #        reg_succ = nx.DiGraph()                
+        #        reg_pre.add_nodes_from( self.predecessors(cloud) )
+        #        reg_succ.add_nodes_from( self.successors(cloud) )
+        #        # 将前一级寄存器
+        #        self.big_regs.append( reg_pre )
+        #        self.big_regs.append(reg_succ)
+        #        #将reg-cloud 边存储下来
+        #        rc_edge.append( (reg_pre, cloud) ) 
+        #        rc_edge.append( (cloud, reg_succ) )
+        #self.remove_nodes_from(self.regs) #移去所有的小FD
+        #self.add_edges_from()
+        ## 调试信息打印
+        #if self.debug:
+        #    print "-------debug info---------"
+        #    in_d = self.in_degree()
+        #    out_d = self.out_degree()
+        #    for eachFD in self.regs:
+        #        if in_d[eachFD] ==0:
+        #            print "0 indegree  FD: %s,its out degree %d" % (eachFD.name,out_d[eachFD])
+        #        if out_d[eachFD] ==0:
+        #            print "0 outdegree FD: %s " % eachFD.name
 
     def __add_clouds_from(self, list1):
         '''输入list1,判断list1当中的所有每一个元素的类型，之后nx.DiGraph类型才能
