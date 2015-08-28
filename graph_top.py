@@ -14,6 +14,7 @@ import networkx       as nx
 import netlist_util   as nu
 from   circuitgraph    import CircuitGraph
 from crgraph import CloudRegGraph
+from ballast import Ballaster
 ###############################################################################
 def get_graph(fname):
 
@@ -31,12 +32,13 @@ def get_graph(fname):
     cloud_reg1.info()
     
     # BALLAST
-    import ballast
-    bobj = ballast.Ballaster()
-    bobj.reg2arc(cloud_reg1)
-    print "After reg2arc "
-    print nx.info(cloud_reg1)
-    print bobj.feedbackset(cloud_reg1)
+    #bobj = Ballaster(cloud_reg1)
+    #print nx.info(cloud_reg1)
+    #print "After Reg2Arc"
+    #print nx.info(bobj.intgraph)
+    #bobj.feedbackset()
+    #print "After removed FAS "
+    #print nx.info(bobj.intgraph)
 #
 #    # S图
 #    s1=g1.get_s_graph()

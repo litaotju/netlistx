@@ -66,7 +66,8 @@ def t_HEX_NUMBER(t):
     r'\d+\'h[0-9A-F]+'
     return t
 def t_words(t):
-    '\\\\?[a-zA-Z_]+[\\\\\w\.]*'
+    #'\\\\?[a-zA-Z_]+[\\\\\w\.]*'
+    '[\\\\a-zA-Z_]?([\\\\\w]+(\[\d+\])?\.?)+' #以下划线或者字母或者斜杠开头，反正除了数字和\[\]之外都可以开头
     t.type = reserved.get(t.value,'IDENTIFIER')
     return t
 def t_NUMBER(t):

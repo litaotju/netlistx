@@ -19,35 +19,46 @@ class Ballaster:
     '''
     def __init__(self, graph):
         self.graph = graph #将一个cloud_reg绑定到self上   
-        self.intgraph , self.node_mapping = self.__convert2intgraph()
         if isinstance(graph, CloudRegGraph):
-            self.arc = self.__reg2arc()   #把FD全变成边,每一个FD为key,(precs,succs)为值的dict
-        elif not isinstance(graph , nx.DiGraph):
-            print "Ballaster Error : input graph is an CloudRegGraph"
+            # 新增的边 对应那些FDs,需要作为字典的值存储下来
+            self.arc = self.__reg2arc()
+        elif not isinstance(graph, nx.DiGraph):
+            print "Ballaster Error : input graph is not an nx.DiGraph"
             print "                  but an instance of %s " % str(graph.__class__)
             raise SystemExit()
+        # 注意整数图所存储的每一个节点都是Cloud, 没有Reg. Reg是以边的形式存在的
+        self.intgraph , self.node_mapping = self.__convert2intgraph()
     
     def __reg2arc(self):
-        '''把所有的reg节点 ignore掉，将其前后相连'''
+        '''把所有的reg节点 ignore掉，将其前后相连
+        '''
         graph = self.graph
-        arc = {}       
+        arc = {} # 记录下来每一个由FD转换成的边，以及对应的FDs
         for reg in graph.regs:
             precs = graph.predecessors(reg)
             succs = graph.successors(reg)
+            prec = None
+            succ = None
             graph.remove_node(reg)
             if len(precs) == 1 : # must be 1, if __check_rules succsfull
                 assert isinstance(precs[0], nx.DiGraph),\
-                    "reg %s %s -->> succ %s %s" % \
+                    "reg %s %s -->> prec %s %s" % \
                     (reg.cellref, reg.name, precs[0].cellref, precs[0].name)
-            else:
-                # 没有前驱结点的FD将不会保留边的信息
-                continue
+                prec = precs[0]
             if len(succs) == 1 :
-                assert isinstance(succ[0], nx.DiGraph) ,\
+                assert isinstance(succs[0], nx.DiGraph) ,\
                     "reg %s %s -->> succ %s %s" % \
-                    (reg.cellref, reg.name, succ[0].cellref, succ[0].name)
-                graph.add_edge(prec[0], succ[0])
-            arc[reg]=(precs, succs)
+                    (reg.cellref, reg.name, succs[0].cellref, succs[0].name)
+                succ = succs[0]
+                if prec: #只有两个都非空的情况下，才新加入边
+                    graph.add_edge(prec, succ)
+            # 记录下来每一条边所对对应的多个FD，将它们组成一个队列作为一个字典的值，存储起来
+            # （None,succ）表示这个点没有前驱只有后继
+            # （prec,None）表示这个点没有后继只有前驱
+            if not arc.has_key( (prec, succ) ):
+                arc[(prec, succ)]= []
+            else:
+                arc[(prec, succ)].append(reg)
         return arc
 
     def __convert2intgraph(self):
@@ -62,14 +73,15 @@ class Ballaster:
         for edge in graph.edges_iter():
             intedge = (nodes.index(edge[0]), nodes.index(edge[1]))
             intgraph.add_edge(intedge[0], intedge[1])
-        return intgraph, nodes
+        node_mapping = nodes #每一个整数对应的FD,存储在这个列表当中
+        return intgraph, node_mapping
         
     def feedbackset(self):
         '''
         step1 找出给定的 cr 图的 feedback 集合,存到数据self.graph.fas 当中去
         '''
         graph = self.graph
-        graph.fas = []
+        graph.fas = [] # 给原图增加数据属性，fas
         feedbackset_index = []
         for c in nx.simple_cycles(self.intgraph):
             print "Info: find cycle %s " % c
@@ -82,13 +94,18 @@ class Ballaster:
                 feedbackset_index.append(edge)
         for index in feedbackset_index:
             graph.fas.append( (self.node_mapping[index[0]], self.node_mapping[index[1]]) )
+        # 只是在整数图上进行移除，所以下面的操作也只是针对整数图
         self.intgraph.remove_edges_from(feedbackset_index)
+        self.feedbackset_index = feedbackset_index
         return None
         
-    def balance(self, graph):
+    def balance(self):
         '''
         step2 把无环图 balancize
         '''
+        target_graph = self.intgraph #只处理整数形式的图，每一个整数对应的节点可以在后面查到
+        assert nx.is_directed_acyclic_graph(target_graph),\
+            "The target graph you want to banlance is not a DAG"
         set1 = []
         # TODO find the cut
         graph.remove_nodes(set1)
