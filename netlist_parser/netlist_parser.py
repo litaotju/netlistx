@@ -8,7 +8,7 @@ import sys
 import os
 import class_circuit as cc
 import netlist_lexer
-
+import re
 tokens=netlist_lexer.tokens
 ###############################################################################
 import yacc
@@ -164,7 +164,14 @@ def p_signal_element(p):
     if len(p)==3:
         p[0]=cc.signal(name=p[1],vector=p[2])
     else:
-        p[0]=cc.signal(name=p[1])
+        # 匹配，使得连在一起的 ID-VEC：ID[\d+]等够将ID VEC分开
+        linked_id_vec = re.match("(.+)(\[\d+\])$",p[1])
+        if linked_id_vec is not None:
+            iden = linked_id_vec.groups()[0]
+            vec = linked_id_vec.groups()[1]
+            p[0] = cc.signal( name = iden ,vector = vec)
+        else:
+            p[0]=cc.signal(name=p[1])
 def p_defparam_list(p):
     '''defparam_list  : defparam_list defparam_stm
                       | defparam_stm

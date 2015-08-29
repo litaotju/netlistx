@@ -66,8 +66,9 @@ def t_HEX_NUMBER(t):
     r'\d+\'h[0-9A-F]+'
     return t
 def t_words(t):
-    # BUGY:把[\d]加入标识符会造成，端口信号的name和string完全相同
-    '[\\\\]?(\w+(\[\d+\])?\.)*\w+$'
+    # NOTE:把[\d]加入标识符会造成，端口信号的name和string完全相同
+    #      所以需要在Parser中额外的处理PORT的IDENTIFIER,看结尾带有[\d+]最后一个就是向量
+    '[\\\\a-zA-Z_]?([\\\\\w]+(\[\d+\])?\.?)+'
     t.type = reserved.get(t.value,'IDENTIFIER')
     return t
 def t_NUMBER(t):
