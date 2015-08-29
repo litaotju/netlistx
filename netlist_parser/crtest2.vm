@@ -1,0 +1,88 @@
+
+`timescale 100 ps/100 ps
+module crtest (
+  clk,
+  reset,
+  in,
+  out
+)
+;
+input clk ;
+input reset ;
+input [2:0] in ;
+output [2:0] out ;
+wire clk ;
+wire reset ;
+wire [2:0] in ;
+wire [2:0] out_z;
+wire [2:0] out ;
+
+wire [2:0] \multline[1].m.inter;
+// @8:42
+  FDR \multline[1].m.triple[0].F_Z  (
+	.Q(\multline[1].m.inter [0]),
+	.D(in[0]),
+	.C(clk),
+	.R(reset)
+);
+// @8:42
+  FDR \multline[1].m.triple[1].F_Z  (
+	.Q(\multline[1].m.inter [1]),
+	.D(in[1]),
+	.C(clk),
+	.R(reset)
+);
+// @8:42
+  FDR \multline[1].m.triple[2].F_Z  (
+	.Q(\multline[1].m.inter [2]),
+	.D(in[2]),
+	.C(clk),
+	.R(reset)
+);
+
+// @8:42
+  LUT3_L \multline[1].m.triple[0].F_RNIRQN41  (
+	.I0(\multline[1].m.inter [0]),
+	.I1(\multline[1].m.inter [2]),
+	.I2(\multline[1].m.inter [1]),
+	.LO(out_z[0])
+);
+defparam \multline[1].m.triple[0].F_RNIRQN41 .INIT=8'hA3;
+// @8:42
+  LUT2_L \multline[1].m.triple[2].F_RNIJVIP  (
+	.I0(\multline[1].m.inter [2]),
+	.I1(\multline[1].m.inter [1]),
+	.LO(out_z[1])
+);
+defparam \multline[1].m.triple[2].F_RNIJVIP .INIT=4'h1;
+
+// @8:53
+  LUT2_L \multline[1].m.andout  (
+	.I0(\multline[1].m.inter [0]),
+	.I1(\multline[1].m.inter [1]),
+	.LO(out_z[2])
+);
+defparam \multline[1].m.andout .INIT=4'h8;
+
+FDR fd2[0](
+	.D(out_z[0]),
+	.Q(out[0]),
+	.R(reset),
+	.C(clk)
+);
+
+FDR fd2[1](
+	.D(out_z[1]),
+	.Q(out[1]),
+	.R(reset),
+	.C(clk)
+);
+FDR fd2[2](
+	.D(out_z[2]),
+	.Q(out[2]),
+	.R(reset),
+	.C(clk)
+);
+
+endmodule /* crtest */
+

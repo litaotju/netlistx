@@ -66,8 +66,8 @@ def t_HEX_NUMBER(t):
     r'\d+\'h[0-9A-F]+'
     return t
 def t_words(t):
-    #'\\\\?[a-zA-Z_]+[\\\\\w\.]*'
-    '[\\\\a-zA-Z_]?([\\\\\w]+(\[\d+\])?\.?)+' #以下划线或者字母或者斜杠开头，反正除了数字和\[\]之外都可以开头
+    # BUGY:把[\d]加入标识符会造成，端口信号的name和string完全相同
+    '[\\\\]?(\w+(\[\d+\])?\.)*\w+$'
     t.type = reserved.get(t.value,'IDENTIFIER')
     return t
 def t_NUMBER(t):
@@ -148,14 +148,9 @@ if __name__=='__main__':
     if len(sys.argv)==1:
         print "Just handle one simple verilog netlist in os.get_cwd() dir"
         fname=raw_input("plz enter the file name:")
-        try:
-            fobj=open(fname,'r')
-        except IOError,e:
-            print "Error: file open error:",e
-        else:
+        with open(fname,'r') as fobj:
             all_lines=fobj.read()
             lex.runmain(lexer,all_lines)
-            fobj.close()
     elif sys.argv[1]=='many': 
         parent_dir=os.getcwd()
         while(1):
