@@ -12,9 +12,10 @@ display_pipo = include_pipo
 import matplotlib.pylab as plt
 import networkx       as nx
 import netlist_util   as nu
-from   circuitgraph    import CircuitGraph
+from circuitgraph    import CircuitGraph
 from crgraph import CloudRegGraph
 from ballast import Ballaster
+from exception import *
 ###############################################################################
 def get_graph(fname):
 
@@ -32,13 +33,13 @@ def get_graph(fname):
     cloud_reg1.info()
     
     # BALLAST
-    #bobj = Ballaster(cloud_reg1)
-    #print nx.info(cloud_reg1)
-    #print "After Reg2Arc"
-    #print nx.info(bobj.intgraph)
-    #bobj.feedbackset()
-    #print "After removed FAS "
-    #print nx.info(bobj.intgraph)
+    ballas = Ballaster(cloud_reg1)
+    cloud_reg1.info()
+    print "After Reg2Arc"
+    print nx.info(ballas.intgraph)
+    ballas.feedbackset()
+    print "After removed FAS "
+    print nx.info(ballas.intgraph)
 #
 #    # S图
 #    s1=g1.get_s_graph()

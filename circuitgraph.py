@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import class_circuit as cc
 from sgraph import s_graph
 
-
+#  TODO :GND和VCC 原语在图形建模中的注意事项，以及如何建模
 class CircuitGraph(nx.DiGraph):
     '''
        This class is a sonclass of nx.DiGraph and construct with a m_list[]

@@ -10,7 +10,7 @@ Created on Mon Aug 24 13:16:27 2015
 import networkx as nx
 import class_circuit as cc
 from crgraph import CloudRegGraph
-
+from exception import *
 
 class Ballaster:
     '''
@@ -25,7 +25,7 @@ class Ballaster:
         elif not isinstance(graph, nx.DiGraph):
             print "Ballaster Error : input graph is not an nx.DiGraph"
             print "                  but an instance of %s " % str(graph.__class__)
-            raise SystemExit()
+            raise BallastError
         # 注意整数图所存储的每一个节点都是Cloud, 没有Reg. Reg是以边的形式存在的
         self.intgraph , self.node_mapping = self.__convert2intgraph()
     
@@ -95,8 +95,8 @@ class Ballaster:
         for index in feedbackset_index:
             graph.fas.append( (self.node_mapping[index[0]], self.node_mapping[index[1]]) )
         # 只是在整数图上进行移除，所以下面的操作也只是针对整数图
-        self.intgraph.remove_edges_from(feedbackset_index)
-        self.feedbackset_index = feedbackset_index
+        self.intgraph.remove_edges_from(feedbackset_index)  
+        self.intgraph.fas = feedbackset_index
         return None
         
     def balance(self):
@@ -124,7 +124,7 @@ if __name__ == '__main__':
     g1.add_path([2,3,4,2])
     b1 = Ballaster(g1)
     b1.feedbackset()
-    print g1.fas
+    print "FAS is %s" % g1.fas
     g2 = nx.DiGraph()
     g2.add_path([1,0,5,1])
     g2.add_path([5,1,3,5])
@@ -132,5 +132,5 @@ if __name__ == '__main__':
     g2.add_path([5,4,3,5])
     b2 = Ballaster(g2)
     b2.feedbackset()
-    print g2.fas
+    print "FAS is %s" % g2.fas
     
