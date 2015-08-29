@@ -233,7 +233,7 @@ def get_clk_in_fd(all_fd_dict,verbose=False):
         "AssertError: has %d clock domain\n %s " % (len(clock_list),\
             ",".join(clock_list) )
     if verbose:
-        print "Info:all clock signals are as follows:"
+        print "Info:all clock signals are as follows:\n    ",
         for clock in  clock_list:
             print clock
     print "Note: get_all_clock() successfully !"
@@ -251,7 +251,7 @@ def get_ce_in_fd(all_fd_dict,verbose=False):
                  ce_signal_list.append(current_ce)
     if verbose:
         if ce_signal_list:
-            print "Info: all ce signal are as follows:"
+            print "Info: all ce signal are as follows:\n    ",
             for ce in ce_signal_list:    
                 print ce
         else:
@@ -286,10 +286,10 @@ def get_reset_in_fd(all_fd_dict,verbose=False):
             if current_reset not in reset_list:
                 reset_list.append(current_reset)
     if verbose:
-        print "Info: all the Async Reset Signal Are:"
+        print "Info: all the Async Reset Signal Are:\n    ",
         for eachAsync in async_reset_list:
             print eachAsync+",  "
-        print "Info: all the Sync Reset Signal Are:"
+        print "\nInfo: all the Sync Reset Signal Are:\n    ",
         for eachSync  in reset_list:
             print eachSync +",  "
     print "Note: get_reset_in_fd() successfully"

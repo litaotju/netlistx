@@ -38,6 +38,7 @@
     <Compile Include="circuitgraph.py" />
     <Compile Include="class_circuit.py" />
     <Compile Include="crgraph.py" />
+    <Compile Include="exception.py" />
     <Compile Include="graph_top.py" />
     <Compile Include="graph_util.py" />
     <Compile Include="netlist_parser\lex.py" />

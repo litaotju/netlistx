@@ -8,6 +8,7 @@ address:Tianjin University
 import networkx as nx
 import class_circuit as cc
 from circuitgraph import CircuitGraph
+from exception import *
 ###############################################################################
 
 
@@ -25,7 +26,7 @@ class CloudRegGraph(nx.DiGraph):
         assert isinstance(basegraph, CircuitGraph) ,"%s" % str(basegraph.__class__)
         
         # 调试的时候设置打印信息，调试完请改回False
-        self.debug = True 
+        self.debug = False
         
         # 将所有的组合逻辑找到，相连接的归为一个Cloud
         self.__get_cloud_reg_graph(basegraph) 
@@ -37,6 +38,7 @@ class CloudRegGraph(nx.DiGraph):
             self.info(True)
         # 确保构造出来的CloudRegGraph符合rules
         self.__check_rules()
+        self.__check_rules2()
 
     def __get_cloud_reg_graph(self, basegraph):
         ''' 
@@ -50,6 +52,7 @@ class CloudRegGraph(nx.DiGraph):
         # g2是一个用basegraph中的点和边建立的无向图，
         # 所以基本的节点和basegraph的节点是完全一致的，
         # 每一个节点都指向了m_list当中的原语的  cc.circuit_module() 对象的实例化
+        print "Process: crgraph__get_cloud_reg_graph()...."
         g2=nx.Graph()
         g2.add_nodes_from(basegraph.prim_vertex_list)
         for eachEdge in basegraph.prim_edge_list:
@@ -153,24 +156,21 @@ class CloudRegGraph(nx.DiGraph):
             if self.debug == True: 
                 print "    ---- Cloud %d is empty cloud :----" % cloud_num
         if self.debug:
-            print "------------info- Before __merge_fd_cloud()-----------------:"
+            print "------------Debug info- Before __merge_fd_cloud()-----------------:"
             print "     %d cloud, %d regs, %d edges" %\
                 (len(self.clouds),len(self.regs),self.number_of_edges() )
         # ---------------------------------------------------------------------
         #basegraph添加新的cloud_reg_graph属性，也就是将两者绑定
         basegraph.cloud_reg_graph = self
-        print "Note: get_cloud_reg_graph()"
+        print "Note: get_cloud_reg_graph() succsfully"
         return None
     
-    #---------------------------------------------------------------------
-    # UNDONE __merge_fd_cloud()函数
-    #---------------------------------------------------------------------
     def __merge_fd_cloud(self):
         '合并多个cloud'
         # ------------------------------------------------------------------
         # step 1 对每一个多扇出的FD，将FD的多个扇出succ cloud合并成一个大的cloud
         for eachFD in self.regs:
-            print "Processing %s ..." % eachFD.name
+            print "    Processing %s ..." % eachFD.name
             # 不论有没有扇入只有0-1个扇出的时候，查找下一个FD
             # 有多于1个的扇出的时候，将它的后继节点的所有cloud合并为一个cloud
             # 合并的大cloud的前驱结点，也就是与同级FD相邻的FD与大cloud相连接
@@ -188,14 +188,16 @@ class CloudRegGraph(nx.DiGraph):
                 succ_fds = succ_fds.union( set(self.successors(succ_cloud)) )
                 self.remove_node(succ_cloud)
             self.add_node(big_cloud)
-            print "%d nodes in cuurent graph" % self.number_of_nodes()
-            print "%d egdes before adding edges-to bigclouds" % self.number_of_edges()
+            if self.debug:
+                print "        %d nodes in cuurent graph" % self.number_of_nodes()
+                print "        %d egdes before adding edges-to bigclouds" % self.number_of_edges()
             for pre_fd in pre_fds:
                 self.add_edge(pre_fd, big_cloud)
             for succ_fd in succ_fds:
                 #self.add_edge(big_cloud, pre_fd) ######FUCK THIS BUGGGG
                 self.add_edge(big_cloud, succ_fd)
-            print "%d edges in current graph" % self.number_of_edges()
+            if self.debug:
+                print "        %d edges in current graph" % self.number_of_edges()
         # ------------------------------------------------------------------
         # step2 合并所有的FD 成为一个REG
         #self.big_regs = []
@@ -258,14 +260,38 @@ class CloudRegGraph(nx.DiGraph):
                 print "Crgrpah Rules Error : %s %s has %d >1 predecessors" %\
                     (reg.cellref, reg.name, npre)
                 print ",".join([ str(eachPre.__class__) for eachPre in self.predecessors(reg)])
-                raise AssertionError
+                raise CrgraphRuleError
             if  nsuc > 1:
                 print "Crgrpah Rules Error : %s %s has  %d >1 successors" %\
                     (reg.cellref, reg.name, nsuc)
                 print ",".join([ str(eachSuc.__class__) for eachSuc in self.successors(reg)])
-                raise AssertionError
-        print "Info:Check Rules of cloud_reg_graph succfully"
-        
+                raise CrgraphRuleError
+        print "Info:Check Rules of cloud_reg_graph succfully,\n    none of FD has more than 2 degree"
+
+    def __check_rules2(self):
+        "确保图中的每一条边都是FD-Cloud边，也就是每一条边含有两种元素,"
+        for edge in self.edges_iter():
+            has_fd = False
+            has_cloud = False
+            for i in range(2):
+                if isinstance(edge[i], cc.circut_module) :
+                    if has_fd:
+                        print "Error: Crgraph ChcekRules2 Error ,Non FD-Cloud edge found, its FD-FD Edge %s" %(str (edge))
+                        raise CrgraphRuleError
+                    has_fd =True
+                    fd = edge[i]
+                if isinstance(edge[i], nx.DiGraph) and edge[i] in self.big_clouds:
+                    if has_cloud:
+                        print 'Error: Crgraph CheckRules2 Error ,Non FD-Cloud edge found, its Cloud-Cloud Edge %s' % ( str(edge) )
+                        raise CrgraphRuleError
+                    has_cloud = True
+                    cloud = edge[i]
+            if not (has_fd and has_cloud): #没有FD或者没有Cloud，根据前面的情况，肯定有一个cloud或者一个fd存在
+                print "Error: Crgraph CheckRules2 Error, egde %s\n    has %d Cloud %d FD" \
+                            % ( str(edge),int(has_cloud),int(has_fd) )
+                raise CrgraphRuleError
+        print "Info: Check Rules2 of cloud_reg_graph succfully,\n    every edge is FD-cloud edge"
+
     def paint(self):
         label_dict={}
         for eachCloud in self.big_clouds:

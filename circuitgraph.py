@@ -146,7 +146,7 @@ class CircuitGraph(nx.DiGraph):
     #------------------------------------------------------------------------------
 
     def info(self, verbose = False) :
-        print "---- module %s -->> CircuitGraph info:----- " % self.m_list[0].name
+        print "----- module %s -- CircuitGraph info:----- " % self.m_list[0].name
         print nx.info(self)
         if verbose:
             print "Info :%d nodes in graph. Node Set Are:"% self.number_of_nodes()

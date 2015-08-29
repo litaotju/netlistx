@@ -11,8 +11,7 @@ for root,dirs,files in os.walk(os.getcwd()):
     
 # 读取当前目录下的\FD_SRC目录里面的verilog文件
 for fdverilog in os.listdir(os.getcwd()+"\FD_SRC"):
-    
-
+    pass
 fobj_scan_cell=open('scan_cells.v','w')
 in_out_del='''\
     input SCAN_EN;
