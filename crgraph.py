@@ -59,13 +59,18 @@ class CloudRegGraph(nx.DiGraph):
             g2.add_edge(eachEdge[0][0],eachEdge[0][1])
         #------------------------------------------------------
         #step1 找出所有FD节点，并移去FD节点
-        fd_list=[]
+        fd_list = []
+        gnd_vcc = []
         for eachFD in basegraph.prim_vertex_list:
             if eachFD.m_type == 'FD' :
                 fd_list.append(eachFD)
+            elif eachFD.cellref in ['GND','VCC']:
+                gnd_vcc.append(eachFD)
+                print "Info: %s %s found" %(eachFD.cellref, eachFD.name)
         print "Info:%d fd has been found " % len(fd_list)
         g2.remove_nodes_from(fd_list)
-
+        if gnd_vcc:
+            g2.remove_nodes_from(gnd_vcc)
         #------------------------------------------------------
         #step2 找出连通分量,建立子图
         compon_list = []
