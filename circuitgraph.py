@@ -26,44 +26,42 @@ class CircuitGraph(nx.DiGraph):
     '''
 
     def __init__(self, m_list, include_pipo = True):
+        '''Para:
+                m_list : cc.circuit_module list, produced by netlist_parser
+                include_pipo : indict that if the graph produced will have pipo vertex and edge
+        '''
         nx.DiGraph.__init__(self)
         self.name = m_list[0].name
         self.m_list = m_list
         self.include_pipo = include_pipo
-        self.__add_edge_vertex_from_m_list(m_list, self.include_pipo)
+        self.__add_vertex_from_m_list()
+        self.__get_edge_from_prim_list()
         self.cloud_reg_graph = None
         self.s_graph = None
         print "Note: circuit_graph() build successfully"
 
-    def __add_edge_vertex_from_m_list(self, m_list, include_pipo):
-        '''
-            now we cannot handle the graph construction problem with concering DSP
-            because, in hardware fault injection emulaiton process, when signal passing
-            DSP, we cannot compute the signal correctly
-        '''
-        print "Process: searching the vertex and edges of netlist..."
+    def __add_vertex_from_m_list(self):
+
+        print "Process: searching the vertex of graph from m_list..."
         pipo_vertex_list=[]
         prim_vertex_list=[]
-
-        pi_edge_list=[]
-        po_edge_list=[]
-        prim_edge_list=[]
-
         vertex_set=[]
-        edge_set=[]
         ###########################################################################
         #vertex
-        prim_vertex_list=m_list[1:]
-        for eachPrim in m_list[1:]:
+        prim_vertex_list = self.m_list[1:]
+        for eachPrim in self.m_list[1:]:
+            #now we cannot handle the graph construction problem with concering DSP
+            #because, in hardware fault injection emulaiton process, when signal passing
+            #DSP, we cannot compute the signal correctly
             assert eachPrim.cellref not in ['DSP48','DSP48E1','DSP48E'],\
-                "%s found %s " % (eachPrim.cellref, eachPrim.name)
+                "CircuitGraph Error: %s found %s " % (eachPrim.cellref, eachPrim.name)
             self.add_node(eachPrim, node_type = eachPrim.cellref, name = eachPrim.name)
-        if include_pipo:
-            pipo_vertex_list=m_list[0].port_list
+        pipo_vertex_list = self.m_list[0].port_list
+        if self.include_pipo:
             for eachPipo in pipo_vertex_list:
                 self.add_node(eachPipo, node_type = eachPipo.port_type, name = eachPipo.name)
-
         vertex_set = prim_vertex_list + pipo_vertex_list
+
         self.prim_vertex_list = prim_vertex_list
         self.pipo_vertex_list = pipo_vertex_list
         self.vertex_set = vertex_set
@@ -71,7 +69,6 @@ class CircuitGraph(nx.DiGraph):
         #edge
         #edge_set的每一个元素是 一个([],[],{})类型的变量,
         #第一个列表存储prim,第二个存储port,第三个存储连接信号
-        self.__get_edge_from_prim_list()
         #---------------------------pipo edge ------------------------------------
         #if include_pipo:
         #    print "    Process: searching PI and PO edges..."
@@ -146,18 +143,27 @@ class CircuitGraph(nx.DiGraph):
     #------------------------------------------------------------------------------
 
     def __get_edge_from_prim_list(self):
-        '''edge的新方法'''
+        '''从prim_list当中获得边的连接的信息。
+            如果self.include_pipo为真，此函数不仅将与PIPO相连接的边加入到生成的图中
+            而且将为生成的CircuitGraph对象增加self.pi_edge_list和self.po_edge_list
+            不论self.include_pipo为真与否，都会增加self.prim_edge_list和self.edge_set
+        '''
         piname = {} #PI　instances dict keyed by name
         poname = {}
         for primary in self.pipo_vertex_list:
             if primary.port_type == 'input':
                 piname[primary.name] = primary
-            else:
-                assert primary.port_type == 'output',"%s %s" % (primary.name,primary.port_type) 
-                poname[primary.name] = primary
+                continue
+            elif not primary.port_type == 'output':
+                print "Error :found an primary port neither input nor output "
+                print "       %s %s" % (primary.name,primary.port_type) 
+                raise CircuitGraphError
+            poname[primary.name] = primary
         pi_dict = {}  # pi_dict[wire1] = {'source':pi,'sink':[]}
         po_dict = {}  # po_dict[wire1] = {'source':(),'sink':po }
         cnt_dict = {} # cnt_dict[wire1] = {'source':(),'sink':[(prim,port),()...]}
+
+        print "Processing: searching edges from prim_vertex_list..."
         for eachPrim in self.prim_vertex_list:
             for eachPort in eachPrim.port_list:
                 #assert每一个端口里面的wire都是单比特信号
@@ -180,11 +186,16 @@ class CircuitGraph(nx.DiGraph):
                     continue
                 # 如果这个信号的名字包含在PO名字里面
                 if poname.has_key(wire_name):
+                    if not (eachPort.port_type =='output'):
+                        #output的那个wire名字可能作为一个模块的输出wire_name，
+                        #然后连接到其他模块的输入上面,这种连接就不需要使用po_edge来记录，只需要跳过就好了
+                        continue
                     if not po_dict.has_key(wire):
                         po_dict[wire] = {'source':(),'sink':poname[wire_name]}
                     if po_dict[wire]['source']: #如果这个PO的bit位信号，已经有source了
-                        print "wire: %s has more than 1 source. 2nd source is %s %s"\
-                            % (wire, eachPrim.cellref, eachPrim.name)
+                        print "wire: PO %s has more than 1 source. 1st source is %s %s.2nd source is %s %s"\
+                            % (wire, po_dict[wire]['source'][0].name,po_dict[wire]['source'][1].port_name,\
+                               eachPrim.cellref, eachPrim.name)
                         raise CircuitGraphError
                     po_dict[wire]['source'] = (eachPrim, eachPort)
                     continue
@@ -193,8 +204,9 @@ class CircuitGraph(nx.DiGraph):
                     cnt_dict[wire] = {'source':(),'sink':[] }
                 if eachPort.port_type == 'output':
                     if cnt_dict[wire]['source']: #如果这个信号已经有一个source了
-                        print "wire: %s has more than 1 source. 2nd source is %s %s"\
-                            % (wire, eachPrim.cellref, eachPrim.name)
+                        print "wire: %s has more than 1 source.1st source is %s %s .2nd source is %s %s"\
+                            % (wire, cnt_dict[wire]['source'][0].name, cnt_dict[wire]['source'][1].port_name,\
+                               eachPrim.cellref, eachPrim.name) 
                         raise CircuitGraphError
                     cnt_dict[wire]['source'] = (eachPrim, eachPort)
                     continue
@@ -205,7 +217,7 @@ class CircuitGraph(nx.DiGraph):
                 print "Error: wire cnt to neither input nor output port. %s %s %s"\
                     % (eachPrim.name ,eachPort.name, eachPort.port_type) 
                 raise CircuitGraphError
-
+        # ------------------------------------------------------------------------
         # prim_edge的找出
         self.prim_edge_list =[]
         for eachWire, SourceSinkDict in cnt_dict.iteritems():
@@ -219,16 +231,22 @@ class CircuitGraph(nx.DiGraph):
                     (eachWire, source.cellref, source.name, source.port_name)
                 raise CircuitGraphError
             for eachSink in sinks:
-                self.add_edge(source, eachSink[0],\
-                    port_pair = (source, eachSink[1]),\
+                self.add_edge(source[0], eachSink[0],\
+                    port_pair = (source[1], eachSink[1]),\
                     connection = eachWire)
-                prim_edge = [ [source, eachSink[0]],[source, eachSink[1]], eachWire ]
+                prim_edge = [ [source[0], eachSink[0]],[source[1], eachSink[1]], eachWire ]
                 self.prim_edge_list.append(prim_edge)
-        
+        self.edge_set = []
+
+        # 如果不包含PIPO，那么现在就退出函数，不将与PIPO相连接的边加入到图中
+        if not self.include_pipo:
+            self.edge_set = self.prim_edge_list
+            print "Note: get all edges succsfully, WARING : NO PIPO EDGES IN GRAPH"
+            return None
+        # ------------------------------------------------------------------------
         # pipo_edge的找出
         self.pi_edge_list = []
         self.po_edge_list = []
-        self.edge_set = []
         for eachWire,piConnect in pi_dict.iteritems():
             source = piConnect['source']  # cc.port instance
             sinks = piConnect['sink']
@@ -239,16 +257,16 @@ class CircuitGraph(nx.DiGraph):
                 pi_edge = [ [source,eachSink[0]], [source, eachSink[1]],eachWire]
                 self.pi_edge_list.append(pi_edge)
         for eachWire, poConnect in po_dict.iteritems():
-            source = poConnect['source']
+            source = poConnect['source'] # a tuple (prim, port)
             sink = poConnect['sink']   #cc.port instance
-            self.add_edge(source, sink,\
-                          port_pair = (source, sink),\
+            self.add_edge(source[0], sink,\
+                          port_pair = (source[1], sink),\
                           connection= eachWire)
-            po_edge = [ [source, sink], [source, sink], eachWire]
+            po_edge = [ [source[0], sink], [source[1], sink], eachWire]
             self.po_edge_list.append(po_edge)
         # 将所有的Edge合并到self.edge_set属性当中
         self.edge_set = self.pi_edge_list + self.po_edge_list + self.prim_edge_list
-        print "Note : get all the edges succsfully."
+        print "Note : get all the edges succsfully"
         return None
     #------------------------------------------------------------------------------
     def info(self, verbose = False) :
@@ -370,19 +388,24 @@ def __test():
     fname = raw_input("plz enter file name:")
     info = nu.vm_parse(fname)
     m_list = info['m_list']
-    for eachPrim in m_list:
-        eachPrim.__print__()
+
     nu.mark_the_circut(m_list)
     nu.rules_check(m_list)
     
     g1 = CircuitGraph(m_list, include_pipo = True)
     g2 = CircuitGraph(m_list, include_pipo = False)
+    if len(m_list) <= 20:
+        for eachPrim in m_list:
+            eachPrim.__print__()
+            verbose_info =True
+    else:
+        verbose_info = False
+        print "Info: THE m_list is too long >20. should not inspected by hand. ignore..."
     print "----NO PIPO-----------"
-    g2.info()
+    g2.info(verbose_info)
     print "----Including PIPO----"    
-    g1.info()
-    plt.figure("Original_Circut")
-    g1.paint()
+    g1.info(verbose_info)
+    #g1.paint()
     return True
 #------------------------------------------------------------------------------
 if __name__ =='__main__':

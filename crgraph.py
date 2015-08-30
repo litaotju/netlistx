@@ -353,7 +353,7 @@ def __test():
     g2 = get_graph_from_raw_input() # 输入netlist 文件，得到 CircuitGraph对象g2
     g2.info() #打印原图的详细信息
     cr2 = CloudRegGraph(g2) 
-    cr2.info(True)
+    cr2.info()
     plt.figure( cr2.name+"_crgraph")
     cr2.paint()
 if __name__ == '__main__':
