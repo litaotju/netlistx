@@ -43,7 +43,7 @@ class CloudRegGraph(nx.DiGraph):
         print "FD's fanout stats are :"
         print "    fan-out    fd-number"
         for outdegree , frequency in stat.iteritems():
-            print "    %d    %d" % (outdegree, frequency)
+            print "    %d       %d" % (outdegree, frequency)
         # 将小的cloug 变为一个大的cloud函数里面，为图增加了 self.big_cloud的属性
         self.__merge_cloud()               
         if self.debug:
