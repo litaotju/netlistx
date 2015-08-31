@@ -22,6 +22,8 @@ class Ballaster:
         if isinstance(graph, CloudRegGraph):
             # 新增的边 对应那些FDs,需要作为字典的值存储下来
             self.arc = self.__reg2arc()
+            print "After __reg2arc:"
+            print nx.info(self.graph)
         elif not isinstance(graph, nx.DiGraph):
             print "Ballaster Error : input graph is not an nx.DiGraph"
             print "                  but an instance of %s " % str(graph.__class__)
@@ -108,17 +110,15 @@ class Ballaster:
             "The target graph you want to banlance is not a DAG"
         set1 = []
         # TODO find the cut
-        graph.remove_nodes(set1)
+        target_graph.remove_nodes_from(set1)
         return set1
 
     def check(self, graph):
         pass
     
-    
-#------------------------------------------------------------------------------    
-if __name__ == '__main__':
-    'test the ballaster'    
-    
+def __test_with_intgraph():
+    '''使用整数图来测试Ballaster的算法
+    '''
     g1 = nx.DiGraph()
     g1.add_path([0,1,2,0])
     g1.add_path([2,3,4,2])
@@ -132,5 +132,12 @@ if __name__ == '__main__':
     g2.add_path([5,4,3,5])
     b2 = Ballaster(g2)
     b2.feedbackset()
+    b2.balance()
     print "FAS is %s" % g2.fas
+#------------------------------------------------------------------------------    
+if __name__ == '__main__':
+    'test the ballaster'    
+    __test_with_intgraph()
+
+
     
