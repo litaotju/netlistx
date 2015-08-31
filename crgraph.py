@@ -46,7 +46,6 @@ class CloudRegGraph(nx.DiGraph):
             return: None
             add data attr -->> basegraph.cloud_reg_graph
             Model the circuit graph to a cloud(combinational cone)_register(FDs) graph
-            add a .cloud_reg_graph data to basegraph.
             注意：1.现有的cloud_register图中没有包含pipo节点，只是prim的节点
         '''
         # g2是一个用basegraph中的点和边建立的无向图，
@@ -204,37 +203,13 @@ class CloudRegGraph(nx.DiGraph):
             if self.debug:
                 print "        %d edges in current graph" % self.number_of_edges()
         # ------------------------------------------------------------------
-        # step2 合并所有的FD 成为一个REG
-        #self.big_regs = []
+        # step2 合并每一个FD的所有后继Cloud节点，把他们组成大的Big_Cloud
         self.big_clouds = []
-        #rc_edge = [] # reg-cloud edges found
         for node in self.nodes_iter(): #总终图上的nx.DiGraph类型只能是cloud
             if isinstance(node , nx.DiGraph):
                 cloud = node   
                 self.big_clouds.append( cloud )
-        #        # cloud前与后的寄存器序列
-        #        reg_pre = nx.DiGraph()
-        #        reg_succ = nx.DiGraph()                
-        #        reg_pre.add_nodes_from( self.predecessors(cloud) )
-        #        reg_succ.add_nodes_from( self.successors(cloud) )
-        #        # 将前一级寄存器
-        #        self.big_regs.append( reg_pre )
-        #        self.big_regs.append(reg_succ)
-        #        #将reg-cloud 边存储下来
-        #        rc_edge.append( (reg_pre, cloud) ) 
-        #        rc_edge.append( (cloud, reg_succ) )
-        #self.remove_nodes_from(self.regs) #移去所有的小FD
-        #self.add_edges_from()
-        ## 调试信息打印
-        #if self.debug:
-        #    print "-------debug info---------"
-        #    in_d = self.in_degree()
-        #    out_d = self.out_degree()
-        #    for eachFD in self.regs:
-        #        if in_d[eachFD] ==0:
-        #            print "0 indegree  FD: %s,its out degree %d" % (eachFD.name,out_d[eachFD])
-        #        if out_d[eachFD] ==0:
-        #            print "0 outdegree FD: %s " % eachFD.name
+        return None
 
     def __add_clouds_from(self, list1):
         '''输入list1,判断list1当中的所有每一个元素的类型，之后nx.DiGraph类型才能

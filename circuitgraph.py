@@ -245,6 +245,7 @@ class CircuitGraph(nx.DiGraph):
             return None
         # ------------------------------------------------------------------------
         # pipo_edge的找出
+        print "Processing: searching PIPO edges from m_list..."
         self.pi_edge_list = []
         self.po_edge_list = []
         for eachWire,piConnect in pi_dict.iteritems():
@@ -286,7 +287,7 @@ class CircuitGraph(nx.DiGraph):
                 print "    (%s -> %s):(wire %s, port:%s->%s)" % \
                 (eachEdge[0].name,eachEdge[1].name,connection[eachEdge]\
                 ,port_pair[eachEdge][0].name,port_pair[eachEdge][1].name)
-        return True
+        return None
     #------------------------------------------------------------------------------
     
     def paint(self):
@@ -315,7 +316,7 @@ class CircuitGraph(nx.DiGraph):
         nx.draw_networkx_edges(self,ps)
         nx.draw_networkx_labels(self,ps,labels=label_dict)
         plt.savefig("test_output\\"+self.m_list[0].name+"_original_.png")
-        return True
+        return None
         
 
     ###############################################################################
