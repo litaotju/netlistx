@@ -31,8 +31,21 @@ class CloudRegGraph(nx.DiGraph):
         # 将所有的组合逻辑找到，相连接的归为一个Cloud
         self.__get_cloud_reg_graph(basegraph) 
         
+        # 在merge_cloud之前统计FD的扇出信息
+        out_degree = self.out_degree()
+        fd_outdegree = { reg: out_degree[reg] for reg in self.regs}
+        stat = {}
+        for degree in fd_outdegree.values():
+            if not stat.has_key(degree):
+                stat[degree] = 1
+            else:
+                stat[degree] += 1
+        print "FD's fanout stats are :"
+        print "    fan-out    fd-number"
+        for outdegree , frequency in stat.iteritems():
+            print "    %d    %d" % (outdegree, frequency)
         # 将小的cloug 变为一个大的cloud函数里面，为图增加了 self.big_cloud的属性
-        self.__merge_fd_cloud()               
+        self.__merge_cloud()               
         if self.debug:
             print "------------info- After __merge_fd_cloud():------------------"
             self.info(True)
@@ -126,7 +139,8 @@ class CloudRegGraph(nx.DiGraph):
                       # 特殊的边，包括其他原语的输出连接到D触发器的CE上
                       # 在CircuitGraph构造函数中，rules_check不检查CE信号，允许内部CE
                       # 但是这些信号对于构建CR图是没有作用的，所以这些边就不再加载到CR图中
-                      print "Info: special edge  %s %s" % (x[0][0].name, x[0][1].name)
+                      if self.debug:
+                        print "Info: special edge  %s %s" % (x[0][0].name, x[0][1].name)
                       special_edges.append(x)
 
         #------------------------------------------------------
@@ -169,12 +183,14 @@ class CloudRegGraph(nx.DiGraph):
         print "Note: get_cloud_reg_graph() succsfully"
         return None
     
-    def __merge_fd_cloud(self):
+    def __merge_cloud(self):
         '合并多个cloud'
         # ------------------------------------------------------------------
         # step 1 对每一个多扇出的FD，将FD的多个扇出succ cloud合并成一个大的cloud
+        print "Processing: merging cloud into big cloud "
         for eachFD in self.regs:
-            print "    Processing %s ..." % eachFD.name
+            if self.debug:
+                print "    Processing %s ..." % eachFD.name
             # 不论有没有扇入只有0-1个扇出的时候，查找下一个FD
             # 有多于1个的扇出的时候，将它的后继节点的所有cloud合并为一个cloud
             # 合并的大cloud的前驱结点，也就是与同级FD相邻的FD与大cloud相连接
@@ -329,8 +345,10 @@ def __test():
     g2.info() #打印原图的详细信息
     cr2 = CloudRegGraph(g2) 
     cr2.info()
-    plt.figure( cr2.name+"_crgraph")
-    cr2.paint()
+
+    if cr2.number_of_nodes() <= 20:
+        plt.figure( cr2.name+"_crgraph")
+        cr2.paint()
 if __name__ == '__main__':
     import matplotlib.pylab as plt
     __test()

@@ -45,6 +45,8 @@
     <Compile Include="netlist_parser\netlist_lexer.py" />
     <Compile Include="netlist_parser\netlist_parser.py" />
     <Compile Include="netlist_parser\parsetab.py" />
+    <Compile Include="netlist_parser\test\class_circuit.py" />
+    <Compile Include="netlist_parser\test\__init__.py" />
     <Compile Include="netlist_parser\yacc.py" />
     <Compile Include="netlist_parser\__init__.py" />
     <Compile Include="netlist_util.py" />
@@ -59,6 +61,7 @@
     <Folder Include="crtest" />
     <Folder Include="grhtest" />
     <Folder Include="netlist_parser" />
+    <Folder Include="netlist_parser\test\" />
     <Folder Include="test_output" />
     <Folder Include="test_output\tmp" />
   </ItemGroup>
