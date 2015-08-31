@@ -1,4 +1,4 @@
-# -----------------------------------------------------------------------------
+﻿# -----------------------------------------------------------------------------
 # ply: yacc.py
 #
 # Copyright (C) 2001-2015,
@@ -184,7 +184,7 @@ def token():
     warnings.warn(_warnmsg)
     return _token()
 
-# Utility function to call the p_error() function with some deprecation hacks
+# utility function to call the p_error() function with some deprecation 
 def call_errorfunc(errorfunc, token, parser):
     global _errok, _token, _restart
     _errok = parser.errok

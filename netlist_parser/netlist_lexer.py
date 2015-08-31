@@ -66,7 +66,10 @@ def t_HEX_NUMBER(t):
     r'\d+\'h[0-9A-F]+'
     return t
 def t_words(t):
-    '\\\\?[a-zA-Z_]+[\\\\\w\.]*'
+    # NOTE:把[\d]加入标识符会造成，端口信号的name和string完全相同
+    #      所以需要在Parser中额外的处理PORT的IDENTIFIER,看结尾带有[\d+]最后一个就是向量
+    #'[\\\\a-zA-Z_]?([\\\\\w]+(\[\d+\])?\.?)+'
+    '[\\\\]?[a-zA-Z_](\w+(\[\d+\])?\.?)*'
     t.type = reserved.get(t.value,'IDENTIFIER')
     return t
 def t_NUMBER(t):
@@ -137,6 +140,7 @@ def t_userignore(t):
     pass
 def t_ANY_error(t):
     print "Warning Illegal character '%s' in line : %d %s " %(t.value[0],t.lexer.lineno,lexer.lexstate)
+    raise Exception
     t.lexer.skip(1)
 # Build the lexer
 lexer = lex.lex()
@@ -146,35 +150,37 @@ if __name__=='__main__':
     import os
     if len(sys.argv)==1:
         print "Just handle one simple verilog netlist in os.get_cwd() dir"
-        fname=raw_input("plz enter the file name:")
-        try:
-            fobj=open(fname,'r')
-        except IOError,e:
-            print "Error: file open error:",e
-        else:
-            all_lines=fobj.read()
-            lex.runmain(lexer,all_lines)
-            fobj.close()
-    elif sys.argv[1]=='many': 
-        parent_dir=os.getcwd()
         while(1):
-            tmp1=raw_input('Plz enter the verilog source sub dir:')
-            input_file_dir=parent_dir+"\\test_input_netlist\\"+tmp1
-            if os.path.exists(input_file_dir)==False:
-                print 'Error : this dir dont exists!'
-                continue
-            else:
-                break
-        for eachFile in os.listdir(input_file_dir):
-            print  eachFile
-            if os.path.splitext(eachFile)[1]=='.v':
-                try:
-                    fobj=open(fname,'r')
-                except IOError,e:
-                    print "Error: file open error:",e
-                else:
-                    all_lines=fobj.read()             
-                    lex.runmain(lexer,all_lines)
-                    fobj.close()
-            else:
-                continue
+            fname=raw_input("plz enter the file name:")
+            console = sys.stdout
+            lexerlog = open(os.path.splitext(fname)[0]+"_lexer.log",'w')
+            sys.stdout = lexerlog
+            with open(fname,'r') as fobj:
+                all_lines=fobj.read()
+                lex.runmain(lexer,all_lines)
+            sys.stdout = console
+            lexerlog.close()
+            print "Note: %s_lexer.log has been generated succfully " % fname
+    #elif sys.argv[1]=='many': 
+    #    parent_dir=os.getcwd()
+    #    while(1):
+    #        tmp1=raw_input('Plz enter the verilog source sub dir:')
+    #        input_file_dir=parent_dir+"\\test_input_netlist\\"+tmp1
+    #        if os.path.exists(input_file_dir)==False:
+    #            print 'Error : this dir dont exists!'
+    #            continue
+    #        else:
+    #            break
+    #    for eachFile in os.listdir(input_file_dir):
+    #        print  eachFile
+    #        if os.path.splitext(eachFile)[1]=='.v':
+    #            try:
+    #                fobj=open(fname,'r')
+    #            except IOError,e:
+    #                print "Error: file open error:",e
+    #            else:
+    #                all_lines=fobj.read()             
+    #                lex.runmain(lexer,all_lines)
+    #                fobj.close()
+    #        else:
+    #            continue

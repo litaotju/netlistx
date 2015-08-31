@@ -6,10 +6,14 @@ Created on Mon Jun 29 21:13:37 2015
 """
 import sys
 import os
-import class_circuit as cc
-import netlist_lexer
 
+import netlist_lexer
+import re
 tokens=netlist_lexer.tokens
+if __name__ == '__main__':
+    import test.class_circuit as cc
+else:
+    import class_circuit as cc
 ###############################################################################
 import yacc
 def p_vmfile(p):
@@ -164,7 +168,14 @@ def p_signal_element(p):
     if len(p)==3:
         p[0]=cc.signal(name=p[1],vector=p[2])
     else:
-        p[0]=cc.signal(name=p[1])
+        # 匹配，使得连在一起的 ID-VEC：ID[\d+]等够将ID VEC分开
+        linked_id_vec = re.match("(.+)(\[\d+\])$",p[1])
+        if linked_id_vec is not None:
+            iden = linked_id_vec.groups()[0]
+            vec = linked_id_vec.groups()[1]
+            p[0] = cc.signal( name = iden ,vector = vec)
+        else:
+            p[0]=cc.signal(name=p[1])
 def p_defparam_list(p):
     '''defparam_list  : defparam_list defparam_stm
                       | defparam_stm
@@ -246,21 +257,24 @@ def vm_parse(input_file):
         #--------------------------------
         #打印部分
         #--------------------------------
-    #    console=sys.stdout
-    #    sys.stdout=fobj2
-    #    p[0].print_module()
-    #    for eachPort_decl in p[1]:
-    #        eachPort_decl.__print__(pipo_decl=True)
-    #    for eachSignal in p[2]:
-    #        eachSignal.__print__(is_wire_decl=True)
-    #    for eachPrimitive in p[3]:
-    #        eachPrimitive.print_module()
-    #    if len(p)==5:
-    #        assign_stm_list=p[4]
-    #        for eachAssign in p[4]:
-    #            eachAssign.__print__()
-    #    print "endmodule;"
-    #    sys.stdout=console
+        if __name__ == "__main__":
+            output_file=os.path.splitext(fname)[0]+"_rewrite.v"
+            fobj2 = open(output_file,'w')
+            console=sys.stdout
+            sys.stdout=fobj2
+            p['m_list'][0].__print__() #top-module
+            for eachPort_decl in p['port_decl_list']:
+                eachPort_decl.__print__(pipo_decl=True)
+            for eachSignal in p['signal_decl_list']:
+                eachSignal.__print__(is_wire_decl=True)
+            for eachPrimitive in p['m_list'][1:]:
+                eachPrimitive.print_module()
+            if len(p)==5:
+                for eachAssign in p['assign_stm_list']:
+                    eachAssign.__print__()
+            print "endmodule;"
+            sys.stdout=console
+            fobj.close()
         #------------------------------------
         #解析完完全打印出来
         #------------------------------------
@@ -275,30 +289,29 @@ if __name__=='__main__':
         while(1):
             print "Just handle one simple verilog netlist in os.get_cwd() dir"
             fname=raw_input("plz enter the file name:")
-            output_file=os.path.splitext(fname)[0]+"rewrite_.v"
             info=vm_parse(fname)
             m_list=info['m_list']
             if m_list:
                 print "Parse %s successfully " % fname
                 print "Info: find %d primitive in %s "% (len(m_list)-1,fname)
-    elif sys.argv[1]=='many': 
-        parent_dir=os.getcwd()
-        while(1):
-            tmp1=raw_input('Plz enter the verilog source sub dir:')
-            input_file_dir=parent_dir+"\\test_input_netlist\\"+tmp1
-            if os.path.exists(input_file_dir)==False:
-                print 'Error : this dir dont exists!'
-                continue
-            else:
-                break
-        for eachFile in os.listdir(input_file_dir):
-            print  eachFile
-            if os.path.splitext(eachFile)[1]=='.v':
-                t=parser.parse(eachFile)
-                m_list=t['m_list']
-                print "Parse %s successfully " % eachFile
-                print "Info: find %d primitive in %s "% (len(m_list)-1,fname)                
-            else:
-                continue
+    #elif sys.argv[1]=='many': 
+    #    parent_dir=os.getcwd()
+    #    while(1):
+    #        tmp1=raw_input('Plz enter the verilog source sub dir:')
+    #        input_file_dir=parent_dir+"\\test_input_netlist\\"+tmp1
+    #        if os.path.exists(input_file_dir)==False:
+    #            print 'Error : this dir dont exists!'
+    #            continue
+    #        else:
+    #            break
+    #    for eachFile in os.listdir(input_file_dir):
+    #        print  eachFile
+    #        if os.path.splitext(eachFile)[1]=='.v':
+    #            t=parser.parse(eachFile)
+    #            m_list=t['m_list']
+    #            print "Parse %s successfully " % eachFile
+    #            print "Info: find %d primitive in %s "% (len(m_list)-1,fname)                
+    #        else:
+    #            continue
 
 
