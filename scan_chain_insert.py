@@ -138,14 +138,15 @@ def insert_scan_chain_new(fname,verbose=False,presult=True,\
                 NEW_INIT=str(2**(input_num+1))+'\'h'+'F'*int(2**(input_num-2))\
                            +init_legal.groups()[1]
             eachPrimitive.param_list[0].edit_param('INIT',NEW_INIT)
-            eachPrimitive.cellref=re.sub('LUT[1-5]',('LUT'+str(input_num+1)),eachPrimitive.cellref)    
+            eachPrimitive.cellref=re.sub('LUT[1-5]',('LUT'+str(input_num+1)),eachPrimitive.cellref)
         #--------------------------------------------------------------------------
         #未能利用剩余LUT的的 FD*E, 在时钟使能信号和LUT的输出之间加入一个或门
-        #--------------------------------------------------------------------------  
-        elif (eachPrimitive.m_type=='FD') and (eachPrimitive.name in fd_has_ce_list):
+        #--------------------------------------------------------------------------
+    for eachPrimitive in m_list[1:]:
+        if (eachPrimitive.m_type=='FD') and (eachPrimitive.name in fd_has_ce_list):
             current_ce=all_fd_dict[eachPrimitive.name]['CE'].string 
             if current_ce in un_opt_ce_list:
-                # BUGY: if current ce start with \ , there will be a syntax error to synthesis
+                # if current ce start with \ , there will be a syntax error to synthesis
                 # 将新引入的信号改名字应该不会产生问题，原有的信号完全不变，只是把连接到FD的信号
                 # 解决方法，加一个gated_ prefix，将其中的信号名称的 ".[]" 全变成 "_",组成新的信号名称
                 # 同时，为了防止wire的重复声明，应该将新加的信号存储到一个列表中，不重复声明
@@ -158,7 +159,7 @@ def insert_scan_chain_new(fname,verbose=False,presult=True,\
                 if not gatedCE in gatedce_list:
                     gatedce_list.append(gatedCE)
                     signal_decl_list.append(new_ce_signal)
-            
+
     #--------------------------------------------------------------------------
     #扫描链顺序的确定,在结尾处进行assign
     #--------------------------------------------------------------------------

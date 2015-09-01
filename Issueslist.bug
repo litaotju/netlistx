@@ -58,13 +58,15 @@ Issue #4 Status：FIXED
 
 
 #-------------------------------------------------------------------------------------
-Issue #6 Status：UN_Resolved
+Issue #6 Status：FIXED
 
 问题：对于un_opt_ce_list里面的信号，wire区域的声明数量要少于assign区域的数量
 	  有些 gated_ce_signal，在结尾处有assign,但是在wire声明区不存在。
 诊断：len(un_opt_ce_list) == 13, len(gated_ce_list) ==3,所以有10个信号没有走相应的分支，gated的修改
-
-
+	  是因为修改FDCE使能端口的elif 前面的分支语句已经走过了。所以有的FD并没有走这个分支。
+	  所以造成了少wire声明。
+解决方案：重新建立一个循环，查找每一个带有 un_opt_ce_signal的FD。前提条件是前面的处理措施，没有对FD
+		  的名字造成任何改变，只是改变了cellref 和port_list
 #-------------------------------------------------------------------------------------
 Issue #7 Status：UN_Resolved
 问题：scan_chain中直接进行 port_list.insert()的时候，没有更新相应的
