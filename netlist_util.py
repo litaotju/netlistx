@@ -141,7 +141,10 @@ def mark_the_circut(m_list,allow_dsp=False,allow_unkown=True,verbose=False):
 
 ###############################################################################
 def get_all_fd(m_list,verbose=False):
-    '--get all the FD and its D_Q port--'
+    '''--get all the FD and its port list--
+        retutn :all_fd_dict = { eachFD.name: port_info{...} } 
+                #port_info ={port1.name:port_assign, port2.name:port_assign,....}
+    '''
     all_fd_dict={}
     if verbose:
         print 'Info: all the FD and its port_assign.string are:'
@@ -187,7 +190,11 @@ def get_all_lut(m_list,lut_type_cnt=[0]*6,verbose=False):
     
 ###############################################################################
 def get_lut_cnt2_FD(m_list,all_fd_dict,verbose=False,K=6):
-    'get all the LUT that has a connection to a FDs D port'
+    '''get all the LUT that has a connection to a FDs D port ,and PIN_NUM <= K-2
+        return: 
+              FD_din_lut_list, prim对象列表，每一个有可用LUT的FD对象
+              lut_out2_fd_dict, 字典，key=LUT名称字符串类型，value= (int_PIN_NUM, FD_Prim Instance)  
+    '''
     FD_din_lut_list=[]
     lut_out2_FD_dict={}
     if verbose:
@@ -244,6 +251,12 @@ def get_clk_in_fd(all_fd_dict,verbose=False):
     
 ###############################################################################   
 def get_ce_in_fd(all_fd_dict,verbose=False):
+    '''para: 
+            all_fd_dict,verbose=False
+       return:
+            ce_signal_list，字符串列表，每一个元素为ce信号的string属性，也就是名称
+            fd_has_ce_list，字符串列表，每一个元素为有CE信号的FD的名称
+    '''
     ce_signal_list=[]
     fd_has_ce_list=[]
     for eachFD in all_fd_dict.keys():
@@ -300,10 +313,19 @@ def get_reset_in_fd(all_fd_dict,verbose=False):
     
 ###############################################################################
 def get_lut_cnt2_ce(m_list,ce_signal_list,K=6,verbose=False):
-    "get for lut combine for ce signal"
+    '''para: 
+            m_list, ce_signal_list, K=6, verbose =False
+       return: 
+            lut_cnt2_ce    字符串列表：每一个元素为，PIN_NUM<= K-2，且没有被搜索过的，
+                             输出口与CE相连接的LUT的name
+            un_opt_ce_list 字符串列表：每一个元素为，没有被优化的CE信号名称，这样的信号
+                           需要在末尾处进行assign赋值，将其用scan_en gated掉
+               
+    '''
     lut_cnt2_ce=[]
     opt_ce_flag=False
     un_opt_ce_list=copy.deepcopy(ce_signal_list)
+    # TODO:优化这个函数的速度，将循环的层次改变一下
     for eachCE in ce_signal_list:
         for eachModule in m_list[1:]:
             if eachModule.m_type=="LUT" and  eachModule.been_searched==False :
@@ -316,6 +338,7 @@ def get_lut_cnt2_ce(m_list,ce_signal_list,K=6,verbose=False):
             un_opt_ce_list.remove(eachCE)
             opt_ce_flag=False                 
     if verbose:
+        print "Info : lut has a output connnet to CE are:"
         for x in lut_cnt2_ce:
             print x
     print "Note: get_lut_cnt2_ce() !"

@@ -76,10 +76,11 @@ class circut_module:
             if(current_port.port_name==name):
                 current_port.edit_port_assign(new_assign)
                 edit_flag=True
+                break
             else:
                 continue
         assert edit_flag,("There is no port: %s in  %s %s."%(name,self.cellref,self.name))
-        return edit_flag
+        return None
         
     def print_module(self):
         '--不同的模块,默认的打印方式不同,顶层模块打印时,端口没有.name(assign)--'

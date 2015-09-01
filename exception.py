@@ -16,3 +16,7 @@ class CrgraphRuleError(CrgraphError):
 class BallastError(Exception):
     ""
     pass
+
+
+class ScanchainError(Exception):
+    pass

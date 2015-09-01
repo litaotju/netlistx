@@ -7,11 +7,18 @@ import re
 import netlist_util   as nu
 import netlist_parser.netlist_parser as np
 import class_circuit   as cc
+from exceptions import SystemExit
 #import generate_testbench as gt
 #############################################################################################
 def insert_scan_chain_new(fname,verbose=False,presult=True,\
                 input_file_dir=os.getcwd(),output_file_dir=os.getcwd(),\
                 K=6):
+    '''para: fname ,input file name in current path
+             verbose, if True print 调用的各个函数的 redandunt infomation
+             presult ,if True 打印最终的各种统计信息
+             input_file_dir, default os.getcwd(),
+             output_file_dir, default os.getcwd()
+    '''
     input_file=os.path.join(input_file_dir,fname)    
     
     #file -->> m_list
@@ -20,7 +27,7 @@ def insert_scan_chain_new(fname,verbose=False,presult=True,\
     port_decl_list  =info['port_decl_list']
     signal_decl_list=info['signal_decl_list']
     assign_stm_list=[]
-    if 'assign_stm_list' in info.keys():
+    if info.has_key('assign_stm_list'):
         assign_stm_list=info['assign_stm_list']
     nu.mark_the_circut(m_list)
     
@@ -32,7 +39,7 @@ def insert_scan_chain_new(fname,verbose=False,presult=True,\
     ##下面两个列表记录了需要进行修改的LUT和D触发器的
     lut_out2_FD_dict,FD_din_lut_list        =nu.get_lut_cnt2_FD(m_list,all_fd_dict,verbose,K)    
     
-    ##和ce有关
+    ##CE优化所需要的netlist信息
     ce_signal_list,fd_has_ce_list           =nu.get_ce_in_fd(all_fd_dict,verbose)
     lut_cnt2_ce,un_opt_ce_list              =nu.get_lut_cnt2_ce(m_list,ce_signal_list,K,verbose)
     fd_ce_cnt=len(fd_has_ce_list)
@@ -41,7 +48,8 @@ def insert_scan_chain_new(fname,verbose=False,presult=True,\
     #####################################################################    
     counter=0
     scan_out_list=[]
-    
+    gatedce_list = []
+
     #cnt for debug only
     fd_replace_cnt=0
     cnt_edited_lut=0
@@ -53,7 +61,7 @@ def insert_scan_chain_new(fname,verbose=False,presult=True,\
         fobj=open(output_file,'w')
     except IOError,e:
         print "Error: file open error:",e
-        return False
+        raise SystemExit
     fobj.writelines('`include "E:/ISE_WORKSPACE/scan_lib/scan_cells.v"\n')
     #--------------------------------------------------------------------------
     #全局信号增加
@@ -97,6 +105,9 @@ def insert_scan_chain_new(fname,verbose=False,presult=True,\
             eachPrimitive.cellref=re.sub('LUT[1-4]',('LUT'+str(input_num+2)),eachPrimitive.cellref)
             scan_out_list.append(all_fd_dict[lut_out2_FD_dict[eachPrimitive.name][1]]['Q'].string)
             cnt_edited_lut+=1
+        #--------------------------------------------------------------------------
+        #未能利用剩余LUT的FD，进行CELL替换，端口增加
+        #--------------------------------------------------------------------------  
         elif (eachPrimitive.m_type=='FD') and (eachPrimitive.name not in FD_din_lut_list):
             counter+=1
             eachPrimitive.cellref="SCAN_"+eachPrimitive.cellref
@@ -108,7 +119,6 @@ def insert_scan_chain_new(fname,verbose=False,presult=True,\
             eachPrimitive.port_list.insert(0,SCAN_IN)
             scan_out_list.append('scan_out'+str(counter))
             fd_replace_cnt+=1
-        ##featured 7.4
         #--------------------------------------------------------------------------
         #CE时钟使能控制信号的优化     改LUT,进行时钟使能的插入,就是插入一个或门
         #--------------------------------------------------------------------------   
@@ -126,15 +136,28 @@ def insert_scan_chain_new(fname,verbose=False,presult=True,\
                 NEW_INIT="4'hD"
             else:
                 NEW_INIT=str(2**(input_num+1))+'\'h'+'F'*int(2**(input_num-2))\
-                        +old_init
+                           +init_legal.groups()[1]
             eachPrimitive.param_list[0].edit_param('INIT',NEW_INIT)
-            eachPrimitive.cellref=re.sub('LUT[1-4]',('LUT'+str(input_num+1)),eachPrimitive.cellref)    
+            eachPrimitive.cellref=re.sub('LUT[1-5]',('LUT'+str(input_num+1)),eachPrimitive.cellref)    
+        #--------------------------------------------------------------------------
+        #未能利用剩余LUT的的 FD*E, 在时钟使能信号和LUT的输出之间加入一个或门
+        #--------------------------------------------------------------------------  
         elif (eachPrimitive.m_type=='FD') and (eachPrimitive.name in fd_has_ce_list):
             current_ce=all_fd_dict[eachPrimitive.name]['CE'].string 
             if current_ce in un_opt_ce_list:
-                new_ce_signal=cc.signal('wire','gated_'+current_ce)
+                # BUGY: if current ce start with \ , there will be a syntax error to synthesis
+                # 将新引入的信号改名字应该不会产生问题，原有的信号完全不变，只是把连接到FD的信号
+                # 解决方法，加一个gated_ prefix，将其中的信号名称的 ".[]" 全变成 "_",组成新的信号名称
+                # 同时，为了防止wire的重复声明，应该将新加的信号存储到一个列表中，不重复声明
+                if current_ce[0] == '\\':
+                    gatedCE = "gated_"+re.sub("[\[\]\.]","_", current_ce[1:])
+                else:
+                    gatedCE = "gated_"+re.sub("[\[\]\.]","_", current_ce)
+                new_ce_signal=cc.signal('wire',gatedCE)
                 eachPrimitive.edit_spec_port('CE',new_ce_signal)
-                signal_decl_list.append(new_ce_signal)
+                if not gatedCE in gatedce_list:
+                    gatedce_list.append(gatedCE)
+                    signal_decl_list.append(new_ce_signal)
             
     #--------------------------------------------------------------------------
     #扫描链顺序的确定,在结尾处进行assign
@@ -169,11 +192,18 @@ def insert_scan_chain_new(fname,verbose=False,presult=True,\
             for eachAssign in assign_stm_list:
                 eachAssign.__print__()
         for eachCE in un_opt_ce_list:
-            print "assign gated_%s = scan_en?1'b1: %s ;"%(eachCE,eachCE)
+            if eachCE[0] == '\\':
+                gatedCE = "gated_"+re.sub("[\[\]\.]","_", eachCE[1:])
+            else:
+                gatedCE = "gated_"+re.sub("[\[\]\.]","_", eachCE)
+            print "assign %s = scan_en? 1'b1 : %s ;"%(gatedCE, eachCE)
         print "//this is a file generate by @litao"
         print "endmodule"
         sys.stdout=console
     fobj.close()
+    #--------------------------------------------------------------------------
+    #基本数据的打印输出
+    #--------------------------------------------------------------------------
     if presult:
         print 'Info:LUT cnt is      : '+str(len(all_lut_dict.keys()))
         print 'Info:LUT1-6 number is: '+str(lut_type_cnt)
@@ -183,7 +213,7 @@ def insert_scan_chain_new(fname,verbose=False,presult=True,\
         print 'Info:edited LUT CNT  : '+str(cnt_edited_lut)
         print 'Info:FD has a CE CNT : '+str(fd_ce_cnt)
         print 'Info:ce_signal CNT is: '+str(len(ce_signal_list))
-    print 'Job: Replace '+fname+' done\n\n'
+    print 'Job: Full Scan insertion of  %s done\n\n' % fname
     return True
 #############################################################################################
 if __name__=='__main__':
