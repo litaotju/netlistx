@@ -6,7 +6,7 @@ import os.path
 import re
 import netlist_util   as nu
 import netlist_parser.netlist_parser as np
-import circut_class   as cc
+import class_circuit   as cc
 #import generate_testbench as gt
 #############################################################################################
 def insert_scan_chain_new(fname,verbose=False,presult=True,\

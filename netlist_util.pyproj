@@ -27,8 +27,6 @@
     <Content Include="crtest\Readme.txt" />
     <Content Include="grhtest\Readme.txt" />
     <Content Include="README.md" />
-    <Content Include="test_output\onlyfd_original_.png" />
-    <Content Include="test_output\reg_inv_reg_original_.png" />
     <Content Include="test_output\tmp\primitive_type_predefine.txt" />
   </ItemGroup>
   <ItemGroup>

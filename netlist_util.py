@@ -6,16 +6,16 @@ this file is composed of a lot of functions to parse and util the netlist Src fi
 """
 
 import os, re, copy
+from netlist_parser.netlist_parser import parser
 ###############################################################################
-def vm_parse(input_file):
+def vm_parse(input_file, write= False):
     '''returns info of input vm file as a dict
     '''
-    from netlist_parser.netlist_parser import parser
     try:
         fobj=open(input_file,'r')
     except IOError,e:
         print "Error: file open error:",e
-        exit()
+        raise SystemExit
     else:
         all_lines=fobj.read()
         fobj.close()
@@ -23,21 +23,24 @@ def vm_parse(input_file):
         #--------------------------------
         #打印部分
         #--------------------------------
-    #    console=sys.stdout
-    #    sys.stdout=fobj2
-    #    p[0].print_module()
-    #    for eachPort_decl in p[1]:
-    #        eachPort_decl.__print__(pipo_decl=True)
-    #    for eachSignal in p[2]:
-    #        eachSignal.__print__(is_wire_decl=True)
-    #    for eachPrimitive in p[3]:
-    #        eachPrimitive.print_module()
-    #    if len(p)==5:
-    #        assign_stm_list=p[4]
-    #        for eachAssign in p[4]:
-    #            eachAssign.__print__()
-    #    print "endmodule;"
-    #    sys.stdout=console
+        if write:
+            fname = os.path.splitext(input_file)[0]+"_parse_rewirte.vm"
+            fobj2 = open(fname, 'w')
+            console=sys.stdout
+            sys.stdout=fobj2
+            p['m_list'][0].__print__() #top-module
+            for eachPort_decl in p['port_decl_list']:
+                eachPort_decl.__print__(pipo_decl=True)
+            for eachSignal in p['signal_decl_list']:
+                eachSignal.__print__(is_wire_decl=True)
+            for eachPrimitive in p['m_list'][1:]:
+                eachPrimitive.print_module()
+            if len(p)==5:
+                for eachAssign in p['assign_stm_list']:
+                    eachAssign.__print__()
+            print "endmodule;"
+            sys.stdout=console
+            fobj2.close()
         #------------------------------------
         #解析完完全打印出来
         #------------------------------------
