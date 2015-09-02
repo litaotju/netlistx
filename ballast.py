@@ -59,8 +59,7 @@ class Ballaster:
             # （prec,None）表示这个点没有后继只有前驱
             if not arc.has_key( (prec, succ) ):
                 arc[(prec, succ)]= []
-            else:
-                arc[(prec, succ)].append(reg)
+            arc[(prec, succ)].append(reg)
         return arc
 
     def __convert2intgraph(self):
@@ -189,10 +188,24 @@ def __test_with_intgraph():
     b2.feedbackset()
     b2.balance()
     print "FAS is %s" % g2.fas
+
+def __test_with_crgraph():
+    from circuitgraph import get_graph_from_raw_input
+    g = get_graph_from_raw_input()
+    g.info()
+    crgraph = CloudRegGraph(g)
+    crgraph.info()
+    ballast1 = Ballaster(crgraph)
+    ballast1.feedbackset()
+    print "Ballaster.intgraph.fas is:"
+    print ballast1.intgraph.fas
+    print nx.info(ballast1.intgraph)
+
+
 #------------------------------------------------------------------------------    
 if __name__ == '__main__':
     'test the ballaster'    
-    __test_with_intgraph()
-
+    #__test_with_intgraph()
+    __test_with_crgraph()
 
     
