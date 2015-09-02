@@ -108,14 +108,69 @@ class Ballaster:
         target_graph = self.intgraph #只处理整数形式的图，每一个整数对应的节点可以在后面查到
         assert nx.is_directed_acyclic_graph(target_graph),\
             "The target graph you want to banlance is not a DAG"
-        set1 = []
-        # TODO find the cut
-        target_graph.remove_nodes_from(set1)
-        return set1
+        while( not self.check(target_graph) ):
+            #非B-Stucture时，一直循环下去
+            #TODO balance
+            set1 = []
+            #TODO find the cut
+            target_graph.remove_nodes_from(set1)
+            return set1
 
     def check(self, graph):
-        pass
-    
+        '''
+        输入一个图G(v,A,H)来判断是否是B-structure,
+        返回：True:是B-Structure，False，不是B-Structure
+        '''
+        # No hold register in this graph
+        if not isinstance(graph, nx.DiGraph):
+            print "The graph is not a nx.DiGraph isinstance"
+            #raise BallastError
+            raise exception
+        if not nx.is_directed_acyclic_graph(graph):
+            return False
+        roots = [node for node in graph.nodes_iter() if graph.in_degree()[node]==0]
+        if len(roots) < 1:
+            return False
+        # 广度优先搜索,访问根节点，访问根节点的下一层节点，
+        # 访问一层节点的下一层节点，直到将所有的节点访问完，
+        # 跳出。注意死循环的情况，如一个环的话，自己就是自己的successors
+        # 为每一个点定Level
+        
+        #初始化level字典
+        level = {node:0 for node in roots} #记录每一个点的LEVEL的字典，初始只记录roots
+        bfs_queue = copy.copy(roots)       #待访问节点序列
+        been_levelized = []                #已经被定级的节点
+        current_level = 0                  #当前的层
+        
+        print "root_queue    :%s" % str(bfs_queue)
+        while(1):
+            # 传进来的bfs_queque的层是已知的，
+            # 记录下它们的所有后继结点，并为他们定层次为n+1,同时放到待访问序列里面
+            if len(bfs_queue) == 0:
+                break
+            current_level +=1
+            next_level_que = []
+            for eachNode in bfs_queue:
+                for eachSucc in graph.successors(eachNode):
+                    # 当一个节点是当前层多个节点的后继时，只加入到next_level_que一次
+                    if not eachSucc in next_level_que:
+                        next_level_que.append(eachSucc)
+                        print "now:%d" % eachSucc
+                        if not level.has_key(eachSucc):
+                            level[eachSucc] = current_level
+                        elif level[eachSucc] ==current_level:
+                            continue
+                        else:
+                            print "node: %s has violated the rule. %d,%d" \
+                                   % (str(eachSucc),level[eachSucc],current_level)
+                            return False
+            been_levelized += bfs_queue
+            bfs_queue = next_level_que
+            print "been_levelized:%s " % str(been_levelized)+str(next_level_que)
+            print "root_queue    :%s " % str(next_level_que)
+        print str(level)
+        return True
+
 def __test_with_intgraph():
     '''使用整数图来测试Ballaster的算法
     '''
