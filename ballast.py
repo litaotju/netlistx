@@ -100,21 +100,24 @@ class Ballaster:
         self.intgraph.fas = feedbackset_index
         return None
         
-    def balance(self):
+    def balance(self,intgraph):
         '''
         step2 把无环图 balancize
         '''
-        target_graph = self.intgraph #只处理整数形式的图，每一个整数对应的节点可以在后面查到
-        assert nx.is_directed_acyclic_graph(target_graph),\
+        #TODO balance
+        #只处理整数形式的图，每一个整数对应的节点可以在后面查到
+        assert nx.is_directed_acyclic_graph(intgraph),\
             "The target graph you want to banlance is not a DAG"
-        while( not self.check(target_graph) ):
+        r = [] # removed set
+        while( not self.check(intgraph) ):
             #非B-Stucture时，一直循环下去
-            #TODO balance
-            set1 = []
+            cs = nx.minimum_edge_cut(intgraph)
             #TODO find the cut
-            target_graph.remove_nodes_from(set1)
+            intgraph.remove_edges_from(cs)
+            g1,g2 = find_connected_subgraph(intgraph)
+            r = self.balance(g1)+self.balance(g2)+cs
             return set1
-
+        return r
     def check(self, graph):
         '''
         输入一个图G(v,A,H)来判断是否是B-structure,
@@ -169,6 +172,9 @@ class Ballaster:
             print "root_queue    :%s " % str(next_level_que)
         print str(level)
         return True
+
+    def find_connnected_subgraph(self, graph):
+        pass
 
 def __test_with_intgraph():
     '''使用整数图来测试Ballaster的算法
