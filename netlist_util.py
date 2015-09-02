@@ -6,16 +6,16 @@ this file is composed of a lot of functions to parse and util the netlist Src fi
 """
 
 import os, re, copy
+from netlist_parser.netlist_parser import parser
 ###############################################################################
-def vm_parse(input_file):
+def vm_parse(input_file, write= False):
     '''returns info of input vm file as a dict
     '''
-    from netlist_parser.netlist_parser import parser
     try:
         fobj=open(input_file,'r')
     except IOError,e:
         print "Error: file open error:",e
-        exit()
+        raise SystemExit
     else:
         all_lines=fobj.read()
         fobj.close()
@@ -23,21 +23,24 @@ def vm_parse(input_file):
         #--------------------------------
         #打印部分
         #--------------------------------
-    #    console=sys.stdout
-    #    sys.stdout=fobj2
-    #    p[0].print_module()
-    #    for eachPort_decl in p[1]:
-    #        eachPort_decl.__print__(pipo_decl=True)
-    #    for eachSignal in p[2]:
-    #        eachSignal.__print__(is_wire_decl=True)
-    #    for eachPrimitive in p[3]:
-    #        eachPrimitive.print_module()
-    #    if len(p)==5:
-    #        assign_stm_list=p[4]
-    #        for eachAssign in p[4]:
-    #            eachAssign.__print__()
-    #    print "endmodule;"
-    #    sys.stdout=console
+        if write:
+            fname = os.path.splitext(input_file)[0]+"_parse_rewirte.vm"
+            fobj2 = open(fname, 'w')
+            console=sys.stdout
+            sys.stdout=fobj2
+            p['m_list'][0].__print__() #top-module
+            for eachPort_decl in p['port_decl_list']:
+                eachPort_decl.__print__(pipo_decl=True)
+            for eachSignal in p['signal_decl_list']:
+                eachSignal.__print__(is_wire_decl=True)
+            for eachPrimitive in p['m_list'][1:]:
+                eachPrimitive.print_module()
+            if len(p)==5:
+                for eachAssign in p['assign_stm_list']:
+                    eachAssign.__print__()
+            print "endmodule;"
+            sys.stdout=console
+            fobj2.close()
         #------------------------------------
         #解析完完全打印出来
         #------------------------------------
@@ -138,7 +141,10 @@ def mark_the_circut(m_list,allow_dsp=False,allow_unkown=True,verbose=False):
 
 ###############################################################################
 def get_all_fd(m_list,verbose=False):
-    '--get all the FD and its D_Q port--'
+    '''--get all the FD and its port list--
+        retutn :all_fd_dict = { eachFD.name: port_info{...} } 
+                #port_info ={port1.name:port_assign, port2.name:port_assign,....}
+    '''
     all_fd_dict={}
     if verbose:
         print 'Info: all the FD and its port_assign.string are:'
@@ -184,7 +190,11 @@ def get_all_lut(m_list,lut_type_cnt=[0]*6,verbose=False):
     
 ###############################################################################
 def get_lut_cnt2_FD(m_list,all_fd_dict,verbose=False,K=6):
-    'get all the LUT that has a connection to a FDs D port'
+    '''get all the LUT that has a connection to a FDs D port ,and PIN_NUM <= K-2
+        return: 
+              FD_din_lut_list, prim对象列表，每一个有可用LUT的FD对象
+              lut_out2_fd_dict, 字典，key=LUT名称字符串类型，value= (int_PIN_NUM, FD_Prim Instance)  
+    '''
     FD_din_lut_list=[]
     lut_out2_FD_dict={}
     if verbose:
@@ -241,6 +251,12 @@ def get_clk_in_fd(all_fd_dict,verbose=False):
     
 ###############################################################################   
 def get_ce_in_fd(all_fd_dict,verbose=False):
+    '''para: 
+            all_fd_dict,verbose=False
+       return:
+            ce_signal_list，字符串列表，每一个元素为ce信号的string属性，也就是名称
+            fd_has_ce_list，字符串列表，每一个元素为有CE信号的FD的名称
+    '''
     ce_signal_list=[]
     fd_has_ce_list=[]
     for eachFD in all_fd_dict.keys():
@@ -297,10 +313,19 @@ def get_reset_in_fd(all_fd_dict,verbose=False):
     
 ###############################################################################
 def get_lut_cnt2_ce(m_list,ce_signal_list,K=6,verbose=False):
-    "get for lut combine for ce signal"
+    '''para: 
+            m_list, ce_signal_list, K=6, verbose =False
+       return: 
+            lut_cnt2_ce    字符串列表：每一个元素为，PIN_NUM<= K-2，且没有被搜索过的，
+                             输出口与CE相连接的LUT的name
+            un_opt_ce_list 字符串列表：每一个元素为，没有被优化的CE信号名称，这样的信号
+                           需要在末尾处进行assign赋值，将其用scan_en gated掉
+               
+    '''
     lut_cnt2_ce=[]
     opt_ce_flag=False
     un_opt_ce_list=copy.deepcopy(ce_signal_list)
+    # TODO:优化这个函数的速度，将循环的层次改变一下
     for eachCE in ce_signal_list:
         for eachModule in m_list[1:]:
             if eachModule.m_type=="LUT" and  eachModule.been_searched==False :
@@ -313,6 +338,7 @@ def get_lut_cnt2_ce(m_list,ce_signal_list,K=6,verbose=False):
             un_opt_ce_list.remove(eachCE)
             opt_ce_flag=False                 
     if verbose:
+        print "Info : lut has a output connnet to CE are:"
         for x in lut_cnt2_ce:
             print x
     print "Note: get_lut_cnt2_ce() !"

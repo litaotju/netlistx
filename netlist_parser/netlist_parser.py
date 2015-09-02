@@ -239,17 +239,17 @@ parser = yacc.yacc()
 ###############################################################################
 def vm_parse(input_file):
     '''returns info of input vm file as a list,
-        info[0] is a instance of cc.circut_module which is top_module in vm,
-        info[1] is the input_ouput decl list of vm file,
-        info[2] is the wire        decl list,
-        info[3] is the primitive instances(cc.circut_module obj) list,and the defparam of primitive(if exist)
-        info[4] is the assign list of a file 
+        info['m_list'][0]        is a instance of cc.circut_module which is top_module in vm,
+        info['port_decl_list']   is the input_ouput decl list of vm file,
+        info['signal_decl_list'] is the wire        decl list,
+        info['m_list'][1:]       is the primitive instances(cc.circut_module obj) list,and the defparam of primitive(if exist)
+        info['assign_stm_list']  is the assign list of a file 
     '''
     try:
         fobj=open(input_file,'r')
     except IOError,e:
         print "Error: file open error:",e
-        return None
+        raise SystemExit
     else:
         all_lines=fobj.read()
         fobj.close()
@@ -258,7 +258,7 @@ def vm_parse(input_file):
         #打印部分
         #--------------------------------
         if __name__ == "__main__":
-            output_file=os.path.splitext(fname)[0]+"_rewrite.v"
+            output_file=os.path.splitext(input_file)[0]+"_rewrite.v"
             fobj2 = open(output_file,'w')
             console=sys.stdout
             sys.stdout=fobj2
@@ -274,7 +274,7 @@ def vm_parse(input_file):
                     eachAssign.__print__()
             print "endmodule;"
             sys.stdout=console
-            fobj.close()
+            fobj2.close()
         #------------------------------------
         #解析完完全打印出来
         #------------------------------------
