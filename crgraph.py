@@ -70,7 +70,7 @@ class CloudRegGraph(nx.DiGraph):
         for eachEdge in basegraph.prim_edge_list:
             g2.add_edge(eachEdge[0][0],eachEdge[0][1])
         #------------------------------------------------------
-        #step1 找出所有FD节点，并移去FD节点
+        #step1 找出所有FD节点，并移去FD节点，以及VCC GND节点
         fd_list = []
         gnd_vcc = []
         for eachFD in basegraph.prim_vertex_list:
@@ -183,6 +183,10 @@ class CloudRegGraph(nx.DiGraph):
         print "Note: get_cloud_reg_graph() succsfully"
         return None
     
+    def _add_pipo_empty_cloud(self):
+        #TODO：将输入输入添加为空的cloud
+        pass
+
     def __merge_cloud(self):
         '合并多个cloud'
         # ------------------------------------------------------------------
@@ -346,7 +350,7 @@ def __test():
     cr2 = CloudRegGraph(g2) 
     cr2.info()
 
-    if cr2.number_of_nodes() <= 20:
+    if cr2.number_of_nodes() <= 100:
         plt.figure( cr2.name+"_crgraph")
         cr2.paint()
 if __name__ == '__main__':
