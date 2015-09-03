@@ -4,6 +4,7 @@
 /*.vm
 /*.v
 /*test/
+prototype/
 test_output/
 cell_construct/FD_SRC
 #################

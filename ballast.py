@@ -118,6 +118,7 @@ class Ballaster:
             r = self.balance(g1)+self.balance(g2)+cs
             return set1
         return r
+        
     def check(self, graph):
         '''
         输入一个图G(v,A,H)来判断是否是B-structure,
@@ -137,40 +138,38 @@ class Ballaster:
         # 访问一层节点的下一层节点，直到将所有的节点访问完，
         # 跳出。注意死循环的情况，如一个环的话，自己就是自己的successors
         # 为每一个点定Level
-        
-        #初始化level字典
-        level = {node:0 for node in roots} #记录每一个点的LEVEL的字典，初始只记录roots
-        bfs_queue = copy.copy(roots)       #待访问节点序列
-        been_levelized = []                #已经被定级的节点
-        current_level = 0                  #当前的层
-        
-        print "root_queue    :%s" % str(bfs_queue)
-        while(1):
-            # 传进来的bfs_queque的层是已知的，
-            # 记录下它们的所有后继结点，并为他们定层次为n+1,同时放到待访问序列里面
-            if len(bfs_queue) == 0:
-                break
-            current_level +=1
-            next_level_que = []
-            for eachNode in bfs_queue:
-                for eachSucc in graph.successors(eachNode):
-                    # 当一个节点是当前层多个节点的后继时，只加入到next_level_que一次
-                    if not eachSucc in next_level_que:
-                        next_level_que.append(eachSucc)
-                        print "now:%d" % eachSucc
-                        if not level.has_key(eachSucc):
-                            level[eachSucc] = current_level
-                        elif level[eachSucc] ==current_level:
-                            continue
-                        else:
-                            print "node: %s has violated the rule. %d,%d" \
-                                   % (str(eachSucc),level[eachSucc],current_level)
-                            return False
-            been_levelized += bfs_queue
-            bfs_queue = next_level_que
-            print "been_levelized:%s " % str(been_levelized)+str(next_level_que)
-            print "root_queue    :%s " % str(next_level_que)
-        print str(level)
+        for root in roots:
+            bfs_queue = [root]
+            level = {root:0 }                  #记录每一个点的LEVEL的字典，初始只记录root
+            been_levelized = []                #已经被定级的节点
+            current_level = 0                  #当前的层
+            print "root         :%s" % str(bfs_queue)
+            while(1):
+                # 传进来的bfs_queque的层是已知的，
+                # 记录下它们的所有后继结点，并为他们定层次为n+1,同时放到待访问序列里面
+                if len(bfs_queue) == 0:
+                    break
+                current_level +=1
+                next_level_que = []
+                for eachNode in bfs_queue:
+                    for eachSucc in graph.successors(eachNode):
+                        # 当一个节点是当前层多个节点的后继时，只加入到next_level_que一次
+                        if not eachSucc in next_level_que:
+                            next_level_que.append(eachSucc)
+                            print "now:%d" % eachSucc
+                            if not level.has_key(eachSucc):
+                                level[eachSucc] = current_level
+                            elif level[eachSucc] ==current_level:
+                                continue
+                            else:
+                                print "node: %s has violated the rule. %d,%d" \
+                                    % (str(eachSucc),level[eachSucc],current_level)
+                                return False
+                been_levelized += bfs_queue
+                bfs_queue = next_level_que
+                print "been_levelized:%s " % str(been_levelized)+str(next_level_que)
+                print "root_queue    :%s " % str(next_level_que)
+            print str(level)
         return True
 
     def find_connnected_subgraph(self, graph):
