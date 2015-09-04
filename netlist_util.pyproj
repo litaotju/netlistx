@@ -6,7 +6,7 @@
     <ProjectGuid>{0eebc94c-7a90-45ac-b811-c90bcaed4af8}</ProjectGuid>
     <ProjectHome />
     <StartupFile>graph_top.py</StartupFile>
-    <SearchPath />
+    <SearchPath>prototype\</SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
@@ -48,6 +48,15 @@
     <Compile Include="netlist_parser\yacc.py" />
     <Compile Include="netlist_parser\__init__.py" />
     <Compile Include="netlist_util.py" />
+    <Compile Include="prototype\balance.py">
+      <SubType>Code</SubType>
+      <Publish>False</Publish>
+    </Compile>
+    <Compile Include="prototype\check.py" />
+    <Compile Include="prototype\cut.py" />
+    <Compile Include="prototype\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="scan_chain_full_replace.py" />
     <Compile Include="scan_chain_insert.py" />
     <Compile Include="sgraph.py" />
@@ -60,6 +69,7 @@
     <Folder Include="grhtest" />
     <Folder Include="netlist_parser" />
     <Folder Include="netlist_parser\test\" />
+    <Folder Include="prototype\" />
     <Folder Include="test_output" />
     <Folder Include="test_output\tmp" />
   </ItemGroup>
