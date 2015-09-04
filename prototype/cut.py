@@ -11,7 +11,7 @@ def cut(graph):
     '''
     debug = True
     assert isinstance(graph, nx.DiGraph), "Input_para.__class__  %s " % graph.__class__
-    assert graph.number_of_nodes() > 1,   "Number of nodes: %d" % graph.number_of_nodes
+    assert graph.number_of_nodes() > 1,   "Number of nodes: %d" % graph.number_of_nodes()
     if debug: print "\nDigraph Edges Are:\n    %s" % str(graph.edges())
     unigraph = nx.Graph(graph)           #将输入的图转为无向图
     cs = nx.minimum_edge_cut(unigraph)   #找出该无向图的minimum edge cut -> CS
