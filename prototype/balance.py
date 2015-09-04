@@ -16,7 +16,7 @@ def balance(graph):
         return r
     #非B-Stucture时，一直循环下去
     # BUGY: 如果cs为空呢，那么不可能有两个图返回来，这时候怎么办
-    print "Cutting Graph"
+    print "\nCutting Graph"
     cs, g1, g2 = cut(graph) 
     r = balance(g1) + balance(g2) + cs
     csl = []
@@ -39,6 +39,7 @@ def balance(graph):
 def __test_case(g):
     '''Test with a Specific graph
     '''
+    print "Balancing Graph"
     r = balance(g)
     g.remove_edges_from(r)
     assert check(g) ,"Graph is not balanced"
@@ -57,6 +58,14 @@ def __test():
                 (5,6),(5,7),(6,8),(7,9),(8,9)] 
     g2.add_edges_from(edge_list)
     __test_case(g2)
+    
+    g3 = nx.DiGraph()
+    g3.add_edges_from([(0,2),(0,3),(1,2),(1,3),(2,3)])
+    __test_case(g3)
+
+    g4 =nx.DiGraph()
+    g4.add_edges_from([(0,2),(1,2),(2,3),(3,4),(4,5),(1,5)])
+    __test_case(g4)
 
 if __name__ == '__main__':
     __test()
