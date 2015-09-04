@@ -32,7 +32,7 @@ class Ballaster:
         self.intgraph , self.node_mapping = self.__convert2intgraph()
     
     def __reg2arc(self):
-        '''把所有的reg节点 ignore掉，将其前后相连
+        '''把所有的reg节点 ignore掉，将其前后相连，直接在原图上操作
         '''
         graph = self.graph
         arc = {} # 记录下来每一个由FD转换成的边，以及对应的FDs
@@ -73,7 +73,8 @@ class Ballaster:
         nodes = graph.nodes()
         for edge in graph.edges_iter():
             intedge = (nodes.index(edge[0]), nodes.index(edge[1]))
-            intgraph.add_edge(intedge[0], intedge[1])
+            # 将FD的数量作为每一条边的权重加入到整数图中
+            intgraph.add_edge(intedge[0], intedge[1],{'weight':len(self.arc[edge])})
         node_mapping = nodes #每一个整数对应的FD,存储在这个列表当中
         return intgraph, node_mapping
         
@@ -100,80 +101,132 @@ class Ballaster:
         self.intgraph.fas = feedbackset_index
         return None
         
-    def balance(self,intgraph):
+    def balance(self,graph):
+        '''parame: graph, a DAG its.__class__ == nx.DiGraph
+           return: r,     removed edges set so makr the input graph a b-structure
         '''
-        step2 把无环图 balancize
-        '''
-        #TODO balance
-        #只处理整数形式的图，每一个整数对应的节点可以在后面查到
-        assert nx.is_directed_acyclic_graph(intgraph),\
+        # 只处理整数形式的图，每一个整数对应的节点可以在后面查到
+        # 输入进来的图应该是连通的，如果存在非连通图，minimum_edge_cut就会产生问题
+        assert nx.is_directed_acyclic_graph(graph),\
             "The target graph you want to banlance is not a DAG"
         r = [] # removed set
-        while( not self.check(intgraph) ):
-            #非B-Stucture时，一直循环下去
-            cs = nx.minimum_edge_cut(intgraph)
-            #TODO find the cut
-            intgraph.remove_edges_from(cs)
-            g1,g2 = find_connected_subgraph(intgraph)
-            r = self.balance(g1)+self.balance(g2)+cs
-            return set1
+        if self.__check(graph):
+            return r
+        #非B-Stucture时，一直循环下去
+        # BUGY: 如果cs为空呢，那么不可能有两个图返回来，这时候怎么办
+        print "Cutting Graph"
+        cs, g1, g2 = self.__cut(graph) 
+        r = self.balance(g1) + self.balance(g2) + cs
+        csl = []
+        for eachEdge in cs:
+            under_check_graph = graph.copy()
+            under_check_graph.remove_edges_from(r)
+            under_check_graph.add_edges_from(csl)
+            under_check_graph.add_edge(eachEdge[0], eachEdge[1])
+            if self.__check(under_check_graph):
+                print "Edge: %s added back" % str(eachEdge)
+                csl.append(eachEdge)
+                graph.add_edge(eachEdge[0],eachEdge[1])
+        for eachEdge in csl:
+            r.remove(eachEdge)
+        print "Removed Edge Set: %s" % str(r)
         return r
-        
-    def check(self, graph):
+
+    #--------------------------------------------------------------------------------
+    # 下面是直供内部调用的私有函数    
+    def __check(self,graph):
         '''
         输入一个图G(v,A,H)来判断是否是B-structure,
         返回：True:是B-Structure，False，不是B-Structure
         '''
         # No hold register in this graph
+        debug = False
+        if debug: print "Procesing: checking graph for b-structure"
         if not isinstance(graph, nx.DiGraph):
             print "The graph is not a nx.DiGraph isinstance"
-            #raise BallastError
-            raise exception
+            raise Exception
         if not nx.is_directed_acyclic_graph(graph):
             return False
         roots = [node for node in graph.nodes_iter() if graph.in_degree()[node]==0]
         if len(roots) < 1:
             return False
-        # 广度优先搜索,访问根节点，访问根节点的下一层节点，
-        # 访问一层节点的下一层节点，直到将所有的节点访问完，
-        # 跳出。注意死循环的情况，如一个环的话，自己就是自己的successors
-        # 为每一个点定Level
+        # 广度优先搜索,访问根节点，访问根节点的下一层节点， 为每一个点定Level
+        # 访问一层节点的下一层节点，直到将所有的节点访问完，跳出。
         for root in roots:
             bfs_queue = [root]
-            level = {root:0 }                  #记录每一个点的LEVEL的字典，初始只记录root
+            level = {root:0 }                  #记录每一个点的LEVEL的字典，初始只记录当前root
             been_levelized = []                #已经被定级的节点
             current_level = 0                  #当前的层
-            print "root         :%s" % str(bfs_queue)
-            while(1):
-                # 传进来的bfs_queque的层是已知的，
-                # 记录下它们的所有后继结点，并为他们定层次为n+1,同时放到待访问序列里面
-                if len(bfs_queue) == 0:
-                    break
+            if debug: print "root          :%s" % str(root)
+            while(bfs_queue):
+		        # 传进来的bfs_queque的层是已知的，
+		        # 记录下它们的所有后继结点，并为他们定层次为n+1,同时放到待访问序列里面
                 current_level +=1
                 next_level_que = []
                 for eachNode in bfs_queue:
                     for eachSucc in graph.successors(eachNode):
-                        # 当一个节点是当前层多个节点的后继时，只加入到next_level_que一次
+				        # 当一个节点是当前层多个节点的后继时，只加入到next_level_que一次
                         if not eachSucc in next_level_que:
                             next_level_que.append(eachSucc)
-                            print "now:%d" % eachSucc
+                            if debug: print "now: %s" % str(eachSucc)
                             if not level.has_key(eachSucc):
                                 level[eachSucc] = current_level
                             elif level[eachSucc] ==current_level:
                                 continue
                             else:
-                                print "node: %s has violated the rule. %d,%d" \
-                                    % (str(eachSucc),level[eachSucc],current_level)
+                                if debug: print "node: %s has violated the rule. %d,%d" \
+							            % (str(eachSucc),level[eachSucc],current_level)
                                 return False
                 been_levelized += bfs_queue
                 bfs_queue = next_level_que
-                print "been_levelized:%s " % str(been_levelized)+str(next_level_que)
-                print "root_queue    :%s " % str(next_level_que)
-            print str(level)
+                if debug:
+                    print "been_levelized:%s " % str(been_levelized)+str(next_level_que)
+                    print "root_queue    :%s " % str(next_level_que)
+            if debug: print "Level: %s" % str(level)
         return True
 
-    def find_connnected_subgraph(self, graph):
-        pass
+    def __cut(self, graph):
+        ''' parame: 
+                graph:a nx.DiGraph obj
+	        return:
+		        cs : edge cut set of the graph
+		        g1 , g2 : subgraphs induced by cs
+	
+        '''
+        debug = True
+        assert isinstance(graph, nx.DiGraph), "Input_para.__class__  %s " % graph.__class__
+        assert graph.number_of_nodes() > 1,   "Number of nodes: %d" % graph.number_of_nodes
+        if debug: print "\nDigraph Edges Are:\n    %s" % str(graph.edges())
+        unigraph = nx.Graph(graph)           #将输入的图转为无向图
+        cs = nx.minimum_edge_cut(unigraph)   #找出该无向图的minimum edge cut -> CS
+        #balance函数调用cut前，graph一定是一个un-balance 结构，所以一定有CUT?
+        if not cs:
+            raise Exception,"Cut Set of this graph is Empty"
+        #CS中的边，可能不存在于原来的有向图中，所以需要将这种边的方向颠倒
+        #将所有real edge,存到RCS中
+        rcs = []
+        original_edges = graph.edges()
+        for eachEdge in cs:
+            if not eachEdge in original_edges:
+                eachEdge = (eachEdge[1], eachEdge[0]) #调换方向
+            rcs.append(eachEdge)
+        graph.remove_edges_from(rcs)			      #在原图中移除CS
+        if debug: print "Edge Cut Set RCS :\n    %s" % str(rcs)
+        if debug: print "After remove RCS :\n    %s" % str(graph.edges())
+    
+        # 移除RCS中的边之后得到的两个Weakly Connected Subgraph
+        glist = []
+        for eachCntComp in nx.weakly_connected_component_subgraphs(graph):
+		    #找到移除CS后的两个弱连接分量
+            glist.append(eachCntComp)
+            if debug:
+                print "Weakly CC %d:" % len(glist)
+                print "    nodes:%s" % eachCntComp.nodes() 
+                print "    edges:%s" % eachCntComp.edges()
+        assert len(glist) == 2
+        return rcs, glist[0], glist[1]
+
+# --------------------------------------------------------------------------------------
 
 def __test_with_intgraph():
     '''使用整数图来测试Ballaster的算法
@@ -191,7 +244,7 @@ def __test_with_intgraph():
     g2.add_path([5,4,3,5])
     b2 = Ballaster(g2)
     b2.feedbackset()
-    b2.balance()
+    b2.balance(b2.intgraph)
     print "FAS is %s" % g2.fas
 
 def __test_with_crgraph():
@@ -210,7 +263,7 @@ def __test_with_crgraph():
 #------------------------------------------------------------------------------    
 if __name__ == '__main__':
     'test the ballaster'    
-    #__test_with_intgraph()
-    __test_with_crgraph()
+    __test_with_intgraph()
+    #__test_with_crgraph()
 
     
