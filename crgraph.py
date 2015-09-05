@@ -83,6 +83,7 @@ class CloudRegGraph(nx.DiGraph):
         g2.remove_nodes_from(fd_list)
         if gnd_vcc:
             g2.remove_nodes_from(gnd_vcc)
+            print "Info :GND VCC node has been removed"
         #------------------------------------------------------
         #step2 找出连通分量,建立子图
         compon_list = []
@@ -90,7 +91,7 @@ class CloudRegGraph(nx.DiGraph):
             #连通子图            
             ccsub = g2.subgraph(c)
             compon_list.append(ccsub)
-        print "Info: %d connected_componenent subgraph after remove FD" % len(compon_list)
+        print "Info: %d connected_componenent subgraph after remove FD [GND_VCC]*" % len(compon_list)
 
         #step2.1 
         #将每一个连通分量，也就是子图恢复为有向图，这样做的目的是搞清楚组合逻辑之间的连接关系
