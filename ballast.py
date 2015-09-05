@@ -18,11 +18,12 @@ class Ballaster:
         注意ballaster当中的函数都对整数型的节点的图有效
     '''
     def __init__(self, graph):
-        self.graph = graph #将一个cloud_reg绑定到self上   
+        ''' para: graph, a CloudRegGraph instance
+        '''
+        self.graph = graph                   # 将一个CloudRegGraph 绑定到self上   
         if isinstance(graph, CloudRegGraph):
-            # 新增的边 对应那些FDs,需要作为字典的值存储下来
-            self.arc = self.__reg2arc()
-            print "After __reg2arc:"
+            self.arc = self.__reg2arc()      # arc字典存储每一条边所对应的FD_list
+            print "CloudRegGrpah info After __reg2arc:"
             print nx.info(self.graph)
         elif not isinstance(graph, nx.DiGraph):
             print "Ballaster Error : input graph is not an nx.DiGraph"
@@ -34,8 +35,8 @@ class Ballaster:
     def __reg2arc(self):
         '''把所有的reg节点 ignore掉，将其前后相连，直接在原图上操作
         '''
-        graph = self.graph
-        arc = {} # 记录下来每一个由FD转换成的边，以及对应的FDs
+        graph = self.graph   # local 变量graph
+        arc = {}             # 记录下来每一个由FD转换成的边，以及对应的FDs
         for reg in graph.regs:
             precs = graph.predecessors(reg)
             succs = graph.successors(reg)
@@ -65,17 +66,21 @@ class Ballaster:
     def __convert2intgraph(self):
         ''' 
             拓扑图只是包含了节点以及他们的连接，所以在进行基于结构的算法时候只需要
-            把图转换成每一个节点是独特的整数的图就可以了。
-            同时返回每一个整数所对应的原图节点对象
+            把图转换成每一个节点是独特的整数的图就可以了,同时返回节点队列，
+            用于算法找到整数边之后，get_scan_fd的查询
         '''
         graph = self.graph
         intgraph = nx.DiGraph()
+        intgraph.name = graph.name + "_intgraph"
         nodes = graph.nodes()
         for edge in graph.edges_iter():
             intedge = (nodes.index(edge[0]), nodes.index(edge[1]))
             # 将FD的数量作为每一条边的权重加入到整数图中
             intgraph.add_edge(intedge[0], intedge[1],{'weight':len(self.arc[edge])})
         node_mapping = nodes #每一个整数对应的FD,存储在这个列表当中
+        # TODO: for debugability, should print the info of eachNodes in nodes_mapping
+        print "Info: intgraph edges are:"
+        print intgraph.edges()
         return intgraph, node_mapping
         
     def feedbackset(self):
@@ -99,12 +104,14 @@ class Ballaster:
         # 只是在整数图上进行移除，所以下面的操作也只是针对整数图
         self.intgraph.remove_edges_from(feedbackset_index)  
         self.intgraph.fas = feedbackset_index
-        return None
+        if not feedbackset_index: print "Info: none FAS found in this graph"
+        return feedbackset_index
         
     def balance(self,graph):
         '''parame: graph, a DAG its.__class__ == nx.DiGraph
            return: r,     removed edges set so makr the input graph a b-structure
         '''
+        # step2 ,输入一个无环的图，对其进行balance
         # 只处理整数形式的图，每一个整数对应的节点可以在后面查到
         # 输入进来的图应该是连通的，如果存在非连通图，minimum_edge_cut就会产生问题
         assert nx.is_directed_acyclic_graph(graph),\
@@ -133,7 +140,7 @@ class Ballaster:
         return r
 
     #--------------------------------------------------------------------------------
-    # 下面是直供内部调用的私有函数    
+    # 下面是直供balance算法调用的私有函数    
     def __check(self,graph):
         '''
         输入一个图G(v,A,H)来判断是否是B-structure,
@@ -184,7 +191,8 @@ class Ballaster:
                     print "root_queue    :%s " % str(next_level_que)
             if debug: print "Level: %s" % str(level)
         return True
-
+    #--------------------------------------------------------------------------------
+    
     def __cut(self, graph):
         ''' parame: 
                 graph:a nx.DiGraph obj
@@ -196,7 +204,7 @@ class Ballaster:
         debug = True
         assert isinstance(graph, nx.DiGraph), "Input_para.__class__  %s " % graph.__class__
         assert graph.number_of_nodes() > 1,   "Number of nodes: %d" % graph.number_of_nodes()
-        if debug: print "\nDigraph Edges Are:\n    %s" % str(graph.edges())
+        if debug: print "Digraph Edges Are:\n    %s" % str(graph.edges())
         unigraph = nx.Graph(graph)           #将输入的图转为无向图
         cs = nx.minimum_edge_cut(unigraph)   #找出该无向图的minimum edge cut -> CS
         #balance函数调用cut前，graph一定是一个un-balance 结构，所以一定有CUT?
@@ -226,6 +234,33 @@ class Ballaster:
         assert len(glist) == 2
         return rcs, glist[0], glist[1]
 
+    #--------------------------------------------------------------------------------
+
+    def get_scan_fd(self,scans):
+        '''从边来获取要扫描的D触发器
+            para：r
+            return: scan_fds , a list of cc.circuit_module instance
+        '''
+        debug = True
+        scan_fds = []
+        for eachEdge  in scans:
+            source = self.node_mapping[eachEdge[0]]
+            sink   = self.node_mapping[eachEdge[1]]
+            scan_fds += self.arc[(source,sink)]
+        if debug:
+            print "Info: %d has to been scan " % len(scan_fds)
+            #对详细的结果，扫描的FD的名字打印到 tmp/目录相应的文件下
+            import sys
+            log_name = "tmp/"+self.graph.name +"_scan_fds.log"
+            fobj = open(log_name,'w')
+            console = sys.stdout
+            sys.stdout = fobj
+            print "The scan FDs are:" 
+            print "\n".join([fd.name for fd in scan_fds])
+            # 打印完详细的结果，将输出重定向到console上
+            sys.stdout = console
+            fobj.close()
+
 # --------------------------------------------------------------------------------------
 
 def __test_with_intgraph():
@@ -248,22 +283,30 @@ def __test_with_intgraph():
     print "FAS is %s" % g2.fas
 
 def __test_with_crgraph():
+    '''输入一个vm文件来测试 Ballaster算法
+    '''
     from circuitgraph import get_graph_from_raw_input
     g = get_graph_from_raw_input()
     g.info()
     crgraph = CloudRegGraph(g)
     crgraph.info()
     ballast1 = Ballaster(crgraph)
-    ballast1.feedbackset()
+    fas = ballast1.feedbackset()
     print "Ballaster.intgraph.fas is:"
     print ballast1.intgraph.fas
+    print "Ballaster intgraph info After removed FAS:"
     print nx.info(ballast1.intgraph)
+    r = ballast1.balance(ballast1.intgraph)
+    if not r:
+        print "Info: B-structure after FAS removed.\nInfo: balance function found 0 fds "
+    scans = r + fas
+    ballast1.get_scan_fd(scans)
 
 
 #------------------------------------------------------------------------------    
 if __name__ == '__main__':
     'test the ballaster'    
-    __test_with_intgraph()
-    #__test_with_crgraph()
+    #__test_with_intgraph()
+    __test_with_crgraph()
 
     
