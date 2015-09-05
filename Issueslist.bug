@@ -72,4 +72,9 @@ Issue #7 Status：UN_Resolved
 问题：scan_chain中直接进行 port_list.insert()的时候，没有更新相应的
 		port_assign_list. which is 存储各个port_assign.string信息的列表
 		
-
+#-------------------------------------------------------------------------------------
+9.5 ballast.py
+Issue #8 Status:UN_Resolved Question
+问题：使用grhtest\b01 ,b17.vm进行ballast实验，发现所有的移除的D触发器都是在FAS那一步移去的，
+	  第二步根本没有电路可以用来做B-structure。并且b17只有4个节点，三条边。
+	  
