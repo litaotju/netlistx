@@ -20,6 +20,7 @@ class CloudRegGraph(nx.DiGraph):
     def __init__(self, basegraph ):
         'parameter :basegraph ，a CircuitGraph Object'
         nx.DiGraph.__init__(self)
+        self.basegraph = basegraph #记录原图的信息
         self.clouds=[]
         self.regs=[]
         self.name = basegraph.name
@@ -31,6 +32,10 @@ class CloudRegGraph(nx.DiGraph):
         # 将所有的组合逻辑找到，相连接的归为一个Cloud
         self.__get_cloud_reg_graph(basegraph) 
         
+        #只添加与PIPO-FD相连接的边，以及与Reg相连接的PIPO为cloud，
+        #与组合逻辑相连接的PIPO，不影响CR图的拓扑结构，所以在函数中没有添加
+        self.__add_pipo_empty_cloud() 
+
         # 在merge_cloud之前统计FD的扇出信息
         out_degree = self.out_degree()
         fd_outdegree = { reg: out_degree[reg] for reg in self.regs}
@@ -184,10 +189,32 @@ class CloudRegGraph(nx.DiGraph):
         print "Note: get_cloud_reg_graph() succsfully"
         return None
     
-    def _add_pipo_empty_cloud(self):
+    def __add_pipo_empty_cloud(self):
         #TODO：将输入输入添加为空的cloud
-        pass
-
+        basegraph = self.basegraph
+        include_pipo = basegraph.include_pipo
+        regs = self.regs.copy() 
+        if not include_pipo:
+            print "Waring:Try to add_pipo empty cloud to self"
+            raise CrgraphError
+        pipo_egde = basegraph.pi_edge_list + basegraph.po_edge_list
+        while(regs):
+            fd_cnt2_pipo_cnt = 0
+            for edge in pipo_egde:
+                if reg[-1] in edge[0]:
+                    fd_index = edge[0].index(reg[-1]) # FD_prim 在edge中的序号
+                    fd_port = edge[1][fd_index]       # FD_port在edge[1]中记录
+                    other_index =1-fd_index           # PIPO 在Edge中的序号
+                    pipo = edge[other_index]          #获取PIPO
+                    if not fd_port.port_name in ('D','Q'):
+                        continue
+                    pipo_cloud = nx.DiGraph()         #建立空图
+                    pipo_cloud.add_node(pipo)         #添加PIPO节点
+                    self.clouds.append(pipo_cloud)    #将新添加的图加入到self.clouds[]属性中
+                    self.add_edge(edge[0], edge[1], original_edge = edge) #为crgraph添加边
+                    fd_cnt2_pipo_cnt += 1
+                    regs.pop() #如果这个FD已经被匹配到了，那么进行下一个FD的匹配
+                    
     def __merge_cloud(self):
         '合并多个cloud'
         # ------------------------------------------------------------------
