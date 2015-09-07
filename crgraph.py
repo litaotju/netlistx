@@ -5,6 +5,7 @@ Created on Tue Aug 25 22:28:45 2015
 @e-mail:litaotju@qq.com
 address:Tianjin University
 """
+import copy
 import networkx as nx
 import class_circuit as cc
 from circuitgraph import CircuitGraph
@@ -37,18 +38,8 @@ class CloudRegGraph(nx.DiGraph):
         self.__add_pipo_empty_cloud() 
 
         # 在merge_cloud之前统计FD的扇出信息
-        out_degree = self.out_degree()
-        fd_outdegree = { reg: out_degree[reg] for reg in self.regs}
-        stat = {}
-        for degree in fd_outdegree.values():
-            if not stat.has_key(degree):
-                stat[degree] = 1
-            else:
-                stat[degree] += 1
-        print "FD's fanout stats are :"
-        print "    fan-out    fd-number"
-        for outdegree , frequency in stat.iteritems():
-            print "    %d       %d" % (outdegree, frequency)
+        self.stat_fd_outdegree()
+
         # 将小的cloug 变为一个大的cloud函数里面，为图增加了 self.big_cloud的属性
         self.__merge_cloud()               
         if self.debug:
@@ -74,6 +65,11 @@ class CloudRegGraph(nx.DiGraph):
         g2.add_nodes_from(basegraph.prim_vertex_list)
         for eachEdge in basegraph.prim_edge_list:
             g2.add_edge(eachEdge[0][0],eachEdge[0][1])
+        ## 方法2： 将原来的图中的所有节点和边都加到新的无向图中
+        #g2=nx.Graph()
+        #g2.add_nodes_from(basegraph.vertex_set)
+        #for eachEdge in basegraph.edge_set:
+        #    g2.add_edge(eachEdge[0][0],eachEdge[0][1])
         #------------------------------------------------------
         #step1 找出所有FD节点，并移去FD节点，以及VCC GND节点
         fd_list = []
@@ -88,7 +84,7 @@ class CloudRegGraph(nx.DiGraph):
         g2.remove_nodes_from(fd_list)
         if gnd_vcc:
             g2.remove_nodes_from(gnd_vcc)
-            print "Info :GND VCC node has been removed"
+            print "Info: GND VCC node has been removed"
         #------------------------------------------------------
         #step2 找出连通分量,建立子图
         compon_list = []
@@ -119,7 +115,7 @@ class CloudRegGraph(nx.DiGraph):
                 for eachPrim in eachSubgraph.nodes_iter():
                     eachPrim.__print__()
         #------------------------------------------------------
-        #step3 记录下fd的D Q 端口与其他FD以及 与组合逻辑的有向边，以及节点
+        #step3 记录下原图prim_edge_list中的 fd的D Q 端口与其他FD以及 与组合逻辑的有向边，以及节点
         special_edges=[]
         reg_reg_edges=[]
         fd_linked_nodes_edges={}
@@ -146,7 +142,8 @@ class CloudRegGraph(nx.DiGraph):
                       # 在CircuitGraph构造函数中，rules_check不检查CE信号，允许内部CE
                       # 但是这些信号对于构建CR图是没有作用的，所以这些边就不再加载到CR图中
                       if self.debug:
-                        print "Info: special edge  %s %s" % (x[0][0].name, x[0][1].name)
+                        special_edge_info = (x[0][0].name,  x[1][0].name, x[0][1].name, x[1][1].name)
+                        print "Info: special edge  %s %s %s %s" % special_edge_info
                       special_edges.append(x)
 
         #------------------------------------------------------
@@ -190,31 +187,62 @@ class CloudRegGraph(nx.DiGraph):
         return None
     
     def __add_pipo_empty_cloud(self):
-        #TODO：将输入输入添加为空的cloud
+        '''在原图的pi_edge_list, po_edge_list,中寻找与FD的 [D,Q]端口相连接的边，
+            如果找到，将该PI或者PO作为一个cloud加入到self中，将该边重新构建为cloud-reg边加入到图中
+            如果该PIPO与别的组合逻辑PRIM相连接，或者与FD的非[D，Q]端口，比如CLR或者C连接，
+            并不添加新的Cloud，一个PIPO多扇出的情况下，只将该PIPO连接到FD上。
+        '''
+        #TODO:处理一个PI扇出到多个FD的D端口的情况，应该添加几个Cloud？
         basegraph = self.basegraph
         include_pipo = basegraph.include_pipo
-        regs = self.regs.copy() 
+        regs = copy.copy(self.regs)
         if not include_pipo:
             print "Waring:Try to add_pipo empty cloud to self"
             raise CrgraphError
         pipo_egde = basegraph.pi_edge_list + basegraph.po_edge_list
+        cnt = 0 #记录这个过程中添加了多少个PIPO-Reg 边
+        pipo_2cloud = {}  # key:PIPO ,value: nx.Digraph,防止一个PIPO对应多个cloud
         while(regs):
-            fd_cnt2_pipo_cnt = 0
             for edge in pipo_egde:
-                if reg[-1] in edge[0]:
-                    fd_index = edge[0].index(reg[-1]) # FD_prim 在edge中的序号
+                if regs[-1] in edge[0]:
+                    fd_index = edge[0].index(regs[-1])# FD_prim 在edge中的序号
                     fd_port = edge[1][fd_index]       # FD_port在edge[1]中记录
-                    other_index =1-fd_index           # PIPO 在Edge中的序号
-                    pipo = edge[other_index]          #获取PIPO
                     if not fd_port.port_name in ('D','Q'):
                         continue
-                    pipo_cloud = nx.DiGraph()         #建立空图
-                    pipo_cloud.add_node(pipo)         #添加PIPO节点
-                    self.clouds.append(pipo_cloud)    #将新添加的图加入到self.clouds[]属性中
-                    self.add_edge(edge[0], edge[1], original_edge = edge) #为crgraph添加边
-                    fd_cnt2_pipo_cnt += 1
-                    regs.pop() #如果这个FD已经被匹配到了，那么进行下一个FD的匹配
-                    
+                    pipo = edge[0][1-fd_index]        # 获取PIPO
+                    cnt += 1
+                    if not pipo_2cloud.has_key(pipo):     #如果还没有用过这个PIPO建立过图
+                        pipo_cloud = nx.DiGraph()         #建立空图
+                        pipo_cloud.add_node(pipo)         #添加PIPO节点
+                        pipo_2cloud[pipo] = pipo_cloud    #更新 pipo->cloud字典
+                        self.clouds.append(pipo_2cloud[pipo])    #将pipo对应的图加入到self.clouds[]属性中
+                    if fd_index == 1:
+                        self.add_edge(pipo_2cloud[pipo], regs[-1], original_edge = edge) #为crgraph添加边
+                    else:
+                        self.add_edge(regs[-1], pipo_2cloud[pipo], original_edge = edge) #为crgraph添加边
+            #这个FD查找完了所有的PIPO边，将其从队列中移除，进行下一个FD的PIPO边查找
+            regs.pop()
+        print "Info: %d PIPO has been added to CloudRegGraph as cloud." % len(pipo_2cloud)
+        print "Info: %d PIPO-Reg edge has been added to CloudRegGraph" % cnt
+        print "Note: add_pipo_empty_cloud() to crgraph successfully ."
+
+    def stat_fd_outdegree(self):
+        '''统计在merge_cloud之前FD的fan-out频次，并将其打印到标准输出上
+        '''
+        out_degree = self.out_degree()
+        fd_outdegree = { reg: out_degree[reg] for reg in self.regs}
+        stat = {}
+        for degree in fd_outdegree.values():
+            if not stat.has_key(degree):
+                stat[degree] = 1
+            else:
+                stat[degree] += 1
+        print "FD's fanout stats are :"
+        print "    fan-out    fd-number"
+        for outdegree , frequency in stat.iteritems():
+            print "    %d       %d" % (outdegree, frequency)
+        return None
+              
     def __merge_cloud(self):
         '合并多个cloud'
         # ------------------------------------------------------------------
@@ -257,6 +285,7 @@ class CloudRegGraph(nx.DiGraph):
             if isinstance(node , nx.DiGraph):
                 cloud = node   
                 self.big_clouds.append( cloud )
+        print "Note: merge_cloud() successfully."
         return None
 
     def __add_clouds_from(self, list1):
@@ -287,12 +316,12 @@ class CloudRegGraph(nx.DiGraph):
             if  npre > 1:
                 print "Crgrpah Rules Error : %s %s has %d >1 predecessors" %\
                     (reg.cellref, reg.name, npre)
-                print ",".join([ str(eachPre.__class__) for eachPre in self.predecessors(reg)])
+                print "\n".join([ str(eachPre.__class__) for eachPre in self.predecessors(reg)])
                 raise CrgraphRuleError
-            if  nsuc > 1:
-                print "Crgrpah Rules Error : %s %s has  %d >1 successors" %\
+            if  nsuc != 1:
+                print "Crgrpah Rules Error : %s %s has  %d successors" %\
                     (reg.cellref, reg.name, nsuc)
-                print ",".join([ str(eachSuc.__class__) for eachSuc in self.successors(reg)])
+                print "\n".join([ str(eachSuc.__class__) for eachSuc in self.successors(reg)])
                 raise CrgraphRuleError
         print "Info:Check Rules of cloud_reg_graph succfully,\n    none of FD has more than 2 degree"
 
@@ -327,7 +356,10 @@ class CloudRegGraph(nx.DiGraph):
                 label_dict[eachCloud] = 'cloud'
             elif eachCloud.number_of_nodes() == 1:
                 node = eachCloud.nodes()[0]
-                label_dict[eachCloud] = "cloud:"+ node.cellref + ":" + node.name
+                if isinstance(node, cc.circut_module):
+                    label_dict[eachCloud] = "cloud:"+ node.cellref + ":" + node.name
+                else: #its a port node
+                    label_dict[eachCloud] = node.port_type +":"+node.port_name
             else:
                 label_dict[eachCloud] = 'empty_cloud'
         for eachReg in self.regs:
@@ -353,7 +385,8 @@ class CloudRegGraph(nx.DiGraph):
                     continue
                 if verbose: print "cloud ::"
                 for prim in node.nodes_iter():
-                    assert isinstance(prim, cc.circut_module), "cloud type %s " % str(prim.__class__)              
+                    assert isinstance(prim, (cc.circut_module, cc.port)),\
+                         "cloud type %s " % str(prim.__class__)              
                     if verbose: prim.__print__()
             else:
                 assert isinstance(node ,cc.circut_module) ,"reg type %s " % str(node.__class__)
