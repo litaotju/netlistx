@@ -303,11 +303,9 @@ def get_reset_in_fd(all_fd_dict,verbose=False):
                 reset_list.append(current_reset)
     if verbose:
         print "Info: all the Async Reset Signal Are:\n    ",
-        for eachAsync in async_reset_list:
-            print eachAsync+",  "
-        print "\nInfo: all the Sync Reset Signal Are:\n    ",
-        for eachSync  in reset_list:
-            print eachSync +",  "
+        print ",".join(async_reset_list)
+        print "Info: all the Sync Reset Signal Are:\n    ",
+        print ",".join(reset_list)
     print "Note: get_reset_in_fd() successfully"
     return reset_list,async_reset_list
     
