@@ -364,13 +364,26 @@ class CloudRegGraph(nx.DiGraph):
                 label_dict[eachCloud] = 'empty_cloud'
         for eachReg in self.regs:
             label_dict[eachReg] = eachReg.cellref + ":" + eachReg.name
-        ps=nx.spring_layout(self)
+        ps= nx.random_layout(self)
+        import matplotlib.pylab as plt
         nx.draw_networkx_nodes(self, pos=ps, nodelist = self.big_clouds, node_color = 'r')
         nx.draw_networkx_nodes(self, pos=ps, nodelist = self.regs, node_color = 'g')
         nx.draw_networkx_edges(self,ps)
         nx.draw_networkx_labels(self,ps,labels=label_dict)
         plt.show()
         return True
+
+    def crlayout(self,default = True):
+        '''设置CloudRegGraph图的节点位置
+        '''
+        fds = self.regs
+        clouds = self.clouds
+        ps = {} #存储每一个节点的位置的字典
+        if default:
+            ps = nx.random_layout(self)
+            return ps
+        # TODO: compute each node's position
+        return ps
 
     def info(self , verbose = False):
         print "--------------Cloud_Reg_graph info:-----------------"
@@ -399,6 +412,20 @@ class CloudRegGraph(nx.DiGraph):
         print "Number of register:%d" % nreg
         print "--------------------------------------"
 
+    def to_gexf_file(self, filename):
+        '''输出图的信息到指定的gexf文件中'''
+        new_graph =nx.DiGraph()
+        fobj = open(self.name+"fdnameid.gexf",'w')
+        for reg in self.regs:
+            fobj.write(reg.name+"\n")
+            reg_id = '_d_'+reg.name[1:] if reg.name[0]=='\\' else reg.name
+            new_graph.add_node(reg, id =reg_id, label = reg.cellref)
+        fobj.close()
+        for cloud in self.big_clouds:
+            new_graph.add_node(cloud, id= id(cloud),label= 'cloud')
+        for eachEdge in self.edges_iter():
+            new_graph.add_edge(eachEdge[0],eachEdge[1])
+        nx.write_gexf(new_graph, filename)
 #------------------------------------------------------------------------------
 # 模块测试代码
 #------------------------------------------------------------------------------
@@ -410,7 +437,7 @@ def __test():
     g2.info() #打印原图的详细信息
     cr2 = CloudRegGraph(g2) 
     cr2.info()
-
+    cr2.to_gexf_file("tmp\\%s_crgraph.gexf" % cr2.name)
     if cr2.number_of_nodes() <= 100:
         plt.figure( cr2.name+"_crgraph")
         cr2.paint()

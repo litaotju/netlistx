@@ -371,6 +371,20 @@ class CircuitGraph(nx.DiGraph):
         s1.new_edges=new_edge
         self.s_graph=s1
         return s1.copy()
+
+    def to_gexf_file(self, filename):
+        '''把图写入gexf文件，不对原图做任何改变
+            新图中的节点增加了id和label两个属性
+        '''
+        new_graph = nx.DiGraph()
+        for node in self.nodes_iter():
+            node_label = node.cellref if isinstance(node, cc.circut_module) else node.port_type
+            node_id = '_d_'+node.name[1:] if node.name[0]=='\\' else node.name
+            new_graph.add_node(node, id= node_id, label = node_label)
+        for start, end, data in self.edges_iter(data=True):
+            #label = data['connection']
+            new_graph.add_edge(start, end)
+        nx.write_gexf(new_graph, filename)
 #------------------------------------------------------------------------------
         
 def get_graph_from_raw_input():
@@ -397,7 +411,9 @@ def __test():
     nu.rules_check(m_list)
     
     g1 = CircuitGraph(m_list, include_pipo = True)
+    g1.to_gexf_file('tmp\\%s_icpipo.gexf' % g1.name)
     g2 = CircuitGraph(m_list, include_pipo = False)
+    g2.to_gexf_file('tmp\\%s_nopipo.gexf' % g2.name)
     if len(m_list) <= 20:
         for eachPrim in m_list:
             eachPrim.__print__()
