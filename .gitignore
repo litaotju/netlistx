@@ -1,6 +1,7 @@
 *.txt
 *.png
 *.jpg
+*.gexf
 /*.vm
 /*.v
 /*test/
