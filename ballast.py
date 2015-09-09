@@ -301,6 +301,10 @@ def __test_with_crgraph():
         print "Info: B-structure after FAS removed.\nInfo: balance function found 0 fds "
     scans = r + fas
     ballast1.get_scan_fd(scans)
+    import matplotlib.pylab as plt
+    plt.figure(ballast1.intgraph.name+"_after FAS")
+    nx.draw(ballast1.intgraph)
+    plt.show()
 
 
 #------------------------------------------------------------------------------    
