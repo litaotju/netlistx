@@ -385,6 +385,30 @@ class CircuitGraph(nx.DiGraph):
             #label = data['connection']
             new_graph.add_edge(start, end)
         nx.write_gexf(new_graph, filename)
+
+    def to_dot_file(self, filename):
+        '''把图写入到dot文件中，不对原图做什么改变
+            新图的节点只是字符串。
+        '''
+        new_graph = nx.DiGraph()
+        for start, end, data  in self.edges_iter(data = True):
+            port_pair = data['port_pair']
+            connection = data['connection']
+            edge = [start, end] # 存储边的起点和终点
+            node_id =['','']    # 存储节点的名称
+            node_data =[{},{}]  # 存储要打印到dot中的信息
+            for i in range(2):
+                # 当前节点是prim 或者是 port
+                is_prim = True if isinstance(edge[i], cc.circut_module) else False
+                # prim和port的数据属性不同，根据判断为生成dot节点的名称，和节点附属的['shape']数据
+                node_name = '_d_'+edge[i].name[1:] if edge[i].name[0]=='\\' else edge[i].name 
+                node_id[i] = edge[i].cellref+node_name if is_prim else\
+                             edge[i].port_type+node_name
+                # prim为box形状（盒子），port为invtriangle形状（倒三角）
+                node_data[i]['shape'] = 'box' if is_prim else 'invtriangle' 
+                new_graph.add_node(node_id[i],node_data[i])
+            new_graph.add_edge(node_id[0], node_id[1])
+        nx.write_dot(new_graph, filename)
 #------------------------------------------------------------------------------
         
 def get_graph_from_raw_input():
@@ -410,10 +434,15 @@ def __test():
     nu.mark_the_circut(m_list)
     nu.rules_check(m_list)
     
+    #生成带pipo的图
     g1 = CircuitGraph(m_list, include_pipo = True)
     g1.to_gexf_file('tmp\\%s_icpipo.gexf' % g1.name)
+    g1.to_dot_file("tmp\\%s_icpipo.dot" % g1.name)
+    
+    #生成不带pipo的图
     g2 = CircuitGraph(m_list, include_pipo = False)
     g2.to_gexf_file('tmp\\%s_nopipo.gexf' % g2.name)
+    g2.to_dot_file("tmp\\%s_nopipo.dot" % g2.name)
     if len(m_list) <= 20:
         for eachPrim in m_list:
             eachPrim.__print__()
