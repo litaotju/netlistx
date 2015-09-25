@@ -21,8 +21,6 @@
     <PtvsTargetsFile>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets</PtvsTargetsFile>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="crtest\crtest.png" />
-    <Content Include="crtest\crtest_log.txt" />
     <Content Include="crtest\crtest测试前必读.txt" />
     <Content Include="crtest\Readme.txt" />
     <Content Include="grhtest\Readme.txt" />
@@ -37,6 +35,9 @@
     <Compile Include="class_circuit.py" />
     <Compile Include="crgraph.py" />
     <Compile Include="exception.py" />
+    <Compile Include="file_util.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="graph_top.py" />
     <Compile Include="graph_util.py" />
     <Compile Include="netlist_parser\lex.py" />
