@@ -411,10 +411,11 @@ class CircuitGraph(nx.DiGraph):
         nx.write_dot(new_graph, filename)
 #------------------------------------------------------------------------------
         
-def get_graph_from_raw_input():
+def get_graph_from_raw_input(fname = None):
     '''for test only'''
     import netlist_util as nu
-    fname = raw_input("plz enter file name:")
+    if not fname:
+        fname = raw_input("plz enter file name:")
     info = nu.vm_parse(fname)
     m_list = info['m_list']
     print "Top module is:"
@@ -425,7 +426,9 @@ def get_graph_from_raw_input():
     return g1
     
 def __test():
-    '''for test only'''
+    '''for test only,输入一个文件名，生成带PIPO和不带PIPO的图，
+       然后将生成的图分别保存到tmp\\下的.dot文件和.gexf文件
+    '''
     import netlist_util as nu
     fname = raw_input("plz enter file name:")
     info = nu.vm_parse(fname)
@@ -454,10 +457,35 @@ def __test():
     g2.info(verbose_info)
     print "----Including PIPO----"    
     g1.info(verbose_info)
-    #g1.paint()
-    return True
+    return None
+
+def fanout_stat(graph):
+
+    '''统计图中的FD节点和组合逻辑节点的扇出，打印到标准输出上
+    '''
+    g1 = graph #local variable
+    com_degree_stat = {} #组合逻辑扇出的统计
+    fd_degree_stat = {}  #D触发器扇出数量的统计
+    for eachNode in g1.nodes_iter():
+        degree = g1.out_degree(eachNode)
+        if isinstance(eachNode, cc.circut_module):
+            if eachNode.m_type != 'FD':
+                if not com_degree_stat.has_key( degree ):
+                    com_degree_stat[degree] = 0
+                com_degree_stat[ degree] += 1
+            else:
+                if not fd_degree_stat.has_key( degree ):
+                    fd_degree_stat[degree]  =0
+                fd_degree_stat[degree] += 1
+    print "combinational node degree are:"
+    for key, val in com_degree_stat.iteritems():
+        print "%d %d" % (key, val)
+    print "fd node degree stat are:"
+    for key ,val in fd_degree_stat.iteritems():
+        print "%d %d" % (key, val)
+    return None
 #------------------------------------------------------------------------------
 if __name__ =='__main__':
-    __test()
-
-    
+    #__test()
+    g1 = get_graph_from_raw_input()
+    fanout_stat(g1)
