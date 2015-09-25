@@ -349,7 +349,7 @@ class CloudRegGraph(nx.DiGraph):
                 raise CrgraphRuleError
         print "Info: Check Rules2 of cloud_reg_graph succfully,\n    every edge is FD-cloud edge"
 
-    def paint(self, path = None):
+    def paint(self):
         label_dict={}
         for eachCloud in self.big_clouds:
             if eachCloud.number_of_nodes()>1:
@@ -370,9 +370,7 @@ class CloudRegGraph(nx.DiGraph):
         nx.draw_networkx_nodes(self, pos=ps, nodelist = self.regs, node_color = 'g')
         nx.draw_networkx_edges(self,ps)
         nx.draw_networkx_labels(self,ps,labels=label_dict)
-        savepath = path if path else "tmp\\"
-        plt.savefig(savepath + self.name + ".png")
-        plt.close()
+        plt.show()
         return True
 
     def crlayout(self,default = True):
@@ -435,17 +433,17 @@ def __test():
     '''crgraph本模块的测试
     '''
     from circuitgraph import get_graph_from_raw_input
-    from file_util import vm_files
-    path = "crtest\\"
-    for eachVm in vm_files(path):
-        g2 = get_graph_from_raw_input(path+eachVm) # 输入netlist 文件，得到 CircuitGraph对象g2
-        g2.info() #打印原图的详细信息
-        cr2 = CloudRegGraph(g2) 
-        cr2.info()
-        cr2.to_gexf_file("tmp\\%s_crgraph.gexf" % cr2.name)
-        if cr2.number_of_nodes() <= 100:
-            cr2.paint("crtest\\")
-
+    g2 = get_graph_from_raw_input() # 输入netlist 文件，得到 CircuitGraph对象g2
+    g2.info() #打印原图的详细信息
+    cr2 = CloudRegGraph(g2) 
+    cr2.info()
+    cr2.to_gexf_file("tmp\\%s_crgraph.gexf" % cr2.name)
+    if cr2.number_of_nodes() <= 100:
+        plt.figure( cr2.name+"_crgraph")
+        cr2.paint()
 if __name__ == '__main__':
     import matplotlib.pylab as plt
     __test()
+
+    
+    
