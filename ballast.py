@@ -20,10 +20,16 @@ class Ballaster:
     def __init__(self, graph):
         ''' para: graph, a CloudRegGraph instance
         '''
-        assert isinstance(graph, (CloudRegGraph, nx.DiGraph)), str(graph.__class__)
-        self.graph = graph
-        self.arc = self.__reg2arc() if isinstance(graph, CloudRegGraph)\
-                else {(edge[0],edge[1]):graph[edge[0]][edge[1]]['weight'] for edge in graph.edges_iter()}
+        self.graph = graph                   # 将一个CloudRegGraph 绑定到self上   
+        if isinstance(graph, CloudRegGraph):
+            self.arc = self.__reg2arc()      # arc字典存储每一条边所对应的FD_list
+            print "CloudRegGrpah info After __reg2arc:"
+            print nx.info(self.graph)
+        elif not isinstance(graph, nx.DiGraph):
+            print "Ballaster Error : input graph is not an nx.DiGraph"
+            print "                  but an instance of %s " % str(graph.__class__)
+            raise BallastError
+        # 注意整数图所存储的每一个节点都是Cloud, 没有Reg. Reg是以边的形式存在的
         self.intgraph , self.node_mapping = self.__convert2intgraph()
     
     def __reg2arc(self):
@@ -34,40 +40,27 @@ class Ballaster:
         for reg in graph.regs:
             precs = graph.predecessors(reg)
             succs = graph.successors(reg)
-            print "precs: %s" % str(precs)
-            print "succs: %s" % str(succs)
             prec = None
             succ = None
-            assert len(precs) <= 1
+            graph.remove_node(reg)
             if len(precs) == 1 : # must be 1, if __check_rules succsfull
                 assert isinstance(precs[0], nx.DiGraph),\
                     "reg %s %s -->> prec %s %s" % \
                     (reg.cellref, reg.name, precs[0].cellref, precs[0].name)
                 prec = precs[0]
-            assert len(succs) == 1
-            assert isinstance(succs[0], nx.DiGraph) ,\
-                "reg %s %s -->> succ %s %s" % \
-                (reg.cellref, reg.name, succs[0].cellref, succs[0].name)
-            succ = succs[0]
-            if not prec is None: #只有两个都非空的情况下，才新加入边
-                graph.add_edge(prec, succ)
-                if not arc.has_key( (prec, succ) ):
-                    arc[(prec, succ)]= []
-                arc[(prec, succ)].append(reg)
-            else:
-                print "Waring :%s %s has no prec" % (reg.cellref, reg.name)
-                reg.__print__()
-                #记录下来每一条边所对对应的多个FD，将它们组成一个队列作为一个字典的值，存储起来
-                #（None,succ）表示这个点没有前驱只有后继
-                #（prec,None）表示这个点没有后继只有前驱
-            graph.remove_node(reg)
-
-        #验证每一个D触发器的数目都反映在边的权重上
-        remain_reg = 0
-        for key,val in arc.iteritems():
-            remain_reg += len(val)
-        if not remain_reg == len(graph.regs):
-            print "Waring: %d / %d regs remained in intgraph" % (remain_reg, len(graph.regs) )
+            if len(succs) == 1 :
+                assert isinstance(succs[0], nx.DiGraph) ,\
+                    "reg %s %s -->> succ %s %s" % \
+                    (reg.cellref, reg.name, succs[0].cellref, succs[0].name)
+                succ = succs[0]
+                if prec: #只有两个都非空的情况下，才新加入边
+                    graph.add_edge(prec, succ)
+            # 记录下来每一条边所对对应的多个FD，将它们组成一个队列作为一个字典的值，存储起来
+            # （None,succ）表示这个点没有前驱只有后继
+            # （prec,None）表示这个点没有后继只有前驱
+            if not arc.has_key( (prec, succ) ):
+                arc[(prec, succ)]= []
+            arc[(prec, succ)].append(reg)
         return arc
 
     def __convert2intgraph(self):
@@ -80,15 +73,14 @@ class Ballaster:
         intgraph = nx.DiGraph()
         intgraph.name = graph.name + "_intgraph"
         nodes = graph.nodes()
-        print "Info: intgraph edges are:"
         for edge in graph.edges_iter():
             intedge = (nodes.index(edge[0]), nodes.index(edge[1]))
             # 将FD的数量作为每一条边的权重加入到整数图中
-            intgraph.add_edge(intedge[0], intedge[1],{'weight':len(self.arc[edge]),\
-                                                       'label':len(self.arc[edge])})
-            print "%s %d" % ( str(intedge), len(self.arc[edge]) )
-        node_mapping = nodes #每一个整数对应的Cloud,存储在这个列表当中
+            intgraph.add_edge(intedge[0], intedge[1],{'weight':len(self.arc[edge])})
+        node_mapping = nodes #每一个整数对应的FD,存储在这个列表当中
         # TODO: for debugability, should print the info of eachNodes in nodes_mapping
+        print "Info: intgraph edges are:"
+        print intgraph.edges()
         return intgraph, node_mapping
         
     def feedbackset(self):
@@ -268,7 +260,7 @@ class Ballaster:
             # 打印完详细的结果，将输出重定向到console上
             sys.stdout = console
             fobj.close()
-        return None
+
 # --------------------------------------------------------------------------------------
 
 def __test_with_intgraph():
@@ -314,36 +306,11 @@ def __test_with_crgraph():
     nx.draw(ballast1.intgraph)
     plt.show()
 
-def paint_intgraph():
-    '''将path目录下的每一个的intgraph画出来
-    '''
-    import os
-    from circuitgraph import get_graph_from_raw_input
-    from file_util import vm_files
-    import matplotlib.pylab as plt
-    path = "v7v10\\"
-    picpath = path+"pic\\"
-    if not os.path.exists(picpath):
-        os.mkdir(path+"pic\\")
-    for eachVm in vm_files(path):
-        g = get_graph_from_raw_input(path+eachVm)
-        g.info()
-        crgraph = CloudRegGraph(g)
-        crgraph.info()
-        ballast1 = Ballaster(crgraph)
-        p = ballast1.intgraph #整数图
-        ps = nx.spring_layout(p)
-        label = nx.get_edge_attributes(p, "weight")
-        nx.draw_networkx_edge_labels(p, ps, label)
-        nx.write_dot(p, path+"pic\\"+"int_"+g.name+".dot")
-        nx.draw(p, ps)
-        plt.savefig(path+"pic\\"+"int_"+g.name+".png")
-        plt.close()
+
 #------------------------------------------------------------------------------    
 if __name__ == '__main__':
     'test the ballaster'    
     #__test_with_intgraph()
-    #__test_with_crgraph()
-    paint_intgraph()
+    __test_with_crgraph()
 
     
