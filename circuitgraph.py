@@ -6,6 +6,7 @@ Created on Tue Aug 25 22:31:02 2015
 address:Tianjin University
 """
 
+import re
 import networkx as nx
 import matplotlib.pyplot as plt
 import class_circuit as cc
@@ -186,20 +187,29 @@ class CircuitGraph(nx.DiGraph):
                     continue
                 # 如果这个信号的名字包含在PO名字里面
                 if poname.has_key(wire_name):
-                    if not (eachPort.port_type =='output'):
-                        #output的那个wire名字可能作为一个模块的输出wire_name，
-                        #然后连接到其他模块的输入上面,这种连接就不需要使用po_edge来记录，只需要跳过就好了
-                        continue
-                    if not po_dict.has_key(wire):
-                        po_dict[wire] = {'source':(),'sink':poname[wire_name]}
-                    if po_dict[wire]['source']: #如果这个PO的bit位信号，已经有source了
-                        print "wire: PO %s has more than 1 source. 1st source is %s %s.2nd source is %s %s"\
-                            % (wire, po_dict[wire]['source'][0].name,po_dict[wire]['source'][1].port_name,\
-                               eachPrim.cellref, eachPrim.name)
-                        raise CircuitGraphError
-                    po_dict[wire]['source'] = (eachPrim, eachPort)
+                    # 无论如何将PO中的信号全部加入到cnt_dict的信息中，之后将没有prim sink的那些信号进行过滤
+                    if not cnt_dict.has_key(wire):
+                        cnt_dict[wire] = { 'source':(),'sink':[] }
+                    if eachPort.port_type == 'output':
+                        cnt_dict[wire]['source'] = (eachPrim, eachPort)
+                    else:
+                        cnt_dict[wire]['sink'].append( (eachPrim, eachPort) )
+                    # 将这个信号的连接信息加入到po_dict中
+                    if eachPort.port_type == "output":
+                        if not po_dict.has_key(wire):
+                            po_dict[wire] = {'source':(eachPrim, eachPort),'sink':poname[wire_name]}
+                        else: #有别的输出端口已经连接到这个属于po的wire上，直接报错
+                            #if po_dict[wire]['source']: #如果这个PO的bit位信号，已经有source了
+                            print "wire: PO %s has more than 1 source. 1st source is %s %s.2nd source is %s %s"\
+                                % (wire, po_dict[wire]['source'][0].name,po_dict[wire]['source'][1].port_name,\
+                                   eachPrim.cellref, eachPrim.name)
+                            raise CircuitGraphError
+                    #po_dict[wire]['source'] = (eachPrim, eachPort)
                     continue
                 # 如果这个信号的名字既没包含在PI也没包含在PO,那只能是Prim之间的连接了
+                if eachPort.port_type == 'clock':
+                    assert pi_dict.has_key(eachPort.port_assign.string)
+                    continue
                 if not cnt_dict.has_key(wire):
                     cnt_dict[wire] = {'source':(),'sink':[] }
                 if eachPort.port_type == 'output':
@@ -223,16 +233,16 @@ class CircuitGraph(nx.DiGraph):
         for eachWire, SourceSinkDict in cnt_dict.iteritems():
             source = SourceSinkDict['source']
             sinks = SourceSinkDict['sink']
-            if len(source) == 0:
+            if not source:
                 print "Error: no source of signal %s " % eachWire
                 raise CircuitGraphError
             if len(sinks) < 1 :
                 # GND VCC 的输出可能不会连接到其他PRIM上，所以其sink可以为0
                 if source[0].cellref in ['VCC', 'GND']:
                     continue
-                print "Error:no sinks of signal %s ,its source is %s %s %s"%\
-                    (eachWire, source[0].cellref, source[0].name, source[1].port_name)
-                raise CircuitGraphError
+                #print "Waring: %s has no prim sink ,its source is %s %s %s"%\
+                #    (eachWire, source[0].cellref, source[0].name, source[1].port_name)
+                #continue
             for eachSink in sinks:
                 self.add_edge(source[0], eachSink[0],\
                     port_pair = (source[1], eachSink[1]),\
@@ -423,6 +433,14 @@ def get_graph_from_raw_input(fname = None):
     nu.mark_the_circut(m_list)
     nu.rules_check(m_list)
     g1 = CircuitGraph(m_list, include_pipo = True)
+    debug = True
+    if debug:
+        # 打印扇入为0的FD的信息
+        fd_nodes = [fd for fd in g1.nodes_iter() if isinstance(fd, cc.circut_module) and fd.m_type=='FD']
+        print "0 in-degree fd:"
+        for fd in fd_nodes:
+            if g1.in_degree(fd) == 0:
+                fd.__print__()
     return g1
     
 def __test():
@@ -486,6 +504,6 @@ def fanout_stat(graph):
     return None
 #------------------------------------------------------------------------------
 if __name__ =='__main__':
-    #__test()
-    g1 = get_graph_from_raw_input()
-    fanout_stat(g1)
+    __test()
+    #g1 = get_graph_from_raw_input()
+    #fanout_stat(g1)
