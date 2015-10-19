@@ -20,16 +20,14 @@ class CloudRegGraph(nx.DiGraph):
     '''
     def __init__(self, basegraph ):
         'parameter :basegraph ，a CircuitGraph Object'
+        assert isinstance(basegraph, CircuitGraph) ,"%s" % str(basegraph.__class__)
         nx.DiGraph.__init__(self)
         self.basegraph = basegraph #记录原图的信息
         self.clouds=[]
         self.regs=[]
         self.name = basegraph.name
-        assert isinstance(basegraph, CircuitGraph) ,"%s" % str(basegraph.__class__)
-        
-        # 调试的时候设置打印信息，调试完请改回False
+
         self.debug = False
-        
         # 将所有的组合逻辑找到，相连接的归为一个Cloud
         self.__get_cloud_reg_graph(basegraph) 
         
