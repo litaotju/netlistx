@@ -164,7 +164,7 @@ class CircuitGraph(nx.DiGraph):
         po_dict = {}  # po_dict[wire1] = {'source':(),'sink':po }
         cnt_dict = {} # cnt_dict[wire1] = {'source':(),'sink':[(prim,port),()...]}
 
-        print "Processing: searching edges from prim_vertex_list..."
+        print "Process: searching edges from prim_vertex_list..."
         for eachPrim in self.prim_vertex_list:
             for eachPort in eachPrim.port_list:
                 #assert每一个端口里面的wire都是单比特信号
