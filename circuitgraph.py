@@ -504,6 +504,16 @@ def fanout_stat(graph):
     return None
 #------------------------------------------------------------------------------
 if __name__ =='__main__':
-    __test()
-    #g1 = get_graph_from_raw_input()
-    #fanout_stat(g1)
+    print "命令行帮助，可选命令如下"
+    print "graph:输入一个文件名称，分别生成两个图（包含和不包含PIPO），保存图的信息到\\tmp下"
+    print "fanout:输入一个文件名称，统计其中组合逻辑和FD节点的扇出数目统计"
+    print "exit:退出主程序"
+    while(1):
+        cmd = raw_input("plz enter command:")
+        if cmd == "graph" :
+            __test()
+        if cmd == "fanout":
+            g1 = get_graph_from_raw_input()
+            fanout_stat(g1)
+        if cmd == "exit":
+            break
