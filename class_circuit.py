@@ -106,8 +106,11 @@ class circut_module:
 
 
 class signal:
-    '--wire decled, primitive port_assignment--'
     def __init__(self,s_type='wire',name=None,vector=None):
+        '''@param: s_type = ['wire', 'input','output','inout']
+                   name = id_string,
+                    vector = [\d+:\d+]
+        '''
         self.s_type=s_type
         self.name  =name
         self.vector=vector #None,or string 类型的[nm1:num2]或者[num]
@@ -121,9 +124,9 @@ class signal:
         else:
             self.string=name+vector;
         if not self.vector==None:
-            self.__get_width__()
+            self.__get_width()
 
-    def __get_width__(self):
+    def __get_width(self):
         vector_match=re.match('\[(\d+):(\d+)\]',self.vector)
         bit_match=re.match('\[(\d+)\]',self.vector)
         if vector_match is not None:
@@ -160,7 +163,23 @@ class signal:
             else:
                 print self.s_type+" "+self.vector+" "+self.name+" ;"
                 
-                
+    def __eq__(self, obj):
+         ## 比较两个signal 对象是否相等，直接比较name, s_type和vector三个字符串
+         ## 属性是否相等，相等则断言其他根据这几个属性推出的属性也必然相等
+         assert isinstance(obj, signal),"%s" % str(obj.__class__)
+         if self.name != obj.name:
+             return False
+         if self.s_type != obj.s_type:
+             return False
+         if self.vector != obj.vector:
+             return False
+         assert self.bit_loc == obj.bit_loc
+         assert self.lsb == obj.lsb
+         assert self.msb == obj.msb
+         assert self.width == self.width
+         return True
+
+
 class joint_signal:
     '--this is a special signal type for signal concut in { }--'
     def __init__(self):
@@ -247,4 +266,11 @@ prim_dict={
     "INV"  :{'I':['I'],'O':['O']}, 
     "GND":{'O':['G']},
     "VCC":{'O':['P']}
-    }           
+    }  
+
+if __name__ == "__main__":
+    x = signal('wire', 'x', '[10:10]')
+    y = signal('wire', 'x', '[10:10]')
+    assert x == y
+    print x == y
+    assert not ( x is y)      
