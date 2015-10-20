@@ -34,7 +34,7 @@ def vm_parse(input_file, write= False):
             for eachSignal in p['signal_decl_list']:
                 eachSignal.__print__(is_wire_decl=True)
             for eachPrimitive in p['m_list'][1:]:
-                eachPrimitive.print_module()
+                eachPrimitive.__print__()
             if len(p)==5:
                 for eachAssign in p['assign_stm_list']:
                     eachAssign.__print__()
