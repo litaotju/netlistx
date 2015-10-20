@@ -432,7 +432,7 @@ def get_graph_from_raw_input(fname = None):
     m_list = info['m_list']
     print "Top module is:"
     m_list[0].__print__()
-    nu.mark_the_circut(m_list)
+    nu.mark_the_circut(m_list, allow_unkown = False)
     nu.rules_check(m_list)
     g1 = CircuitGraph(m_list, include_pipo = True)
     debug = True
@@ -454,7 +454,7 @@ def __test():
     info = nu.vm_parse(fname)
     m_list = info['m_list']
 
-    nu.mark_the_circut(m_list)
+    nu.mark_the_circut(m_list, allow_unkown = False)
     nu.rules_check(m_list)
     
     #生成带pipo的图
@@ -506,11 +506,11 @@ def fanout_stat(graph):
     return None
 #------------------------------------------------------------------------------
 if __name__ =='__main__':
-    print "命令行帮助，可选命令如下"
-    print "graph:输入一个文件名称，分别生成两个图（包含和不包含PIPO），保存图的信息到\\tmp下"
-    print "fanout:输入一个文件名称，统计其中组合逻辑和FD节点的扇出数目统计"
-    print "exit:退出主程序"
     while(1):
+        print u"命令行帮助，可选命令如下"
+        print u"graph:输入一个文件名称，分别生成两个图（包含和不包含PIPO），保存图的信息到\\tmp下"
+        print u"fanout:输入一个文件名称，统计其中组合逻辑和FD节点的扇出数目统计"
+        print u"exit:退出主程序"
         cmd = raw_input("plz enter command:")
         if cmd == "graph" :
             __test()
