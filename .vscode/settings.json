@@ -8,7 +8,7 @@
 	"files.exclude": {
 		"**/.git": true,
 		"**/.DS_Store": true,
-        "**.pyc":true,
+        "**/*.pyc" :true,
         "**.sln":true,
         "**.suo":true,
         "**.pyproj" :true
