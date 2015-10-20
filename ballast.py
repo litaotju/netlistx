@@ -20,6 +20,7 @@ class Ballaster:
     def __init__(self, graph):
         ''' para: graph, a CloudRegGraph instance
         '''
+        # 9.25 修改构造函数
         assert isinstance(graph, (CloudRegGraph, nx.DiGraph)), str(graph.__class__)
         self.graph = graph
         self.arc = self.__reg2arc() if isinstance(graph, CloudRegGraph)\
@@ -34,8 +35,6 @@ class Ballaster:
         for reg in graph.regs:
             precs = graph.predecessors(reg)
             succs = graph.successors(reg)
-            print "precs: %s" % str(precs)
-            print "succs: %s" % str(succs)
             prec = None
             succ = None
             assert len(precs) <= 1
@@ -56,7 +55,6 @@ class Ballaster:
                 arc[(prec, succ)].append(reg)
             else:
                 print "Waring :%s %s has no prec" % (reg.cellref, reg.name)
-                reg.__print__()
                 #记录下来每一条边所对对应的多个FD，将它们组成一个队列作为一个字典的值，存储起来
                 #（None,succ）表示这个点没有前驱只有后继
                 #（prec,None）表示这个点没有后继只有前驱
@@ -259,7 +257,7 @@ class Ballaster:
             print "Info: %d has to been scan " % len(scan_fds)
             #对详细的结果，扫描的FD的名字打印到 tmp/目录相应的文件下
             import sys
-            log_name = "tmp/"+self.graph.name +"_scan_fds.log"
+            log_name = "tmp\\"+self.graph.name +"_scan_fds.log"
             fobj = open(log_name,'w')
             console = sys.stdout
             sys.stdout = fobj
@@ -293,11 +291,16 @@ def __test_with_intgraph():
 def __test_with_crgraph():
     '''输入一个vm文件来测试 Ballaster算法
     '''
+    import matplotlib.pylab as plt
     from circuitgraph import get_graph_from_raw_input
+    
+    # 第一步：获取cr图
     g = get_graph_from_raw_input()
     g.info()
     crgraph = CloudRegGraph(g)
     crgraph.info()
+
+    # 第二步进行ballaster
     ballast1 = Ballaster(crgraph)
     fas = ballast1.feedbackset()
     print "Ballaster.intgraph.fas is:"
@@ -307,21 +310,23 @@ def __test_with_crgraph():
     r = ballast1.balance(ballast1.intgraph)
     if not r:
         print "Info: B-structure after FAS removed.\nInfo: balance function found 0 fds "
+    
+    # 第三步 输出扫描D触发器，同时画出图形
     scans = r + fas
     ballast1.get_scan_fd(scans)
-    import matplotlib.pylab as plt
     plt.figure(ballast1.intgraph.name+"_after FAS")
     nx.draw(ballast1.intgraph)
     plt.show()
 
-def paint_intgraph():
+def __paint_intgraph(path= None):
     '''将path目录下的每一个的intgraph画出来
     '''
     import os
     from circuitgraph import get_graph_from_raw_input
     from file_util import vm_files
     import matplotlib.pylab as plt
-    path = "v7v10\\"
+    if not path:
+        path = raw_input("plz enter a vmfiles path:")+"\\"
     picpath = path+"pic\\"
     if not os.path.exists(picpath):
         os.mkdir(path+"pic\\")
@@ -332,18 +337,49 @@ def paint_intgraph():
         crgraph.info()
         ballast1 = Ballaster(crgraph)
         p = ballast1.intgraph #整数图
-        ps = nx.spring_layout(p)
-        label = nx.get_edge_attributes(p, "weight")
-        nx.draw_networkx_edge_labels(p, ps, label)
-        nx.write_dot(p, path+"pic\\"+"int_"+g.name+".dot")
-        nx.draw(p, ps)
-        plt.savefig(path+"pic\\"+"int_"+g.name+".png")
-        plt.close()
+        
+        savefile = picpath+"int_"+g.name
+        nx.write_dot(p, savefile+".dot")
+        try:
+            result = os.system("dot -Tjpg -o %s_dot.jpg %s.dot" %(savefile, savefile ))
+            if result != 0:
+                print "Failed to convert dot to png"
+                exit(-1)
+        except Exception,e:
+            print e
+            exit(-1)
+        # ps = nx.spring_layout(p)
+        # label = nx.get_edge_attributes(p, "weight")
+        # nx.draw_networkx_edge_labels(p, ps, label)
+        # nx.draw(p, ps)
+        # plt.savefig(picpath+"int_"+g.name+".png")
+        # plt.close()
 #------------------------------------------------------------------------------    
 if __name__ == '__main__':
-    'test the ballaster'    
-    #__test_with_intgraph()
-    #__test_with_crgraph()
-    paint_intgraph()
+    'test the ballaster'
+    print "Ballaster Help:"
+    print u" int: 使用内置(脚本中定义好的)的int类型图来进行测试"
+    print u" cr:输入一个vm文件，然后使用ballast，输出扫描FD的结果"
+    print u" pint: 输入一个目录，对所有该目录下的.v或者.vm文件进行crgraph建模，并且保存.dot图形"
+    cmdlist = ["int", "cr", "pint", 'exit']
+    while(1):
+        cmd = raw_input("plz enter command:")
+        if cmd not in cmdlist:
+            print "WRONG CMD"
+            continue
+        if cmd =="int":
+            __test_with_intgraph()
+            continue
+        if cmd == "cr":
+            __test_with_crgraph()
+            continue
+        if cmd =="pint":
+            __paint_intgraph()
+            continue
+        else: # exit
+            break
+
+
+
 
     
