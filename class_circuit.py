@@ -11,8 +11,6 @@ class port:
             ("Error: add non-signal obj to port:%s"%self.port_name)
         self.port_assign=port_assign #assign_signal
         self.port_width =port_assign.width #每一个signal类型的变量会自动的计算出宽度
-        ##featured 7.2,为1取port_name的方便,与其他类的名字很类似
-        ##主要为了打印边的方便       
         self.name=self.port_name
     def edit_port_assign(self,new_assign):
         assert isinstance(new_assign,(signal,joint_signal)),\
@@ -34,8 +32,8 @@ class port:
             self.port_assign.__print__()
             print ")",
 
+
 class circut_module:
-    '--this is a class of circut module in verilog--'
     def __init__(self,name='default',m_type='default',cellref='--top--',been_searched=False):
         self.name     =name
         self.m_type   =m_type
@@ -45,7 +43,7 @@ class circut_module:
         self.param_list=None
         if debug:
             print 'create a %s instance:%s' %(self.cellref,self.name)
-    ##featured 7.1
+
     def add_port_list(self,port_list):
         self.port_list=port_list
         port_assign_list=[]
@@ -65,7 +63,6 @@ class circut_module:
         for eachParam in self.param_list:
             assert isinstance(eachParam,defparam),\
                 ("Error: add non-defparam obj to param_list in module %s"%self.name)
-    ##featured 7.1
                 
     def add_port_to_module(self,port_name,port_type,port_assign,port_width):
         self.port_list.append(port(port_name,port_type,port_assign,port_width))
@@ -88,7 +85,6 @@ class circut_module:
         assert(not self.port_list==None)
         #顶层模块的端口打印
         if self.m_type=='top_module':
-#            pass
             for eachPort in self.port_list:
                 assert isinstance(eachPort,port),eachPort.name
                 eachPort.__print__(is_top_port=True)
@@ -107,8 +103,7 @@ class circut_module:
         return True
     def __print__(self):
         self.print_module()
-###----------------------------------------------------------------------------
-#featured 7.1
+
 
 class signal:
     '--wire decled, primitive port_assignment--'
@@ -117,12 +112,9 @@ class signal:
         self.name  =name
         self.vector=vector #None,or string 类型的[nm1:num2]或者[num]
         self.width =1
-        
-        ##featured 7.2
         self.lsb=0
         self.msb=0
         self.bit_loc=0
-        ##feature 7.2
 
         if vector==None:
             self.string=name
@@ -152,6 +144,7 @@ class signal:
         assert (self.s_type in ['input','output','inout'])
         p1=port(self.name,self.s_type,self,self.width)
         return p1
+        
     def __print__(self,is_wire_decl=False):
         #在{}中与在{}外的打印方式不同。
         #在{}中时,打印不要wire,input等关键字
@@ -166,6 +159,8 @@ class signal:
                 print self.s_type+" "+self.name+" ;"
             else:
                 print self.s_type+" "+self.vector+" "+self.name+" ;"
+                
+                
 class joint_signal:
     '--this is a special signal type for signal concut in { }--'
     def __init__(self):
@@ -184,6 +179,7 @@ class joint_signal:
                 print ",",
         print "}",
 
+
 class defparam:
     '--this is a class for defparam statement--'
     def __init__(self,name,attr,value):
@@ -199,6 +195,8 @@ class defparam:
         else:
             value_str=str(self.value)
         print "defparam %s .%s=%s ;"%(self.name,self.attr,value_str)
+        
+        
 class assign:
     '--this is a class of assign statement--'
     def __init__(self,kwd="assign",left_signal=None,right_signal=None):
