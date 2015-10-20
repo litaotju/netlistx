@@ -234,10 +234,8 @@ class CircuitGraph(nx.DiGraph):
             source = SourceSinkDict['source']
             sinks = SourceSinkDict['sink']
             if not source:
-                print "Warning: no source of signal %s " % eachWire
-                # print "Error: no source of signal %s " % eachWire
-                # raise CircuitGraphError
-                continue
+                print "Error: no source of signal %s " % eachWire
+                raise CircuitGraphError
             if len(sinks) < 1 :
                 # GND VCC 的输出可能不会连接到其他PRIM上，所以其sink可以为0
                 if source[0].cellref in ['VCC', 'GND']:
