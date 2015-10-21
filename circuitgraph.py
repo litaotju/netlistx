@@ -266,8 +266,10 @@ class CircuitGraph(nx.DiGraph):
                 if piname.has_key(rstring):
                     #print "Waing:A pi has been connected to PO directly"
                     po_dict[lstring]['source'] = ( piname[rstring], piname[rstring] )
-                    pi_dict[rstring]['source'] = ( piname[rstring], piname[rstring] )
-                    pi_dict[rstring]['sink']   = ( 
+                    if not pi_dict.has_key(rstring):
+                        #没有任何一个prim的端口列接到右值的这个PI上
+                        pi_dict[rstring] = {'source':piname[rstring], "sink" :[]}
+                    pi_dict[rstring]['sink'].append( (poname[lstring], poname[lstring]) )
                 elif cnt_dict.has_key(rstring):
                     po_dict[lstring]['source'] = cnt_dict[rstring]['source']
                 else:
@@ -276,7 +278,7 @@ class CircuitGraph(nx.DiGraph):
                     source = po_dict[lstring]['source'] # a tuple
                     if isinstance(source[0], cc.port):
                         del cnt_dict[lstring]
-                        pi_dict[]
+                        pi_dict['sink'] += cnt_dict['sink']
                     else:
                         cnt_dict[lstring]['source'] = source
                 continue
