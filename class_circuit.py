@@ -103,6 +103,23 @@ class circut_module:
         return True
     def __print__(self):
         self.print_module()
+    
+    def __str__(self):
+        ports = [(port.port_name, port.port_assign.string) for port in self.port_list ]
+        portlist = ""
+        if self.cellref == "module":
+            for name, assign in ports:
+                portlist += "%s ,\n" % name
+        else:
+            for name, assign in ports:
+                portlist += "    .%s( %s ),\n" % (name, assign)
+        portlist = portlist[:-2]
+        paramlist = ""
+        if self.param_list != None:
+            for para in self.param_list:
+                paramlist +=  "defparam %s .%s=%s ;\n" %\
+                             (para.name,para.attr,str(para.value) )
+        return "%s %s (\n%s\n);\n%s" % (self.cellref , self.name , portlist , paramlist)
 
 
 class signal:
