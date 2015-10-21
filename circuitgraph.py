@@ -26,7 +26,7 @@ class CircuitGraph(nx.DiGraph):
            port_pair, which records the port instance pair
     '''
 
-    def __init__(self, m_list, include_pipo = True):
+    def __init__(self, m_list, assign_list = None, include_pipo = True):
         '''Para:
                 m_list : cc.circuit_module list, produced by netlist_parser
                 include_pipo : indict that if the graph produced will have pipo vertex and edge
@@ -34,6 +34,7 @@ class CircuitGraph(nx.DiGraph):
         nx.DiGraph.__init__(self)
         self.name = m_list[0].name
         self.m_list = m_list
+        self.assign_list = assign_list
         self.include_pipo = include_pipo
         self.__add_vertex_from_m_list()
         self.__get_edge_from_prim_list()
@@ -150,7 +151,7 @@ class CircuitGraph(nx.DiGraph):
             不论self.include_pipo为真与否，都会增加self.prim_edge_list和self.edge_set
         '''
         piname = {} #PI　instances dict keyed by name
-        poname = {}
+        poname = {} #PO  instances dict keyed by name
         for primary in self.pipo_vertex_list:
             if primary.port_type == 'input':
                 piname[primary.name] = primary
@@ -160,10 +161,16 @@ class CircuitGraph(nx.DiGraph):
                 print "       %s %s" % (primary.name,primary.port_type) 
                 raise CircuitGraphError
             poname[primary.name] = primary
+
         pi_dict = {}  # pi_dict[wire1] = {'source':pi,'sink':[]}
         po_dict = {}  # po_dict[wire1] = {'source':(),'sink':po }
         cnt_dict = {} # cnt_dict[wire1] = {'source':(),'sink':[(prim,port),()...]}
+        self.__cnt_dict(pi_dict, po_dict, cnt_dict, piname, poname)
+        if self.assign_list is not None:
+            self.__assign_handle(pi_dict, po_dict, cnt_dict, piname, poname)
+        self.__edges_cnt(pi_dict, po_dict, cnt_dict)
 
+    def __cnt_dict(self, pi_dict, po_dict, cnt_dict, piname, poname):
         print "Process: searching edges from prim_vertex_list..."
         for eachPrim in self.prim_vertex_list:
             for eachPort in eachPrim.port_list:
@@ -227,6 +234,67 @@ class CircuitGraph(nx.DiGraph):
                 print "Error: wire cnt to neither input nor output port. %s %s %s"\
                     % (eachPrim.name ,eachPort.name, eachPort.port_type) 
                 raise CircuitGraphError
+        return None
+
+    def __assign_handle(self, pi_dict, po_dict, cnt_dict, piname, poname):
+
+        assign_dict = {}
+        for assign in self.assign_list:
+            assert isinstance(assign, cc.assign)
+            left = assign.left_signal
+            right = assign.right_signal
+            assert left.width == 1, "assign leftwidth >1, %s" % left.string
+            assert right.width == 1, "assign rightwidth >1 , %s " % right.width
+            l = left.string
+            r = right.string
+            assert not assign_dict.has_key(l), \
+                "Leftvalue:%s has been assigned more than once." % l
+            assign_dict[l] = r
+        all_l = assign_dict.keys()
+        for l in all_l:
+            r = assign_dict[l]
+            while(assign_dict.has_key(r)):
+                assign_dict[l] = assign_dict[r]
+                r = assign_dict[r]
+        for assign in self.assign_list:
+            lstring = assign.left_signal.string
+            rstring = assign_dict[lstring]
+            # 根据左值先分为两类，再根据右值进行划分
+            if poname.has_key(lstring):
+                assert not po_dict.has_key(lstring),"A po is drived by two nets"
+                po_dict[lstring] = {'source':(), "sink": poname[lstring]}
+                if piname.has_key(rstring):
+                    #print "Waing:A pi has been connected to PO directly"
+                    po_dict[lstring]['source'] = ( piname[rstring], piname[rstring] )
+                    pi_dict[rstring]['source'] = ( piname[rstring], piname[rstring] )
+                    pi_dict[rstring]['sink']   = ( 
+                elif cnt_dict.has_key(rstring):
+                    po_dict[lstring]['source'] = cnt_dict[rstring]['source']
+                else:
+                    print "Error: assignment \" %s \" is illegal.Left wire is not effectively drived" % assign
+                if cnt_dict.has_key(lstring):
+                    source = po_dict[lstring]['source'] # a tuple
+                    if isinstance(source[0], cc.port):
+                        del cnt_dict[lstring]
+                        pi_dict[]
+                    else:
+                        cnt_dict[lstring]['source'] = source
+                continue
+            elif cnt_dict.has_key(lstring):
+                # 如果一个lstring _ wire需要在assign里面进行赋值，那它一定是因为本身没有驱动
+                assert not cnt_dict[lstring]['source']
+                if piname.has_key(rstring):
+                    cnt_dict[lstring]['source'] = piname[rstring]
+                elif cnt_dict.has_key(rstring):
+                    cnt_dict[lstring]['source'] = cnt_dict[rstring]['source']
+                    cnt_dict[rstring]['sink'] = cnt_dict[lstring]['sink']
+                else:
+                    print "Error: assignment \" %s \" is illegal" % assign 
+                continue
+            else:
+                print "Error:assignment \" %s \" is illegal" % assign
+
+    def __edges_cnt(self,  pi_dict, po_dict, cnt_dict):
         # ------------------------------------------------------------------------
         # prim_edge的找出
         self.prim_edge_list =[]
@@ -260,7 +328,7 @@ class CircuitGraph(nx.DiGraph):
             return None
         # ------------------------------------------------------------------------
         # pipo_edge的找出
-        print "Processing: searching PIPO edges from m_list..."
+        print "Process: searching PIPO edges from m_list..."
         self.pi_edge_list = []
         self.po_edge_list = []
         for eachWire,piConnect in pi_dict.iteritems():
@@ -437,11 +505,12 @@ def get_graph_from_raw_input(fname = None):
         fname = raw_input("plz enter file name:")
     info = nu.vm_parse(fname)
     m_list = info['m_list']
+    assign_list = info["assign_stm_list"]
     print "Top module is:"
     m_list[0].__print__()
     nu.mark_the_circut(m_list, allow_unkown = False)
     nu.rules_check(m_list)
-    g1 = CircuitGraph(m_list, include_pipo = True)
+    g1 = CircuitGraph(m_list, assign_list, include_pipo = True)
     debug = True
     if debug:
         # 打印扇入为0的FD的信息
@@ -465,12 +534,12 @@ def __test():
     nu.rules_check(m_list)
     
     #生成带pipo的图
-    g1 = CircuitGraph(m_list, include_pipo = True)
+    g1 = CircuitGraph(m_list, info['assign_stm_list'], include_pipo = True)
     g1.to_gexf_file('tmp\\%s_icpipo.gexf' % g1.name)
     g1.to_dot_file("tmp\\%s_icpipo.dot" % g1.name)
     
     #生成不带pipo的图
-    g2 = CircuitGraph(m_list, include_pipo = False)
+    g2 = CircuitGraph(m_list, info['assign_stm_list'], include_pipo = False)
     g2.to_gexf_file('tmp\\%s_nopipo.gexf' % g2.name)
     g2.to_dot_file("tmp\\%s_nopipo.dot" % g2.name)
     if len(m_list) <= 20:

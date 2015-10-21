@@ -242,7 +242,9 @@ class defparam:
 class assign:
     '--this is a class of assign statement--'
     def __init__(self,kwd="assign",left_signal=None,right_signal=None):
-        self.kwd=kwd        
+        self.kwd=kwd
+        assert isinstance(left_signal, signal) and \
+                isinstance(right_signal, signal)
         self.left_signal =left_signal
         self.right_signal=right_signal        
     def __print__(self):
@@ -259,7 +261,13 @@ class assign:
             assert type(self.right_signal)==str,"%s,type %s "%(self.right_signal,type(self.right_signal))
             print self.right_signal,
         print " ;"
-        
+    
+    def __str__(self):
+        "assign语句一定是以等号连接的"
+        left = self.left_signal
+        right = self.right_signal
+        return "%s %s = %s ;" % (self.kwd, left.string, right.string)
+
 ###featured 7.3--------------------------------------------------------------
 ###
 class vertex:
