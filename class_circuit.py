@@ -18,7 +18,8 @@ class port:
         self.port_assign=new_assign
         
     def __print__(self,is_top_port=False,pipo_decl=False):
-        ##不同的端口有不同的打印方式,顶层模块()内的打印,pipo声明处的打印,以及primitive()的打印
+        '''不同的端口有不同的打印方式,顶层模块()内的打印,pipo声明处的打印,以及primitive()的打印
+        '''
         if is_top_port:
             print self.port_name,
         elif pipo_decl:
@@ -32,6 +33,11 @@ class port:
             self.port_assign.__print__()
             print ")",
 
+    def __str__(self):
+        '''只供调试使用，在最终输出的Verilog网表中不应该使用这样的语句来打印端口
+        '''
+        return "%s %s %s %s\n" %\
+            (self.port_type, self.port_name, self.port_assign.string, self.port_width)
 
 class circut_module:
     def __init__(self,name='default',m_type='default',cellref='--top--',been_searched=False):
