@@ -396,7 +396,10 @@ class CircuitGraph(nx.DiGraph):
         for start, end, data in self.edges_iter(data=True):
             #label = data['connection']
             new_graph.add_edge(start, end)
-        nx.write_gexf(new_graph, filename)
+        try:
+            nx.write_gexf(new_graph, filename)
+        except Exception, e:
+            print "Waring: can not write gexf file correctly", e
 
     def to_dot_file(self, filename):
         '''把图写入到dot文件中，不对原图做什么改变
@@ -420,7 +423,11 @@ class CircuitGraph(nx.DiGraph):
                 node_data[i]['shape'] = 'box' if is_prim else 'invtriangle' 
                 new_graph.add_node(node_id[i],node_data[i])
             new_graph.add_edge(node_id[0], node_id[1])
-        nx.write_dot(new_graph, filename)
+        try:
+            nx.write_dot(new_graph, filename)
+        except Exception, e:
+            print "Warning: Cannot write dot file", e
+
 #------------------------------------------------------------------------------
         
 def get_graph_from_raw_input(fname = None):
@@ -468,7 +475,7 @@ def __test():
     g2.to_dot_file("tmp\\%s_nopipo.dot" % g2.name)
     if len(m_list) <= 20:
         for eachPrim in m_list:
-            eachPrim.__print__()
+            print eachPrim
             verbose_info =True
     else:
         verbose_info = False
@@ -508,11 +515,11 @@ def fanout_stat(graph):
 if __name__ =='__main__':
     while(1):
         print u"命令行帮助，可选命令如下"
-        print u"graph:输入一个文件名称，分别生成两个图（包含和不包含PIPO），保存图的信息到\\tmp下"
+        print u"grh:输入一个文件名称，分别生成两个图（包含和不包含PIPO），保存图的信息到\\tmp下"
         print u"fanout:输入一个文件名称，统计其中组合逻辑和FD节点的扇出数目统计"
         print u"exit:退出主程序"
         cmd = raw_input("plz enter command:")
-        if cmd == "graph" :
+        if cmd == "grh" :
             __test()
         if cmd == "fanout":
             g1 = get_graph_from_raw_input()
