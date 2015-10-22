@@ -168,9 +168,13 @@ class CircuitGraph(nx.DiGraph):
         self.__cnt_dict(pi_dict, po_dict, cnt_dict, piname, poname)
         if self.assign_list is not None:
             self.__assign_handle(pi_dict, po_dict, cnt_dict, piname, poname)
+        else:
+            print "Info: No assignment in graph constructing."
         self.__edges_cnt(pi_dict, po_dict, cnt_dict)
 
     def __cnt_dict(self, pi_dict, po_dict, cnt_dict, piname, poname):
+        '''从prim的每一个端口连接中获取连接信息
+        '''
         print "Process: searching edges from prim_vertex_list..."
         for eachPrim in self.prim_vertex_list:
             for eachPort in eachPrim.port_list:
@@ -198,6 +202,7 @@ class CircuitGraph(nx.DiGraph):
                     if not cnt_dict.has_key(wire):
                         cnt_dict[wire] = { 'source':(),'sink':[] }
                     if eachPort.port_type == 'output':
+                        assert not cnt_dict[wire]['source'], "%s has more than one source"
                         cnt_dict[wire]['source'] = (eachPrim, eachPort)
                     else:
                         cnt_dict[wire]['sink'].append( (eachPrim, eachPort) )
@@ -237,64 +242,107 @@ class CircuitGraph(nx.DiGraph):
         return None
 
     def __assign_handle(self, pi_dict, po_dict, cnt_dict, piname, poname):
-
+        ''' 处理assign语句，补全电路的连接信息。assign的左边等于 target wire，右边等于 driver wire
+            处理的原则是寻找target wire 的source，让其等于driver wire 的source
+            顺便让driver wire的sink 附加上 target的sink。（！千万不能等于） 在电路中如果存在一个多扇出的状况的话。
+        '''
+        # step1.首先检查assign语句的合法性。规则见注释
+        #       其次合并冗余的赋值，使每一个target真正对应于某一个driver.
         assign_dict = {}
         for assign in self.assign_list:
             assert isinstance(assign, cc.assign)
             left = assign.left_signal
             right = assign.right_signal
-            assert left.width == 1, "assign leftwidth >1, %s" % left.string
-            assert right.width == 1, "assign rightwidth >1 , %s " % right.width
             l = left.string
             r = right.string
+            # rule1. GND VCC的右值
+            if l == "GND": 
+                assert r == "1'b0"
+                continue
+            if l == "VCC":
+                assert r == "1'b1"
+                continue
+
+            # rule2. 宽度必须为1
+            assert left.width == 1,  "Error: assign leftwidth  >1 explicitly. %s" % assign
+            assert right.width == 1, "Error: assign rightwidth >1 explicitly. %s " % assign
+            
+            # rule3. 即是凡是assign中出现了pi po相关的信号，都必须保证这个pi或者po本身是单比特的。且赋值中是单比特的形式
+            assert not piname.has_key(left.name) , "Error: input beeing assigned: %s" % assign
+            if poname.has_key(left.name):
+                assert left.vector == None, "A vector po beeing assigned Explicitly: %s" %assign
+                assert poname[left.name].port_assign.vector == None, "A vector po beeing assigned: %s" %assign
+            if piname.has_key(right.name):
+                assert right.vector == None,"A vector pi being driver Explicitly %s" % assign
+                assert piname[right.name].port_assign.vector == None, "A vector pi being driver: %s" % assign
+            if poname.has_key(right.name):
+                assert right.vector == None, "A vector po being driver Explicitly %s" % assign
+                assert poname[right.name].port_assign.vector == None,  "A vector po being driver: %s" % assign
+            
+            # rule4. 不能重复的assign一个信号
             assert not assign_dict.has_key(l), \
                 "Leftvalue:%s has been assigned more than once." % l
             assign_dict[l] = r
+        
+        # step2. 追溯连环的assign,让其等于真正的driver
         all_l = assign_dict.keys()
         for l in all_l:
             r = assign_dict[l]
             while(assign_dict.has_key(r)):
                 assign_dict[l] = assign_dict[r]
                 r = assign_dict[r]
+        
+        # step3. 将target和driver分别加入到3种连接字典中。
         for assign in self.assign_list:
-            lstring = assign.left_signal.string
-            rstring = assign_dict[lstring]
-            # 根据左值先分为两类，再根据右值进行划分
-            if poname.has_key(lstring):
-                assert not po_dict.has_key(lstring),"A po is drived by two nets"
-                po_dict[lstring] = {'source':(), "sink": poname[lstring]}
-                if piname.has_key(rstring):
+            target = assign.left_signal.string
+            if target in ["GND", 'VCC']:
+                continue
+            driver = assign_dict[target]
+            # 如果这个terget是一个PO
+            if poname.has_key(target):
+                assert not po_dict.has_key(target),"A po is drived by two nets"
+                po_dict[target] = {'source':(), "sink": poname[target]}
+                if piname.has_key(driver):
                     #print "Waing:A pi has been connected to PO directly"
-                    po_dict[lstring]['source'] = ( piname[rstring], piname[rstring] )
-                    if not pi_dict.has_key(rstring):
+                    po_dict[target]['source'] = ( piname[driver], piname[driver] )
+                    if not pi_dict.has_key(driver):
                         #没有任何一个prim的端口列接到右值的这个PI上
-                        pi_dict[rstring] = {'source':piname[rstring], "sink" :[]}
-                    pi_dict[rstring]['sink'].append( (poname[lstring], poname[lstring]) )
-                elif cnt_dict.has_key(rstring):
-                    po_dict[lstring]['source'] = cnt_dict[rstring]['source']
+                        pi_dict[driver] = {'source':piname[driver], "sink" :[]}
+                    pi_dict[driver]['sink'].append( (poname[target], poname[target]) )
+                elif cnt_dict.has_key(driver):
+                    po_dict[target]['source'] = cnt_dict[driver]['source']
                 else:
                     print "Error: assignment \" %s \" is illegal.Left wire is not effectively drived" % assign
-                if cnt_dict.has_key(lstring):
-                    source = po_dict[lstring]['source'] # a tuple
+                if cnt_dict.has_key(target):
+                    # 如果某一个prim的输入连接到这个terget上了，那么要判断tergte的source类型来决定
+                    # 这个连接是属于pi_dict管理的范畴还是cnt_dict涵盖的范畴，两个不能兼容
+                    source = po_dict[target]['source'] # a tuple
                     if isinstance(source[0], cc.port):
-                        del cnt_dict[lstring]
-                        pi_dict['sink'] += cnt_dict['sink']
+                        pi_dict[driver]['sink'] += cnt_dict[target]['sink']
+                        del cnt_dict[target]
                     else:
-                        cnt_dict[lstring]['source'] = source
+                        cnt_dict[target]['source'] = source
                 continue
-            elif cnt_dict.has_key(lstring):
-                # 如果一个lstring _ wire需要在assign里面进行赋值，那它一定是因为本身没有驱动
-                assert not cnt_dict[lstring]['source']
-                if piname.has_key(rstring):
-                    cnt_dict[lstring]['source'] = piname[rstring]
-                elif cnt_dict.has_key(rstring):
-                    cnt_dict[lstring]['source'] = cnt_dict[rstring]['source']
-                    cnt_dict[rstring]['sink'] = cnt_dict[lstring]['sink']
+            
+            # 如果这个terget是一个非PO的wire
+            elif cnt_dict.has_key(target):
+                # 如果一个target _ wire需要在assign里面进行赋值，那它一定是因为本身没有驱动
+                assert not cnt_dict[target]['source']
+                if piname.has_key(driver):
+                    if not pi_dict.has_key(driver):
+                        # 这个driver没有连接到其他的prim上
+                        pi_dict[driver] = {'source':piname[driver], 'sink':[]}
+                    pi_dict[driver]['sink'] += cnt_dict[target]['sink']
+                    del cnt_dict[target]
+                elif cnt_dict.has_key(driver):
+                    cnt_dict[target]['source'] = cnt_dict[driver]['source']
+                    cnt_dict[driver]['sink'] += cnt_dict[target]['sink']
                 else:
                     print "Error: assignment \" %s \" is illegal" % assign 
                 continue
+            # 如果这个terget即不是po也不存在prim wire里面。那么说明这个target可能只是为了进行assign的传递。
             else:
-                print "Error:assignment \" %s \" is illegal" % assign
+                print "Waring:assignment \" %s \" maybe illegal check it." % assign
 
     def __edges_cnt(self,  pi_dict, po_dict, cnt_dict):
         # ------------------------------------------------------------------------
