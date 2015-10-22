@@ -246,6 +246,7 @@ class CircuitGraph(nx.DiGraph):
             处理的原则是寻找target wire 的source，让其等于driver wire 的source
             顺便让driver wire的sink 附加上 target的sink。（！千万不能等于） 在电路中如果存在一个多扇出的状况的话。
         '''
+        print "Process: handing assignment for connection..."
         # step1.首先检查assign语句的合法性。规则见注释
         #       其次合并冗余的赋值，使每一个target真正对应于某一个driver.
         assign_dict = {}
