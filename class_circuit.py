@@ -246,7 +246,9 @@ class assign:
         assert isinstance(left_signal, signal) and \
                 isinstance(right_signal, signal)
         self.left_signal =left_signal
-        self.right_signal=right_signal        
+        self.right_signal=right_signal
+        self.name = left_signal.string
+          
     def __print__(self):
         print self.kwd+" ",
         if isinstance(self.left_signal,signal):
