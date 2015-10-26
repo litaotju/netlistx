@@ -27,8 +27,9 @@ class CircuitGraph(nx.DiGraph):
     '''
 
     def __init__(self, m_list, assign_list = None, include_pipo = True):
-        '''Para:
+        '''@param:
                 m_list : cc.circuit_module list, produced by netlist_parser
+                assign_list  : assign statement list from netlist .vm file , produced by netlist_parser 
                 include_pipo : indict that if the graph produced will have pipo vertex and edge
         '''
         nx.DiGraph.__init__(self)
@@ -36,6 +37,20 @@ class CircuitGraph(nx.DiGraph):
         self.m_list = m_list
         self.assign_list = assign_list
         self.include_pipo = include_pipo
+
+        # vertexs containers 
+        self.prim_vertex_list = []
+        self.pipo_vertex_list = []
+        self.vertex_set = []
+
+        # edges containners
+        self.prim_edge_list = []
+        self.pi_edge_list = []
+        self.po_edge_list = []
+        self.edge_set = []
+        
+        #下面的两个函数会从 m_list和assign list中提取出和图连接相关的所有信息，
+        #并为vertex containers 和edges containers赋值
         self.__add_vertex_from_m_list()
         self.__get_edge_from_prim_list()
         self.cloud_reg_graph = None
@@ -346,9 +361,16 @@ class CircuitGraph(nx.DiGraph):
                 print "Waring:assignment \" %s \" maybe illegal check it." % assign
 
     def __edges_cnt(self,  pi_dict, po_dict, cnt_dict):
+        '''@param:
+                pi_dict = {}  # pi_dict[pi_wire_name] = {'source':pi,'sink':[]}
+                po_dict = {}  # po_dict[po_wire_name] = {'source':(),'sink':po }
+                cnt_dict = {} # cnt_dict[wire] = {'source':(),'sink':[(prim,port),()...]}
+
+           @brief:
+                从这三个字典中提取所有所有的边，加入到DiGraph的属性中。
+        '''
         # ------------------------------------------------------------------------
         # prim_edge的找出
-        self.prim_edge_list =[]
         for eachWire, SourceSinkDict in cnt_dict.iteritems():
             source = SourceSinkDict['source']
             sinks = SourceSinkDict['sink']
@@ -370,7 +392,6 @@ class CircuitGraph(nx.DiGraph):
                     connection = eachWire)
                 prim_edge = [ [source[0], eachSink[0]],[source[1], eachSink[1]], eachWire ]
                 self.prim_edge_list.append(prim_edge)
-        self.edge_set = []
 
         # 如果不包含PIPO，那么现在就退出函数，不将与PIPO相连接的边加入到图中
         if not self.include_pipo:
@@ -380,8 +401,6 @@ class CircuitGraph(nx.DiGraph):
         # ------------------------------------------------------------------------
         # pipo_edge的找出
         print "Process: searching PIPO edges from m_list..."
-        self.pi_edge_list = []
-        self.po_edge_list = []
         for eachWire,piConnect in pi_dict.iteritems():
             source = piConnect['source']  # cc.port instance
             sinks = piConnect['sink']
