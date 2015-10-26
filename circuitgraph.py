@@ -576,8 +576,8 @@ def get_graph_from_raw_input(fname = None):
     info = nu.vm_parse(fname)
     m_list = info['m_list']
     assign_list = info["assign_stm_list"]
-    print "Top module is:"
-    m_list[0].__print__()
+    print "Info: top module is:\n    %s" % m_list[0].name 
+
     nu.mark_the_circut(m_list, allow_unkown = False)
     nu.rules_check(m_list)
     g1 = CircuitGraph(m_list, assign_list, include_pipo = True)
@@ -585,10 +585,10 @@ def get_graph_from_raw_input(fname = None):
     if debug:
         # 打印扇入为0的FD的信息
         fd_nodes = [fd for fd in g1.nodes_iter() if isinstance(fd, cc.circut_module) and fd.m_type=='FD']
-        print "0 in-degree fd:"
+        print "Info: 0 in-degree fd:"
         for fd in fd_nodes:
             if g1.in_degree(fd) == 0:
-                fd.__print__()
+                print fd
     return g1
     
 def __test():
