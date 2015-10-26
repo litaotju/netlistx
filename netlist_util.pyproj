@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{0eebc94c-7a90-45ac-b811-c90bcaed4af8}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>graph_top.py</StartupFile>
+    <StartupFile>ballast.py</StartupFile>
     <SearchPath>prototype\</SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
@@ -40,6 +40,9 @@
     </Compile>
     <Compile Include="graph_top.py" />
     <Compile Include="graph_util.py" />
+    <Compile Include="netlist.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="netlist_parser\lex.py" />
     <Compile Include="netlist_parser\netlist_lexer.py" />
     <Compile Include="netlist_parser\netlist_parser.py" />
