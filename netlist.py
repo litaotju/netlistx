@@ -1,4 +1,7 @@
 ﻿# -*- coding:utf-8 -*- #
+import os
+import sys
+import re
 
 import netlist_parser.netlist_parser as parser
 import class_circuit as cc
@@ -26,16 +29,24 @@ class Netlist(object):
         self.top_module  = vminfo['m_list'][0]
         self.ports       = vminfo['port_decl_list']        
         self.wires       = vminfo['signal_decl_list']
-        self.primtives   = vminfo['primitive_list']
+        self.primitives  = vminfo['primitive_list']
         self.assigns     = vminfo['assign_stm_list']
-        
+        if self.assigns == None:
+            self.assigns = []
+            
         self.others = None
         # 建立一系列字典，提升查询的效率
         self._ports     = self.__build_dict(self.ports,    "name" )
         self._wires     = self.__build_dict(self.wires,    "name" )
-        self._primtives = self.__build_dict(self.primtives, "name" )
+        self._primitives = self.__build_dict(self.primitives, "name" )
         self._assigns   = self.__build_dict(self.assigns,   "name" )
 
+        # 规定不同的类型的搜索函数
+        self.search_callable = {'ports' : self.search_port ,
+                   'wires' :    self.search_wire , 
+                   'primitives':self.search_prim, 
+                   'assigns':   self.search_assign
+                   }
         print "Note: Bulid Netlist Obj sucessfully"
         return None
 
@@ -67,18 +78,31 @@ class Netlist(object):
            @return: None或者dict_name中的一个值
         '''
         try:
-            dict = getattr(self, dict_name)
+            tdict = getattr(self, dict_name)
         except AttributeError:
             errmsg = "Error: netlist has no attr %s" % dict_name
             raise Exception, errmsg
         try:
-            result = dict[target]
+            result = tdict[target]
         except KeyError:
             return None
         else:
             return result
-          
-    # 查询组的方法
+    
+    def __insert_type(self, itype, element, hashable_attr = "name"):
+        assert hasattr(element, hashable_attr)
+        key = getattr(element, hashable_attr)
+        seq_container  = getattr(self, itype)
+        dict_container = getattr(self, "_"+itype )
+        has_one = self.search_callable[itype]( key )
+        if has_one is not None:
+            errmsg = "Error: redeclaration of %s %s" % (itype, key)
+            raise RedeclarationError(errmsg)
+        else:
+            seq_container.append(element)
+            dict_container[element.name] = element
+            
+    # 查询的方法组
     def top(self):
         return self.top_module
  
@@ -89,66 +113,115 @@ class Netlist(object):
         return self.__search_dict("_wires", name)
 
     def search_prim(self, name):
-        return self.__search_dict("_primtives", name )
+        return self.__search_dict("_primitives", name )
     
     def search_assign(self, name):
         return self.__search_dict("_assigns", name )
 
-    # 修改组的方法
+    # 插入的方法组
     def insert_prim(self, prim):
         '''@param: prim, a cc.circut_module 对象
         '''
         assert isinstance(prim, cc.circut_module)
-        has_prim = self.search_prim( prim.name ) 
-        if has_prim is not None:
-            errmsg = "Error: a prim has the same name already in netlist."
-            raise Exception, errmsg
-        else:
-            self.primtives.append( prim )
-            self._primtives[prim.name] = prim
+        self.__insert_type("primitives", prim)
         try:
             p_assigns = prim.port_assign_list
         except AttributeError:
-            print "Warning: prim has no port_assigns "
+            print "Warning: inserted prim has no port_assigns "
         else:
             if len( p_assigns)==0:
-            #TODO: raise an exception,for this 
-                print "Warning: A prim with no port inserted"
+                print "Warning: inserted prim with has no port_assigns"
             else:
                 for signal in p_assigns:
                     self.insert_wire( signal )
 
     def insert_wire(self, signal):
-        assert isinstance(signal, cc.signal)
-        has_signal = self.search_wire(signal.name)
-        if has_signal is not None:
-            errmsg = "Error: a signal has the same name already in netlist"
-            raise Exception, errmsg
+        if isinstance(signal, cc.signal):
+            s = signal
+        elif isinstance(signal, str):
+            ss = signal.split()
+            if len(ss) == 2:
+                assert re.match("\[\d+\]|\[\d+:\d+\]", ss[1])
+                s = cc.signal(name = ss[0], vector = ss[1])
+            else:
+                s = cc.signal(name = ss[0])
         else:
-            self.wires.append( signal)
-            self._wires[signal.name] = signal
-    
-    def insert_assign(self, assign, left, right):
-        pass
-
-
+            raise Exception,"param type error: not a signal or a string."
+        try:
+            self.__insert_type('wires', s) 
+        except RedeclarationError,e:
+            # 已经插入过的线网，如果再次插入，直接保持原模原样不动就好了
+            print e, "|| so no wire get changed."
+            return None
+        return s
+        
+    def insert_assign(self, target, driver):
+        left = self.insert_wire(target)
+        right = self.insert_wire(driver)
+        if left != None and right !=None:   
+            assign = cc.assign(left_signal = left, right_signal = right)
+            self.__insert_type("assigns", assign)
+        else:
+            print "Error: no assign inserted."
+            
     # 加入扫描链的方法
     def scan_insert(self):
         pass
 
     # 输出组的方法
     def write(self, path):
-        pass
+        filename = os.path.join(path, self.top_module.name)+".v"
+        try:
+            fobj = open(filename,'w')
+        except Exception,e:
+            print e
+            return False
+        else:
+            console = sys.stdout
+            sys.stdout = fobj
+            print self.top_module
+            for port in self.ports:
+                port.__print__(pipo_decl = True)
+            for wire in self.wires:
+                wire.__print__(is_wire_decl = True)
+            for prim in self.primitives:
+                print prim
+            for assign in self.assigns:
+                print assign
+            print "endmodule;"
+            sys.stdout = console
+            fobj.close()
 
-   
-def __test():
-    from file_util import vm_files
-    path = raw_input("plz enter a path:")
-    for vm in vm_files(path):
-        vminfo = parser.vm_parse( path+"\\"+vm )
-        n1 = Netlist(vminfo)
-        x = cc.circut_module()
-        n1.insert_prim(x)
-
+class NetlistError(Exception):
+    def __init__(self,msg = ''):
+        Exception.__init__(self, msg)
+        
+class RedeclarationError(NetlistError):
+    def __init__(self, msg = ''):
+        NetlistError.__init__(self, msg)
+        
+def __test(filename = None):
+    if filename == None:
+        filename = raw_input("plz enter a file:")
+    vminfo = parser.vm_parse( filename )
+    n1 = Netlist(vminfo)
+    n1.write(os.getcwd())
+    ## insert module
+    #x = cc.circut_module()
+    #n1.insert_prim(x)
+    
+    # search things
+    print n1.search_wire('N_13') #TODO:打印线网需要专门的重新的定制
+    print n1.search_prim("\stato_ns_cZ[2]")
+    print n1.search_port("overflw")
+    print n1.search_assign("VCC")
+    
+    n1.insert_wire("NewInsert [10:3]")
+    n1.insert_wire("NewInsert ")
+    n1.insert_wire("overflw")
+    
+    n1.insert_assign("A [9]", "B [10]")
+    n1.insert_assign("reset","VCC")
+    n1.write(os.getcwd())
 if __name__ == "__main__":
     __test()
