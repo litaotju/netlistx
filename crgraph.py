@@ -49,11 +49,10 @@ class CloudRegGraph(nx.DiGraph):
 
     def __get_cloud_reg_graph(self, basegraph):
         ''' 
-            para: basegraph
-            return: None
-            add data attr -->> basegraph.cloud_reg_graph
-            Model the circuit graph to a cloud(combinational cone)_register(FDs) graph
-            注意：1.现有的cloud_register图中没有包含pipo节点，只是prim的节点
+            @param : basegraph
+            @return: None
+                     为basegraph增加cloud_reg_graph数据属性
+            @brief : model the circuit graph to a cloud_register_graph
         '''
         # g2是一个用basegraph中的点和边建立的无向图，
         # 所以基本的节点和basegraph的节点是完全一致的，
@@ -185,7 +184,7 @@ class CloudRegGraph(nx.DiGraph):
         return None
     
     def __add_pipo_empty_cloud(self):
-        '''在原图的pi_edge_list, po_edge_list,中寻找与FD的 [D,Q]端口相连接的边，
+        ''' 在原图的pi_edge_list, po_edge_list, 中寻找与FD的[D,Q]端口相连接的边，
             如果找到，将该PI或者PO作为一个cloud加入到self中，将该边重新构建为cloud-reg边加入到图中
             如果该PIPO与别的组合逻辑PRIM相连接，或者与FD的非[D，Q]端口，比如CLR或者C连接，
             并不添加新的Cloud，一个PIPO多扇出的情况下，只将该PIPO连接到FD上。
