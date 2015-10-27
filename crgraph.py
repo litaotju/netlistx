@@ -9,7 +9,7 @@ import copy
 import networkx as nx
 
 # user-defined module
-import class_circuit as cc
+import netlistx.class_circuit as cc
 from circuitgraph import CircuitGraph
 from exception import *
 ###############################################################################
@@ -416,12 +416,12 @@ class CloudRegGraph(nx.DiGraph):
     def to_gexf_file(self, filename):
         '''输出图的信息到指定的gexf文件中'''
         new_graph =nx.DiGraph()
-        fobj = open(self.name+"fdnameid.gexf",'w')
+        #fobj = open(self.name+"fdnameid.gexf",'w')
         for reg in self.regs:
-            fobj.write(reg.name+"\n")
+            #fobj.write(reg.name+"\n")
             reg_id = '_d_'+reg.name[1:] if reg.name[0]=='\\' else reg.name
             new_graph.add_node(reg, id =reg_id, label = reg.cellref)
-        fobj.close()
+        #fobj.close()
         for cloud in self.big_clouds:
             new_graph.add_node(cloud, id= id(cloud),label= 'cloud')
         for eachEdge in self.edges_iter():
@@ -435,7 +435,7 @@ def __test():
     '''
     from circuitgraph import get_graph_from_raw_input
     from file_util import vm_files
-    path = "crtest\\"
+    path = "test\\crtest\\"
     for eachVm in vm_files(path):
         g2 = get_graph_from_raw_input(path+eachVm) # 输入netlist 文件，得到 CircuitGraph对象g2
         g2.info() #打印原图的详细信息

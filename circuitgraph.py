@@ -11,7 +11,7 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 # user-defined module
-import class_circuit as cc
+import netlistx.class_circuit as cc
 from sgraph import s_graph
 from exception import *
 
@@ -268,7 +268,7 @@ class CircuitGraph(nx.DiGraph):
         #       其次合并冗余的赋值，使每一个target真正对应于某一个driver.
         assign_dict = {}
         for assign in self.assign_list:
-            assert isinstance(assign, cc.assign)
+            assert isinstance(assign, cc.assign), str(assign.__class__)
             left = assign.left_signal
             right = assign.right_signal
             l = left.string

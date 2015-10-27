@@ -10,7 +10,7 @@ Created on Mon Aug 24 13:16:27 2015
 import networkx as nx
 
 # user-defined module
-import class_circuit as cc
+import netlistx.class_circuit as cc
 from crgraph import CloudRegGraph
 from exception import *
 
