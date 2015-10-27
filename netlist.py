@@ -3,7 +3,8 @@ import os
 import sys
 import re
 
-import netlist_parser.netlist_parser as parser
+# user-defined module
+from netlistx.exception import *
 import class_circuit as cc
 
 
@@ -31,9 +32,7 @@ class Netlist(object):
         self.wires       = vminfo['signal_decl_list']
         self.primitives  = vminfo['primitive_list']
         self.assigns     = vminfo['assign_stm_list']
-        if self.assigns == None:
-            self.assigns = []
-            
+    
         self.others = None
         # 建立一系列字典，提升查询的效率
         self._ports     = self.__build_dict(self.ports,    "name" )
@@ -47,7 +46,6 @@ class Netlist(object):
                    'primitives':self.search_prim, 
                    'assigns':   self.search_assign
                    }
-        print "Note: Bulid Netlist Obj sucessfully"
         return None
 
     # 建立内部字典和查询内部字典的工厂方法
@@ -63,13 +61,12 @@ class Netlist(object):
             return tdict
         for obj in iterable:
             key = getattr(obj, attr_as_key)
-            assert key is not None
             if not tdict.has_key(key):
                 tdict[ key ] = obj
             else:
                 errmsg = "Error: Redecleration of %s obj : %s" \
                         % (obj.__class__ , key )
-                raise Exception, errmsg
+                raise RedeclarationError, errmsg
         return tdict
 
     def __search_dict(self, dict_name, target):
@@ -121,21 +118,27 @@ class Netlist(object):
     # 插入的方法组
     def insert_prim(self, prim):
         '''@param: prim, a cc.circut_module 对象
+           @return: 插入成功的prim对象
         '''
         assert isinstance(prim, cc.circut_module)
         self.__insert_type("primitives", prim)
         try:
             p_assigns = prim.port_assign_list
         except AttributeError:
-            print "Warning: inserted prim has no port_assigns "
+            print "Warning: inserted prim has no ports and port_assigns "
         else:
             if len( p_assigns)==0:
                 print "Warning: inserted prim with has no port_assigns"
             else:
                 for signal in p_assigns:
                     self.insert_wire( signal )
+        return prim
 
     def insert_wire(self, signal):
+        '''@param: signal, 一个signal对象，
+                    或者是一个可以转化为signal的字符串.空格分隔，长度为2个词，后一个是向量.或者单个词
+           @return:如果成功插入则返回一个signal对象，如果失败，则返回None
+        '''
         if isinstance(signal, cc.signal):
             s = signal
         elif isinstance(signal, str):
@@ -146,7 +149,7 @@ class Netlist(object):
             else:
                 s = cc.signal(name = ss[0])
         else:
-            raise Exception,"param type error: not a signal or a string."
+            raise FormatError,"param type error: not a signal or a string."
         try:
             self.__insert_type('wires', s) 
         except RedeclarationError,e:
@@ -156,13 +159,13 @@ class Netlist(object):
         return s
         
     def insert_assign(self, target, driver):
-        left = self.insert_wire(target)
-        right = self.insert_wire(driver)
-        if left != None and right !=None:   
-            assign = cc.assign(left_signal = left, right_signal = right)
-            self.__insert_type("assigns", assign)
-        else:
-            print "Error: no assign inserted."
+        '''@param: target， driver两个signal对象
+           @return: 插入成功的assign
+        '''
+        assert isinstance(target, cc.signal)
+        assert isinstance(driver, cc.signal)
+        #TODO:添加assign的具体功能，与原来的线网有关系吗
+        pass
             
     # 加入扫描链的方法
     def scan_insert(self):
@@ -191,37 +194,3 @@ class Netlist(object):
             print "endmodule;"
             sys.stdout = console
             fobj.close()
-
-class NetlistError(Exception):
-    def __init__(self,msg = ''):
-        Exception.__init__(self, msg)
-        
-class RedeclarationError(NetlistError):
-    def __init__(self, msg = ''):
-        NetlistError.__init__(self, msg)
-        
-def __test(filename = None):
-    if filename == None:
-        filename = raw_input("plz enter a file:")
-    vminfo = parser.vm_parse( filename )
-    n1 = Netlist(vminfo)
-    n1.write(os.getcwd())
-    ## insert module
-    #x = cc.circut_module()
-    #n1.insert_prim(x)
-    
-    # search things
-    print n1.search_wire('N_13') #TODO:打印线网需要专门的重新的定制
-    print n1.search_prim("\stato_ns_cZ[2]")
-    print n1.search_port("overflw")
-    print n1.search_assign("VCC")
-    
-    n1.insert_wire("NewInsert [10:3]")
-    n1.insert_wire("NewInsert ")
-    n1.insert_wire("overflw")
-    
-    n1.insert_assign("A [9]", "B [10]")
-    n1.insert_assign("reset","VCC")
-    n1.write(os.getcwd())
-if __name__ == "__main__":
-    __test()
