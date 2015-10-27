@@ -1,5 +1,7 @@
-import os
+﻿import os
 import os.path
+
+# user-defined module
 import netlist_util as nu
 import re
 #############################################################################################

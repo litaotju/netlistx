@@ -7,6 +7,8 @@ address:Tianjin University
 """
 import copy
 import networkx as nx
+
+# user-defined module
 import class_circuit as cc
 from circuitgraph import CircuitGraph
 from exception import *

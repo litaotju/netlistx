@@ -11,6 +11,8 @@ display_pipo = include_pipo
 
 import matplotlib.pylab as plt
 import networkx       as nx
+
+# user-defined module
 import netlist_util   as nu
 from circuitgraph    import CircuitGraph
 from crgraph import CloudRegGraph

@@ -1,4 +1,4 @@
-import os.path
+﻿import os.path
 #################################################
 def generate_testbench(top_module,fd_cnt,output_dir):
     reg_list=[]

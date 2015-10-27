@@ -4,8 +4,10 @@ import sys
 import os
 import os.path
 import re
+
+# user-defined module
 import netlist_util   as nu
-import netlist_parser.netlist_parser as np
+import netlistx.parser.netlist_parser as np
 import class_circuit   as cc
 from exceptions import SystemExit
 #import generate_testbench as gt

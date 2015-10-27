@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import copy
 import os.path
 
+# user-defined module
 import class_circuit as cc
 ###############################################################################
 class s_graph(nx.DiGraph):

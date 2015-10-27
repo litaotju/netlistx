@@ -9,6 +9,8 @@ address:Tianjin University
 import re
 import networkx as nx
 import matplotlib.pyplot as plt
+
+# user-defined module
 import class_circuit as cc
 from sgraph import s_graph
 from exception import *
