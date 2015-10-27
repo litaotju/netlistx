@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-debug=False
+
 import re
 
 class port:
@@ -47,6 +47,7 @@ class circut_module:
         self.been_searched=been_searched
         self.port_list =None
         self.param_list=None
+        debug=False
         if debug:
             print 'create a %s instance:%s' %(self.cellref,self.name)
 
@@ -272,38 +273,38 @@ class assign:
 
 ###featured 7.3--------------------------------------------------------------
 ###
-class vertex:
-    def __init__(self,obj):
-        if isinstance(obj,port):
-            self.entity=obj
-            self.type =obj.port_type
-        else:
-            assert isinstance(obj,circut_module)
-            self.entity=obj
-            self.type  =obj.cellref
-        self.label=self.type+"  "+self.obj.name
-class edge:
-    def __init__(self,s,d):
-        pass
+#class vertex:
+#    def __init__(self,obj):
+#        if isinstance(obj,port):
+#            self.entity=obj
+#            self.type =obj.port_type
+#        else:
+#            assert isinstance(obj,circut_module)
+#            self.entity=obj
+#            self.type  =obj.cellref
+#        self.label=self.type+"  "+self.obj.name
+#class edge:
+#    def __init__(self,s,d):
+#        pass
 ###featured 7.3--------------------------------------------------------------
-prim_dict={
-    "LUT6_2":{'I':['I0','I1','I2','I3','I4','I5'],'O':['O5','O6']},
-    "XORCY":{'I':['LI','CI'],'O':['O']},
-    "MULT_AND":{'I':['I0','I1'],'O':['LO']},
-    "MUXCY_L":{'I':['DI','CI','S'],'O':['LO']},
-    "MUXCY":{'I':['DI','CI','S'],'O':['O']},
-    "MUXF5":{'I':['I0','I1','S'],'O':['O']},
-    "MUXF6":{'I':['I0','I1','S'],'O':['O']},
-    "MUXF7":{'I':['I0','I1','S'],'O':['O']},
-    "MUXF8":{'I':['I0','I1','S'],'O':['O']},
-    "INV"  :{'I':['I'],'O':['O']}, 
-    "GND":{'O':['G']},
-    "VCC":{'O':['P']}
-    }  
+#prim_dict={
+#    "LUT6_2":{'I':['I0','I1','I2','I3','I4','I5'],'O':['O5','O6']},
+#    "XORCY":{'I':['LI','CI'],'O':['O']},
+#    "MULT_AND":{'I':['I0','I1'],'O':['LO']},
+#    "MUXCY_L":{'I':['DI','CI','S'],'O':['LO']},
+#    "MUXCY":{'I':['DI','CI','S'],'O':['O']},
+#    "MUXF5":{'I':['I0','I1','S'],'O':['O']},
+#    "MUXF6":{'I':['I0','I1','S'],'O':['O']},
+#    "MUXF7":{'I':['I0','I1','S'],'O':['O']},
+#    "MUXF8":{'I':['I0','I1','S'],'O':['O']},
+#    "INV"  :{'I':['I'],'O':['O']}, 
+#    "GND":{'O':['G']},
+#    "VCC":{'O':['P']}
+#    }  
 
-if __name__ == "__main__":
-    x = signal('wire', 'x', '[10:10]')
-    y = signal('wire', 'x', '[10:10]')
-    assert x == y
-    print x == y
-    assert not ( x is y)      
+#if __name__ == "__main__":
+#    x = signal('wire', 'x', '[10:10]')
+#    y = signal('wire', 'x', '[10:10]')
+#    assert x == y
+#    print x == y
+#    assert not ( x is y)      
