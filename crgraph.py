@@ -5,8 +5,10 @@ Created on Tue Aug 25 22:28:45 2015
 @e-mail:litaotju@qq.com
 address:Tianjin University
 """
+import os
 import copy
 import networkx as nx
+import matplotlib.pylab as plt
 
 # user-defined module
 import netlistx.class_circuit as cc
@@ -364,13 +366,13 @@ class CloudRegGraph(nx.DiGraph):
         for eachReg in self.regs:
             label_dict[eachReg] = eachReg.cellref + ":" + eachReg.name
         ps= nx.random_layout(self)
-        import matplotlib.pylab as plt
         nx.draw_networkx_nodes(self, pos=ps, nodelist = self.big_clouds, node_color = 'r')
         nx.draw_networkx_nodes(self, pos=ps, nodelist = self.regs, node_color = 'g')
         nx.draw_networkx_edges(self,ps)
         nx.draw_networkx_labels(self,ps,labels=label_dict)
         savepath = path if path else "tmp\\"
-        plt.savefig(savepath + self.name + ".png")
+        picfile = os.path.join(savepath, self.name+"_crgraph" + ".png")
+        plt.savefig(picfile)
         plt.close()
         return True
 
@@ -427,24 +429,27 @@ class CloudRegGraph(nx.DiGraph):
         for eachEdge in self.edges_iter():
             new_graph.add_edge(eachEdge[0],eachEdge[1])
         nx.write_gexf(new_graph, filename)
-#------------------------------------------------------------------------------
-# 模块测试代码
-#------------------------------------------------------------------------------
-def __test():
-    '''crgraph本模块的测试
+
+def main(path):
+    '''从目录来提取其中的每一个网表的CR图的信息
     '''
     from circuitgraph import get_graph_from_raw_input
     from file_util import vm_files
-    path = "test\\crtest\\"
+    opath = os.path.join(path, "graphpic")
+    if not os.path.exists(opath):
+        os.mkdir( opath )
     for eachVm in vm_files(path):
-        g2 = get_graph_from_raw_input(path+eachVm) # 输入netlist 文件，得到 CircuitGraph对象g2
-        g2.info() #打印原图的详细信息
+        # 输入netlist 文件，得到 CircuitGraph对象g2
+        inputfile =os.path.join(path, eachVm)
+        g2 = get_graph_from_raw_input( inputfile )
+        g2.info()
         cr2 = CloudRegGraph(g2) 
         cr2.info()
-        cr2.to_gexf_file("tmp\\%s_crgraph.gexf" % cr2.name)
+        cr2.to_gexf_file( opath + "\\%s_crgraph.gexf" % cr2.name)
         if cr2.number_of_nodes() <= 100:
-            cr2.paint("crtest\\")
+            cr2.paint( opath )
 
 if __name__ == '__main__':
-    import matplotlib.pylab as plt
-    __test()
+    print u"Usage:输入一个目录，将该目录下的所有.v或者。vm文件的进行crgraph建模"
+    path = raw_input("plz set working directory:")
+    main(path)
