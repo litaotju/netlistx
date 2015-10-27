@@ -71,7 +71,7 @@ class Netlist(object):
 
     def __search_dict(self, dict_name, target):
         '''@param: dict_name, self的一个字典数据属性
-                    target, 一个ID
+                   target, 一个ID
            @return: None或者dict_name中的一个值
         '''
         try:
@@ -87,6 +87,11 @@ class Netlist(object):
             return result
     
     def __insert_type(self, itype, element, hashable_attr = "name"):
+        '''@brief:
+                私有工厂方法，向 itype类型的容器里面加入一个element, 并且将这个
+                element的hashable_attr属性作为键值，进行索引，索引相同时
+                raise一个 RedeclarationError的异常。默认的索引是name属性。
+        '''
         assert hasattr(element, hashable_attr)
         key = getattr(element, hashable_attr)
         seq_container  = getattr(self, itype)
