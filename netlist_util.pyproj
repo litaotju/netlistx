@@ -61,6 +61,9 @@
     <Compile Include="scan_chain_insert.py" />
     <Compile Include="sgraph.py" />
     <Compile Include="testbench_generate.py" />
+    <Compile Include="unittest\testCrgraph.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="unittest\testNetlist.py" />
     <Compile Include="__init__.py">
       <SubType>Code</SubType>
