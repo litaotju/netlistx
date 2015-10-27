@@ -4,7 +4,10 @@
 *.gexf
 /*.vm
 /*.v
-/*test/
+/test
+unittest/*test/
+unittest/htmlcov
+unittest/netlist
 test_output/
 cell_construct/FD_SRC
 #################
