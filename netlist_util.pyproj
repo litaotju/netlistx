@@ -57,10 +57,13 @@
     <Compile Include="prototype\__init__.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="scan_chain_full_replace.py" />
-    <Compile Include="scan_chain_insert.py" />
+    <Compile Include="scan\full_replace.py" />
+    <Compile Include="scan\using_lut.py" />
+    <Compile Include="scan\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="sgraph.py" />
-    <Compile Include="testbench_generate.py" />
+    <Compile Include="scan\testbench_generate.py" />
     <Compile Include="unittest\testCrgraph.py">
       <SubType>Code</SubType>
     </Compile>
@@ -71,6 +74,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="cell_construct" />
+    <Folder Include="scan\" />
     <Folder Include="parser\" />
     <Folder Include="parser\test\" />
     <Folder Include="prototype\" />

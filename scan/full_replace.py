@@ -1,23 +1,26 @@
 ﻿import os
 import os.path
+import re
 
 # user-defined module
-import netlist_util as nu
-import re
-#############################################################################################
-def full_replace_scan_chain(fname,verbose=True,input_file_dir=os.getcwd(),output_file_dir=os.getcwd()):
-    input_file=os.path.join(input_file_dir,fname)
-    all_lines=nu.remove_comment(input_file,False)
-    
-    name_base=os.path.splitext(fname)[0]
-    output_file=os.path.join(output_file_dir,name_base+'_scan_full_replace.v')
+import netlistx.netlist_util as nu
+
+#扫描D触发器的库的位置
+scanlib = '`include "E:\ISE_WORKSPACE\scan_lib\scan_cells_ce_gated.v"'
+
+def full_replace_scan_chain(fname,verbose=True,input_file_dir=os.getcwd(),output_file_dir=os.getcwd()+"\\out\\"):
+    input_file = os.path.join(input_file_dir, fname)
+    name_base = os.path.splitext(fname)[0]
+    output_file = os.path.join(output_file_dir,fname)
     try:
-        fobj=open(output_file,'w')
-    except IOError,e:
+        infile = open( input_file, 'r')
+        fobj = open( output_file, 'w' )
+    except IOError, e:
         print "Error: file open error:",e
         return False          
     #add the include file @begin of a verilog design file
-    fobj.writelines('`include "E:\ISE_WORKSPACE\scan_lib\scan_cells_ce_gated.v"') 
+    header = scanlib
+    fobj.writelines( header ) 
     #####################################################################    
     #some string constant nedd to add before a FD line
     sen ='    .SCAN_EN(scan_en),\n'
@@ -30,25 +33,27 @@ def full_replace_scan_chain(fname,verbose=True,input_file_dir=os.getcwd(),output
     #counter for the FD number
     counter=0
     #####################################################################
-    for x in all_lines:
+    for x in infile:
+        if x.lstrip()[0:2] == "//":
+            continue
         #top module region
         if  re.match('^\s*module\s+([^\s]+)',x) is not None:
-            print 'Note:Find the top module:'+re.match('^\s*module\s+([^\s]+)',x).groups()[0]
+            print 'Info: Find the top module:'+re.match('^\s*module\s+([^\s]+)',x).groups()[0]
             fobj.writelines(x)
             fobj.writelines(module_ports_decl)
         elif x[0]==';':
             fobj.writelines(x)
             fobj.writelines(in_out_put_del)
             fobj.writelines(wire_del)
-        elif x[0:10]=='endmodule ':
+        elif x.lstrip().startswith('endmodule'):
             fobj.writelines('assign scan_out=scan_out'+str(counter)+' ;\n')
             fobj.writelines(x)    
         ######################################################################
         #FD replace
-        elif re.match('^\s*(FD\w*)\s+([^\s]+)',x) is not None:
+        elif re.match('^\s*(FD\w*)\s+([^\s]+)', x) is not None:
             #replace the FD with a SCAN_ version or just record the Q output
-            counter=counter+1
-            x='  SCAN_'+x[2:]
+            counter = counter + 1
+            x = " "*4 + 'SCAN_' + x.lstrip()
             fobj.writelines(x)
             fobj.writelines(sen)                     
             #scan_in this is just the simple version of scan oder
@@ -63,24 +68,23 @@ def full_replace_scan_chain(fname,verbose=True,input_file_dir=os.getcwd(),output
 
     #####################################################################
     #print the nessecery info before function e
-    if verbose:
-        print "Note:full replace %d FD in file %s" %(counter,fname)
-    #######close the file handle
     fobj.close()
-    print 'Job: Replace '+fname+' done\n\n'
+    print "Info: full replace %d FD in file %s" %(counter,fname)
+    print 'Job:  Replace '+fname+' done\n\n'
     return True
 
 #############################################################################################
 if __name__=='__main__':    
     parent_dir=os.getcwd()
-    input_file_dir=parent_dir+"\\test_input_netlist\\bench_virtex4"
-    output_file_dir=parent_dir+"\\test_output_dir\\bench_full_replace_virtex4"    
-    print output_file_dir
-    print parent_dir
-    print input_file_dir   
+    input_file_dir = parent_dir+"\\test\\bench_virtex4"
+    output_file_dir = parent_dir+"\\test\\bench_full_replace_virtex4"    
+    if not os.path.exists( output_file_dir ):
+        os.mkdir(output_file_dir )
+    print "CWD:", parent_dir
+    print "Output to", output_file_dir
+    print "Input netlist:", input_file_dir   
     for eachFile in os.listdir(input_file_dir):
-        print eachFile
-        if os.path.splitext(eachFile)[1]=='.v':
-            full_replace_scan_chain(eachFile,False,input_file_dir,output_file_dir)
-        else:
-            continue
+        print "Handling:", eachFile, "..."
+        if os.path.splitext(eachFile)[1] in ['.v', '.vm']:
+            full_replace_scan_chain(eachFile,\
+                     False, input_file_dir, output_file_dir)
