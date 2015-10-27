@@ -6,7 +6,7 @@
     <ProjectGuid>{0eebc94c-7a90-45ac-b811-c90bcaed4af8}</ProjectGuid>
     <ProjectHome />
     <StartupFile>ballast.py</StartupFile>
-    <SearchPath>prototype\</SearchPath>
+    <SearchPath>prototype\;..\</SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
@@ -21,11 +21,7 @@
     <PtvsTargetsFile>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets</PtvsTargetsFile>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="crtest\crtest测试前必读.txt" />
-    <Content Include="crtest\Readme.txt" />
-    <Content Include="grhtest\Readme.txt" />
     <Content Include="README.md" />
-    <Content Include="test_output\tmp\primitive_type_predefine.txt" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ballast.py" />
@@ -43,14 +39,14 @@
     <Compile Include="netlist.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="netlist_parser\lex.py" />
-    <Compile Include="netlist_parser\netlist_lexer.py" />
-    <Compile Include="netlist_parser\netlist_parser.py" />
-    <Compile Include="netlist_parser\parsetab.py" />
-    <Compile Include="netlist_parser\test\class_circuit.py" />
-    <Compile Include="netlist_parser\test\__init__.py" />
-    <Compile Include="netlist_parser\yacc.py" />
-    <Compile Include="netlist_parser\__init__.py" />
+    <Compile Include="parser\lex.py" />
+    <Compile Include="parser\netlist_lexer.py" />
+    <Compile Include="parser\netlist_parser.py" />
+    <Compile Include="parser\parsetab.py" />
+    <Compile Include="parser\test\class_circuit.py" />
+    <Compile Include="parser\test\__init__.py" />
+    <Compile Include="parser\yacc.py" />
+    <Compile Include="parser\__init__.py" />
     <Compile Include="netlist_util.py" />
     <Compile Include="prototype\balance.py">
       <SubType>Code</SubType>
@@ -65,17 +61,17 @@
     <Compile Include="scan_chain_insert.py" />
     <Compile Include="sgraph.py" />
     <Compile Include="testbench_generate.py" />
-    <Compile Include="test_output\tmp\test.py" />
+    <Compile Include="unittest\testNetlist.py" />
+    <Compile Include="__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="cell_construct" />
-    <Folder Include="crtest" />
-    <Folder Include="grhtest" />
-    <Folder Include="netlist_parser" />
-    <Folder Include="netlist_parser\test\" />
+    <Folder Include="parser\" />
+    <Folder Include="parser\test\" />
     <Folder Include="prototype\" />
-    <Folder Include="test_output" />
-    <Folder Include="test_output\tmp" />
+    <Folder Include="unittest\" />
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="{2af0f10d-7135-4994-9156-5d01c9c11b7e}\2.7" />

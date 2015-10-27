@@ -13,7 +13,7 @@ tokens=netlist_lexer.tokens
 if __name__ == '__main__':
     import test.class_circuit as cc
 else:
-    import class_circuit as cc
+    import netlistx.class_circuit as cc
 ###############################################################################
 import yacc
 def p_vmfile(p):
@@ -33,7 +33,7 @@ def p_vmfile(p):
     if len(p)==7:
         p[0]['assign_stm_list']=p[5]
     else:
-        p[0]['assign_stm_list']= None
+        p[0]['assign_stm_list']= []
         print "Info: no assign statement find in this vm file"
 #---------------------------------------------------------------------
 #----顶层模块声明区

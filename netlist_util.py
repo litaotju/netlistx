@@ -6,7 +6,9 @@ this file is composed of a lot of functions to parse and util the netlist Src fi
 """
 
 import os, re, copy
-from netlist_parser.netlist_parser import parser
+
+# user-defined module
+from netlistx.parser.netlist_parser import parser
 ###############################################################################
 def vm_parse(input_file, write= False):
     '''returns info of input vm file as a dict
