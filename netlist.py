@@ -5,7 +5,7 @@ import re
 
 # user-defined module
 from netlistx.exception import *
-import class_circuit as cc
+import netlistx.class_circuit as cc
 
 
 class Netlist(object):
@@ -163,15 +163,35 @@ class Netlist(object):
             return None
         return s
         
-    def insert_assign(self, target, driver):
+    def insert_assign(self, target, driver, force = False):
         '''@param: target， driver两个signal对象
+                    force , 决定在已经有意个target.name
+                     赋值的情况下是否强制插入一个新的assign
            @return: 插入成功的assign
         '''
         assert isinstance(target, cc.signal)
         assert isinstance(driver, cc.signal)
         #TODO:添加assign的具体功能，与原来的线网有关系吗
-        pass
-            
+        if self.search_wire( driver.name ) is None:
+            self.insert_wire(driver)
+        if self.search_wire( target.name) is None:
+            self.insert_wire( target )
+        assign = cc.assign(left_signal = target, right_signal = driver)
+        try:
+            self.__insert_type("assigns", assign, "name")
+        except RedeclarationError, e:
+            if force:
+                self._assigns[ target.name ] = assign
+                self.assigns.append( assign )
+                print "Inserted Forcelly"
+                return assign
+            else:
+                print e, "|| so no assign inserted"
+                return None
+        else:
+            return assign
+
+        
     # 加入扫描链的方法
     def scan_insert(self):
         pass
