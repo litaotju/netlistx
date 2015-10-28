@@ -7,12 +7,17 @@ Created on Mon Aug 24 13:16:27 2015
 @license: Free
 
 """
+import os
 import networkx as nx
+import matplotlib.pylab as plt
 
 # user-defined module
 import netlistx.class_circuit as cc
-from crgraph import CloudRegGraph
-from exception import *
+from netlistx.exception    import *
+from netlistx.crgraph      import CloudRegGraph
+from netlistx.circuitgraph import get_graph_from_raw_input
+from netlistx.file_util    import vm_files
+
 
 class Ballaster:
     '''
@@ -293,9 +298,6 @@ def __test_with_intgraph():
 def __test_with_crgraph():
     '''输入一个vm文件来测试 Ballaster算法
     '''
-    import matplotlib.pylab as plt
-    from circuitgraph import get_graph_from_raw_input
-    
     # 第一步：获取cr图
     g = get_graph_from_raw_input()
     g.info()
@@ -323,10 +325,6 @@ def __test_with_crgraph():
 def __paint_intgraph(path= None):
     '''将path目录下的每一个的intgraph画出来
     '''
-    import os
-    from circuitgraph import get_graph_from_raw_input
-    from file_util import vm_files
-    import matplotlib.pylab as plt
     if not path:
         path = raw_input("plz enter a vmfiles path:")+"\\"
     picpath = path+"pic\\"
