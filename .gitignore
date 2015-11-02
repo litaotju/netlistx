@@ -5,6 +5,7 @@
 /*.vm
 /*.v
 /test
+/itrans/iscas*
 unittest/*test/
 unittest/htmlcov
 unittest/netlist
@@ -226,3 +227,4 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
+*.v

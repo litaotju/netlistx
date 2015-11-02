@@ -21,6 +21,7 @@
     <PtvsTargetsFile>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets</PtvsTargetsFile>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="itrans\Readme.md" />
     <Content Include="README.md" />
   </ItemGroup>
   <ItemGroup>
@@ -36,6 +37,8 @@
     </Compile>
     <Compile Include="graph_top.py" />
     <Compile Include="graph_util.py" />
+    <Compile Include="itrans\itrans.py" />
+    <Compile Include="itrans\Primitives.py" />
     <Compile Include="netlist.py">
       <SubType>Code</SubType>
     </Compile>
@@ -54,6 +57,7 @@
     </Compile>
     <Compile Include="prototype\check.py" />
     <Compile Include="prototype\cut.py" />
+    <Compile Include="prototype\unbpath.py" />
     <Compile Include="prototype\__init__.py">
       <SubType>Code</SubType>
     </Compile>
@@ -74,6 +78,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="cell_construct" />
+    <Folder Include="itrans\" />
     <Folder Include="scan\" />
     <Folder Include="parser\" />
     <Folder Include="parser\test\" />
