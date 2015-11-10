@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 
 # user-defined module
 import netlistx.class_circuit as cc
+import netlistx.netlist_util as nu
 from sgraph import s_graph
 from exception import *
 
@@ -69,95 +70,21 @@ class CircuitGraph(nx.DiGraph):
         #vertex
         prim_vertex_list = self.m_list[1:]
         for eachPrim in self.m_list[1:]:
-            #now we cannot handle the graph construction problem with concering DSP
-            #because, in hardware fault injection emulaiton process, when signal passing
-            #DSP, we cannot compute the signal correctly
             assert eachPrim.cellref not in ['DSP48','DSP48E1','DSP48E'],\
                 "CircuitGraph Error: %s found %s " % (eachPrim.cellref, eachPrim.name)
             self.add_node(eachPrim, node_type = eachPrim.cellref, name = eachPrim.name)
-        pipo_vertex_list = self.m_list[0].port_list
         if self.include_pipo:
-            for eachPipo in pipo_vertex_list:
-                self.add_node(eachPipo, node_type = eachPipo.port_type, name = eachPipo.name)
+            tmplist = self.m_list[0].port_list
+            for pipo in tmplist:
+                # 将多位端口分解成多个一位端口，加入到图中
+                for eachPipo in pipo.split():
+                    pipo_vertex_list.append( eachPipo )
+                    self.add_node(eachPipo, node_type = eachPipo.port_type, name = eachPipo.name)
         vertex_set = prim_vertex_list + pipo_vertex_list
 
         self.prim_vertex_list = prim_vertex_list
         self.pipo_vertex_list = pipo_vertex_list
         self.vertex_set = vertex_set
-        ###########################################################################
-        #edge
-        #edge_set的每一个元素是 一个([],[],{})类型的变量,
-        #第一个列表存储prim,第二个存储port,第三个存储连接信号
-        #---------------------------pipo edge ------------------------------------
-        #if include_pipo:
-        #    print "    Process: searching PI and PO edges..."
-        #    for eachPrim in prim_vertex_list:
-        #        for eachPort in eachPrim.port_list:
-        #            for eachPPort in pipo_vertex_list:
-        #                cnt_flag=False
-        #                #信号名称等于端口名称,可能prim port的信号是pipo的某一bit
-        #                if isinstance(eachPort.port_assign, cc.signal) and \
-        #                        eachPort.port_assign.name == eachPPort.port_name:
-        #                    connection = eachPort.port_assign.name
-        #                    cnt_flag = True
-        #                # 这一部分用于多位端口的连接
-        ##                elif isinstance(eachPort.port_assign,cc.joint_signal):
-        ##                    for eachSubsignal in eachPort.port_assign.sub_signal_list:
-        ##                        if eachSubsignal.name==eachPPort.port_name:
-        ##                            cnt_flag=True
-        ##                            break
-        ##                        else:
-        ##                            continue
-        #                if cnt_flag:
-        #                    if eachPPort.port_type=='input':
-        #                        assert eachPort.port_type in ['input', 'clock'],\
-        #                            ("%s %s  port:%s, port_type:%s"\
-        #                            % (eachPrim.cellref, eachPrim.name, \
-        #                               eachPort.port_name, eachPort.port_type))
-        #                        pi_edge_list.append([[eachPPort,eachPrim], [eachPPort,eachPort], connection])
-        #                    else:
-        #                        ##只有输prim 的输出端口 才能连接到po port上。否则只是PO的反馈，一定在prim_edge中存在
-        #                        if eachPort.port_type=='output':
-        #                            po_edge_list.append([[eachPrim,eachPPort], [eachPort,eachPPort], connection])
-        
-        #print "    Process: searching Prim edges..."
-        #self.fd_loop = []
-        ##---------------------------prim edge --------------------------------------------
-        #for eachPrim in prim_vertex_list:
-        #    for eachPrim2 in prim_vertex_list:
-        #        # 存在prim与自身的连接
-        #        p_set = set(eachPrim.port_assign_list)
-        #        p_set2 = set(eachPrim2.port_assign_list)
-        #        if not p_set.intersection(p_set2):
-        #            continue
-        #        for eachPort in eachPrim.port_list:
-        #            for eachPort2 in eachPrim2.port_list:
-        #                sig1 = eachPort.port_assign.string
-        #                sig2 = eachPort2.port_assign.string
-        #                if sig2 == sig1 and \
-        #                    eachPort2.port_type != eachPort.port_type:
-        #                    if eachPrim is eachPrim2 :
-        #                        assert eachPrim.m_type == 'FD' ,\
-        #                        "Combinational Prim loop: %s %s" % ( eachPrim.cellref, eachPrim.name )
-        #                        #print "        FD-self loop %s %s " % ( eachPrim.cellref, eachPrim.name )
-        #                        self.fd_loop.append( (eachPrim , eachPort, eachPort2) )
-        #                    connection = sig2
-        #                    if eachPort.port_type == 'input':
-        #                        tmp_edge = [[eachPrim2 ,eachPrim], [eachPort2, eachPort], connection]
-        #                    else:
-        #                        tmp_edge = [[eachPrim, eachPrim2], [eachPort ,eachPort2],  connection]
-        #                    if tmp_edge in prim_edge_list:
-        #                        continue
-        #                    prim_edge_list.append(tmp_edge)
-
-        ##--------merge all the edge-------------------------------------------------------
-        #self.pi_edge_list   = pi_edge_list
-        #self.po_edge_list   = po_edge_list
-        #self.prim_edge_list = prim_edge_list
-        #self.edge_set       = pi_edge_list + po_edge_list + prim_edge_list
-        #for eachEdge in self.edge_set:
-        #    self.add_edge(eachEdge[0][0], eachEdge[0][1],\
-        #    connection=eachEdge[2] , port_pair=eachEdge[1])
         return None
     #------------------------------------------------------------------------------
 
@@ -170,20 +97,21 @@ class CircuitGraph(nx.DiGraph):
         piname = {} #PI　instances dict keyed by name
         poname = {} #PO  instances dict keyed by name
         for primary in self.pipo_vertex_list:
+            string = primary.port_assign.string
             if primary.port_type == 'input':
-                piname[primary.name] = primary
+                piname[string] = primary
                 continue
             elif not primary.port_type == 'output':
                 print "Error :found an primary port neither input nor output "
                 print "       %s %s" % (primary.name,primary.port_type) 
                 raise CircuitGraphError
-            poname[primary.name] = primary
+            poname[string] = primary
 
         pi_dict = {}  # pi_dict[wire1] = {'source':pi,'sink':[]}
         po_dict = {}  # po_dict[wire1] = {'source':(),'sink':po }
         cnt_dict = {} # cnt_dict[wire1] = {'source':(),'sink':[(prim,port),()...]}
         self.__cnt_dict(pi_dict, po_dict, cnt_dict, piname, poname)
-        if self.assign_list is not None:
+        if self.assign_list :
             self.__assign_handle(pi_dict, po_dict, cnt_dict, piname, poname)
         else:
             print "Info: No assignment in graph constructing."
@@ -201,20 +129,21 @@ class CircuitGraph(nx.DiGraph):
                         % (eachPrim.name, eachPort.port_name)
                     raise CircuitGraphError
                 # a bit wire is the format : .string = .name[.bit_loc]
-                wire_name = eachPort.port_assign.name # 名称
                 wire = eachPort.port_assign.string    # 全名 = 名称[n]
+
                 # 如果这个信号是包含在PI名字里面
-                if  piname.has_key(wire_name):
+                if  piname.has_key(wire):
                     if not pi_dict.has_key(wire):
-                        pi_dict[wire] = {'source':piname[wire_name],'sink':[]}
+                        pi_dict[wire] = {'source':piname[wire],'sink':[]}
                     if not eachPort.port_type in ['input','clock']:
                         print "Error: PI %s connect to Prim's Non-input Port: %s %s"\
-                            % (wire_name, eachPrim.name, eachPort.port_name)
+                            % (wire, eachPrim.name, eachPort.port_name)
                         raise CircuitGraphError
                     pi_dict[wire]['sink'].append( (eachPrim, eachPort) )
                     continue
+
                 # 如果这个信号的名字包含在PO名字里面
-                if poname.has_key(wire_name):
+                if poname.has_key(wire):
                     # 无论如何将PO中的信号全部加入到cnt_dict的信息中，之后将没有prim sink的那些信号进行过滤
                     if not cnt_dict.has_key(wire):
                         cnt_dict[wire] = { 'source':(),'sink':[] }
@@ -226,7 +155,7 @@ class CircuitGraph(nx.DiGraph):
                     # 将这个信号的连接信息加入到po_dict中
                     if eachPort.port_type == "output":
                         if not po_dict.has_key(wire):
-                            po_dict[wire] = {'source':(eachPrim, eachPort),'sink':poname[wire_name]}
+                            po_dict[wire] = {'source':(eachPrim, eachPort),'sink':poname[wire]}
                         else: #有别的输出端口已经连接到这个属于po的wire上，直接报错
                             #if po_dict[wire]['source']: #如果这个PO的bit位信号，已经有source了
                             print "wire: PO %s has more than 1 source. 1st source is %s %s.2nd source is %s %s"\
@@ -235,10 +164,14 @@ class CircuitGraph(nx.DiGraph):
                             raise CircuitGraphError
                     #po_dict[wire]['source'] = (eachPrim, eachPort)
                     continue
-                # 如果这个信号的名字既没包含在PI也没包含在PO,那只能是Prim之间的连接了
-                if eachPort.port_type == 'clock':
-                    assert pi_dict.has_key(eachPort.port_assign.string)
+
+                # 规则检查 如果当前端口的类型是Clock，而且图包含PIPO，那么Clock必须连接在PIPO上
+                if eachPort.port_type == 'clock' and self.include_pipo :
+                    clock = eachPort.port_assign.string
+                    assert piname.has_key(clock), "Clock:%s has no connect to PI" % clock
                     continue
+
+                # 如果这个信号的名字既没包含在PI也没包含在PO,那只能是Prim之间的连接了
                 if not cnt_dict.has_key(wire):
                     cnt_dict[wire] = {'source':(),'sink':[] }
                 if eachPort.port_type == 'output':
@@ -401,7 +334,6 @@ class CircuitGraph(nx.DiGraph):
             print "Note: get all edges succsfully, WARING : NO PIPO EDGES IN GRAPH"
             return None
         # ------------------------------------------------------------------------
-        # pipo_edge的找出
         print "Process: searching PIPO edges from m_list..."
         for eachWire,piConnect in pi_dict.iteritems():
             source = piConnect['source']  # cc.port instance
@@ -581,7 +513,7 @@ def get_graph_from_raw_input(fname = None):
     print "Info: top module is:\n    %s" % m_list[0].name 
 
     nu.mark_the_circut(m_list, allow_unkown = False)
-    nu.rules_check(m_list)
+    #nu.rules_check(m_list)
     g1 = CircuitGraph(m_list, assign_list, include_pipo = True)
     debug = True
     if debug:
@@ -597,7 +529,7 @@ def __test():
     '''for test only,输入一个文件名，生成带PIPO和不带PIPO的图，
        然后将生成的图分别保存到tmp\\下的.dot文件和.gexf文件
     '''
-    import netlist_util as nu
+
     fname = raw_input("plz enter file name:")
     info = nu.vm_parse(fname)
     m_list = info['m_list']

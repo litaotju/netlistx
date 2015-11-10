@@ -16,7 +16,22 @@ class port:
         assert isinstance(new_assign,(signal,joint_signal)),\
             ("Error: non-signal obj assgin to port %s"%self.port_name)
         self.port_assign=new_assign
-        
+
+    def split(self):
+        '''将一个多bit的端口自动的分解为单bit的端口，用于图的建模，便于将PIPO分解
+           @return：一个队列，含有拆分后的一个或多个port类对象
+        '''
+        if self.port_width <= 1:
+            return [self]
+        ports = []
+        lsb, msb = self.port_assign.lsb, self.port_assign.msb 
+        loop = range(lsb, msb+1) if lsb <= msb else range(msb, lsb+1) 
+        for i in loop:
+            subassign = signal(self.port_type, self.name, "[%d]"% i)
+            subport = port(self.name, self.port_type, subassign )
+            ports.append( subport )
+        return ports
+
     def __print__(self,is_top_port=False,pipo_decl=False):
         '''不同的端口有不同的打印方式,顶层模块()内的打印,pipo声明处的打印,以及primitive()的打印
         '''
