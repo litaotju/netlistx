@@ -3,15 +3,18 @@ u'''将iscas89电路门级网表提取出图，并且构建CloudRegGraph。
    将中间结果和最终的结果生成。dot格式的图保存在子目录中。
    只适合作为主调模块来使用。
 '''
+# built-in
 import re
 import os
 import sys
 import copy
 from exceptions import *
 
+# 3rd-party dependency
 import networkx as nx
 import matplotlib.pylab as plt
 
+# user-defined
 from netlistx.prototype.unbpath import unbalance_paths
 from netlistx.file_util import vm_files
 from Primitives import *
@@ -68,7 +71,7 @@ def classify(prims):
     return dffs, coms
 
 def graphy(dffs, coms, name):
-    '''@param: dffs, Dff对象的列表
+    '''@param:  dffs, Dff对象的列表
                 coms, Combi对象的列表
                 name，想要生成的图的名称
        @return: g, A networkx DiGraph obj 
@@ -207,13 +210,14 @@ def merge(fds, cr):
             pre_fds = pre_fds.union( set( cr.predecessors(succ_cloud) ) )
             succ_fds = succ_fds.union( set( cr.successors( succ_cloud) ) )
             cr.remove_node(succ_cloud)
-        cr.add_node( big_cloud, label ='bigcloud')
+        cr.add_node( big_cloud, label = big_cloud.name)
         cr.add_edges_from( [ (pre_fd, big_cloud) for pre_fd in pre_fds] )
         cr.add_edges_from( [ (big_cloud, succ_fd) for succ_fd in succ_fds] )
     for fd in fds:
         if cr.out_degree(fd) != 1 or cr.in_degree(fd) != 1:
             print "Error: %s indegree:%d outdegree:%d" % (fd, cr.in_degree(fd), cr.out_degree(fd) )
             raise AssertionError
+    #TODO:记录下来每一个bigcloud 由哪些cloud组成，
     return cr
 
 def fd2edge(fds, cr):
@@ -243,7 +247,7 @@ def fd2edge(fds, cr):
     return cr, arc
 
 #---------------------------------------------------------------------------------
-
+# 将符合iscas电路建模方式的路径下的所有电路进行图的建模分析。保存结果到同名子文件夹
 def main(path):
     '''输入一个路径，提取该路径下的iscas所有v或者vm文件，并且建立子文件夹，存储
     生成的graph,crgraph,mergegraph,finalgraph的图的dot文件。
@@ -253,9 +257,21 @@ def main(path):
         #输入输出环境搭建
         name = os.path.splitext(vmfile)
         inputfile = os.path.join(path, vmfile)
+            #总的输出文件夹路径
         outpath = os.path.join(path, name[0])
         if not os.path.exists(outpath):
             os.mkdir( outpath)
+
+            #merge之前每一个cloud的存储路径
+        beforemergepath = os.path.join( outpath, "before_merge" )
+        if not os.path.exists(beforemergepath):
+            os.mkdir(beforemergepath)
+    
+            #merge之后每一个cloud的存储路径
+        finalpath= os.path.join(outpath, 'final')
+        if not os.path.exists( finalpath ):
+            os.mkdir( finalpath)
+
         print "Start ", inputfile
 
         #翻译，分拣
@@ -273,10 +289,11 @@ def main(path):
         clouds, fds, cr = crgraph(g)
         print "Crgraph Fanout before merging:"
         fanout = report_fanout(cr )
+
         crfilename = os.path.join( outpath, cr.name+".dot" )
         nx.write_dot(cr, crfilename)
         for cloud in clouds:
-           cloudfilename = os.path.join( outpath, cloud.name+".dot")
+           cloudfilename = os.path.join( beforemergepath, cloud.name+".dot")
            nx.write_dot( cloud, cloudfilename) 
 
         #合并每一个D触发器的扇出Cloud
@@ -290,9 +307,6 @@ def main(path):
         nx.write_dot(cr, fd2edgefile)
 
         #将最终的Cloud的情况全部写入一个文件夹的dot中
-        finalpath= os.path.join(outpath, 'final')
-        if not os.path.exists( finalpath ):
-            os.mkdir( finalpath)
         cloudname = []
         for cloud in cr.nodes():
             assert cloud.name not in cloudname,\
@@ -307,7 +321,7 @@ def main(path):
 
 def getgraph(filename):
     '''@param: filename， 一个可以打开的文件名，可以是绝对路径也可以是相对路径
-       @return: cr, 根据该文件生成的cr图，
+       @return: cr, 根据该文件生成的cr图，eweight图中每一条边的权重
     '''
     prims = trans(filename )
     name = os.path.split(filename)[1]
@@ -324,15 +338,17 @@ def upath_cycle(cr):
        @ return: upaths, cycles ,图中所有的不平衡路径和环
        @ brief: 将每一个图转化成节点的名字为节点的图，然后找出图中所有的不平衡路径和环
     '''
+    tmp = {}
+    for node in cr.nodes_iter():
+        assert not tmp.has_key( node.name), \
+            "Node:%s, has the same name with:%s, name:%s" % (node, tmp[node.name], node.name)
+        tmp[node.name] = node
+
     namegraph = nx.DiGraph()
     for edge in cr.edges():
         namegraph.add_edge( edge[0].name, edge[1].name )
         
     upaths = unbalance_paths( namegraph)
-    #realpath = []
-    #for upath in upaths.values():
-    #    if len(upath) != 0:
-    #        realpath += upath
     cycles = []
     for cycle in nx.simple_cycles(namegraph):
         cycles.append( cycle)
@@ -343,35 +359,54 @@ def search_unbalance_iscas(path):
        @return： None
        @brief: 对该目录下的每一个网表进行图的建模，生成不平衡路径写入文件中。
     '''
-    records = open(path+"\\upath.log",'w')
     for vmfile in vm_files( path ):
+        # 输入输出环境搭建
         filename = os.path.join( path, vmfile )
+        namebase =  os.path.splitext(vmfile)[0]
+        ouputpath = os.path.join( path, namebase)
+        if not os.path.exists( ouputpath):
+            os.mkdir( ouputpath)
+        records = open(ouputpath+"\\%s_upath.txt" % namebase,'w')
         print "Handling ", vmfile
+        
+        #建模前的准备工作
         cr, ewight = getgraph( filename )
+        print "     getting crgraph OK."
         upaths, cycles = upath_cycle(cr )
-        
-        # 重定向标准输出
-        console = sys.stdout
-        sys.stdout = records
-        
+        print "     getting all upaths and cycles ok"
+
         #将环和不平衡路径写入文件
-        sys.stdout = console
-        records.write("\n\n"+cr.name+"\nupath:")
-        for upath in upaths:
-            records.write(str(upath)+"\n" )
+        records.write("\n\n"+cr.name+"\nupath\n:")
+        for (s,t), upath in upaths.iteritems():
+            records.write("s->t: " +str( (s, t) ) +"\n")
+            for eachpath in upath:
+                records.write( str(eachpath)+"\n" )
         records.write('cycles:\n')
         for cycle in cycles:
             records.write( str(cycle)+"\n")
-        
+        records.close()
+
         #最优化问题建立
+        matfile = open( os.path.join(ouputpath, cr.name+".m" ), 'w' )
+        console = sys.stdout
+        sys.stdout = matfile
         convert2opt(cr, ewight, upaths, cycles)
-    
-    records.close()
-    print "All unbalances found"
+        sys.stdout = console        
+        matfile.close()
+        print "    matlab opt problem ok."
+        print vmfile, "OK"
     return None
 
 def convert2opt(cr, ewight, upaths, cycles):
-    '''转化成Matlab求解的方法
+    '''@param: cr, a graph, every node is a nx.DiGraph obj
+               eweight, a dict, cr's edge -> weight
+               upaths,  a dict, (s, t )   -> [ all unbalance paths bwt (s, t)]
+               cycles,  a list, [ simple cycle of cr ]
+        转化成Matlab求解的方法,并且打印要求解的问题的matlab程序
+    '''
+    SDPSETTING = '''
+    ops = sdpsettings('solver','bnb','bnb.solver','fmincon','bnb.method',...
+                  'breadth','bnb.gaptol',1e-8,'verbose',1,'bnb.maxiter',1000,'allownonconvex',0);
     '''
     names ={ node:node.name for node in cr.nodes() }
     namewight = {}
@@ -381,26 +416,9 @@ def convert2opt(cr, ewight, upaths, cycles):
         assert not namewight.has_key( (name0, name1) )
         namewight[(name0, name1)] = len(weight)
 
-    edge2x = {}       #名称字典,键为边，值为X变量的索引
-    all_edges = {}    #权重字典,键为边，值为权重
+    edge2x = {}       #名称字典,键为名称边，值为X变量的索引
+    all_edges = {}    #权重字典,键为名称边，值为权重
     cycle_const = []
-    
-    # 下面字典的每一个Key是（s,t）tuple，值是s.t之间的所有路径的列表
-    unbalance_const = {}
-    for (s,t), path_bwt in upaths.iteritems():
-        unbalance_const[ (s,t) ] = []
-        for upath in path_bwt:
-            edges = []
-
-            if upath[0] == upath[-1]:
-                #环的情况跳过去
-                continue
-            else:
-                for i in range(0, len(upath)-1):
-                    edge = (upath[i], upath[i+1])
-                    edges.append( edge )
-                    all_edges[ edge ] = namewight[ edge ]
-                unbalance_const[ (s,t) ].append( edges )
     
     # 下面进行cycles列表的获取
     for cycle in cycles:
@@ -413,62 +431,86 @@ def convert2opt(cr, ewight, upaths, cycles):
         all_edges[ back_edge ] = namewight[ back_edge ]
         edges.append( back_edge )
         cycle_const.append( edges )
-    
+
+    # 下面字典的每一个Key是（s,t）tuple，值是s.t之间的所有路径的列表
+    unbalance_const = {}
+    for (s,t), path_bwt in upaths.iteritems():
+        if s is t or s == t:
+            continue
+        unbalance_const[ (s,t) ] = []
+        for upath in path_bwt:
+            edges = []
+            for i in range(0, len(upath)-1):
+                edge = (upath[i], upath[i+1])
+                edges.append( edge )
+                all_edges[ edge ] = namewight[ edge ]
+            unbalance_const[ (s,t) ].append( edges )
+
     # 准备进行权重和约束的输出
     cnt = 0
     sorted_wight = []
     for edge, wight in all_edges.iteritems():
         cnt += 1 
         edge2x[ edge ] = "x(%d)" %cnt
-        #print "%% %s : x%d" % (str( (names[ edge[0]], names[ edge[1] ])), cnt )
+        print "%% x%d: %s -> %s" % (cnt, edge[0], edge[1])
         sorted_wight.append( wight)
-    
+    print "x = binvar(1, %d);" % len(all_edges)
+
+    print SDPSETTING
     #权重的字符串形式
     print "%% Weight of Edges"
-    print "W = ", str(sorted_wight )
-
-    cycle_string_const = [] #环约束的字符串形式
+    print "W = ", str(sorted_wight ) , ";"
+    
+    print "obj = -x*W';"
+    print "constraints = [..."
+    #环约束的字符串形式
+    cycle_string_const = [] 
     for cycle in cycle_const:
         xs = []
         for edge in cycle:
             xs.append( edge2x[edge])
         string = "*".join( xs )
-        string = string+ "<= 1/100000 ;"
+        string = string+ "<= 1/100000 ;..."
         cycle_string_const.append( string )
     print "%% Cycle Constraits Are:"
     print "\n".join( cycle_string_const)
-    
+
+    #不平衡路径约束的字符串形式
     print "%% Unbalance Constraints Are:"
-    unbalance_string_const = [] #不平衡路径的每一项的乘积的字符串
-    for (s,t), paths_between in unbalance_const.iteritems():
+    unbalance_string_const = [] 
+    for (s, t), paths_between in unbalance_const.iteritems():
         length_dict = {}
-        #把路径按照长度来归类。
+        # 把路径按照长度来归类.同一个长度的不平衡路径全部乘起来，称之为Ki
         for upath in paths_between:
             n = len( upath ) 
+            xs = []
+            for edge in upath:
+                xs.append( edge2x[edge] )
+            string = "*".join( xs)
             if not length_dict.has_key( n ):
-                length_dict[n] = ""
+                length_dict[n] = string
             else:
-                xs = []
-                for edge in upath:
-                    xs.append( edge2x[ edge])
-                string = "*".join( xs)
                 length_dict[n] = length_dict[n]+"*"+string
-
+        
         length_list = length_dict.values()
+        print "%% (%s, %s)" % (s,t)
+        print "\n".join([ "%% k%d: %s" %(i+1, length_list[i] ) \
+                            for i in range(0, len(length_list) )] )
         n = len( length_list )
+        assert n >= 2
+        #将不同的Ki两两相乘
         for i in range(0, n-1):
-            for j in range(0, n-1):
-                if i==j:
-                    continue
-                else:
-                    print length_list[i]+"*"+length_list[j] + "<= 1/100000;"
-                    
-    all_un_constraints = []
-    
-
-    print "Unbalance SOM is:"
-    print "\n".join( unbalance_string_const)
-
+            for j in range(i+1, n):
+                print "%% k%d * k%d" %(i, j)
+                print length_list[i]+"*"+length_list[j] + "<= 1/100000;..." 
+    print "];"
+    SOLVE   = '''solvesdp(constraints,obj, ops);'''
+    DISPLAY = '''for i = 1:%d\n fprintf('x %%d  ',i);\n display(x(i));\n end''' % len(all_edges )
+    ALL_FD = sum([ len(fdlist) for fdlist in ewight.itervalues()])
+    RUSULT = "display( %d-x*W' );" % ALL_FD
+    print SOLVE
+    print DISPLAY
+    print RUSULT
     return None
 
 #------------------------------------------------------------------------------------
@@ -477,11 +519,11 @@ if __name__ == "__main__":
     path = raw_input("plz enter file path:>")
     assert os.path.exists( path)
     while(True):
-        job = raw_input("plz enter the job: grh? balance?>:")
+        job = raw_input("plz enter the job: grh? blc? >:")
         if job == "grh":
             main(path)
             break
-        elif job == "balance":
+        elif job == "blc":
             search_unbalance_iscas(path)
             break
         elif job == "exit":
