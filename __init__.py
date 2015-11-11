@@ -36,11 +36,9 @@ from netlistx.parser.netlist_parser import vm_parse
 import class_circuit
 from class_circuit import *
 
-import crgraph
-from crgraph import CloudRegGraph
-
-import circuitgraph
-from circuitgraph import CircuitGraph
+from netlistx.graph import *
+from netlistx.graph.crgraph import CloudRegGraph
+from netlistx.graph.circuitgraph import CircuitGraph
 
 import netlist
 from netlist import Netlist

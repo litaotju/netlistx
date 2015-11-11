@@ -5,7 +5,8 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{0eebc94c-7a90-45ac-b811-c90bcaed4af8}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>ballast.py</StartupFile>
+    <StartupFile>
+    </StartupFile>
     <SearchPath>prototype\;..\</SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
@@ -25,18 +26,22 @@
     <Content Include="README.md" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ballast.py" />
     <Compile Include="cell_construct\construct_scan_lib.py" />
     <Compile Include="cell_construct\faultfdlib.py" />
-    <Compile Include="circuitgraph.py" />
     <Compile Include="class_circuit.py" />
-    <Compile Include="crgraph.py" />
     <Compile Include="exception.py" />
     <Compile Include="file_util.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="graph_top.py" />
-    <Compile Include="graph_util.py" />
+    <Compile Include="graph\ballast.py" />
+    <Compile Include="graph\circuitgraph.py" />
+    <Compile Include="graph\crgraph.py" />
+    <Compile Include="graph\graph_top.py" />
+    <Compile Include="graph\graph_util.py" />
+    <Compile Include="graph\sgraph.py" />
+    <Compile Include="graph\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="itrans\itrans.py" />
     <Compile Include="itrans\Primitives.py" />
     <Compile Include="netlist.py">
@@ -69,7 +74,6 @@
     <Compile Include="scan\__init__.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="sgraph.py" />
     <Compile Include="scan\testbench_generate.py" />
     <Compile Include="unittest\testCrgraph.py">
       <SubType>Code</SubType>
@@ -84,6 +88,7 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="cell_construct" />
+    <Folder Include="graph\" />
     <Folder Include="itrans\" />
     <Folder Include="scan\" />
     <Folder Include="parser\" />

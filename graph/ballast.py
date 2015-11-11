@@ -14,10 +14,10 @@ import matplotlib.pylab as plt
 # user-defined module
 import netlistx.class_circuit as cc
 from netlistx.exception    import *
-from netlistx.crgraph      import CloudRegGraph
-from netlistx.circuitgraph import get_graph
 from netlistx.file_util    import vm_files
 
+from crgraph      import CloudRegGraph
+from circuitgraph import get_graph
 
 class Ballaster:
     '''

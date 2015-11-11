@@ -15,11 +15,12 @@ import matplotlib.pylab as plt
 
 # user-defined module
 import netlistx.class_circuit as cc
-from circuitgraph import CircuitGraph
-from exception import *
+from netlistx.file_util import vm_files
+from netlistx.exception import *
 
+from circuitgraph import CircuitGraph
 from circuitgraph import get_graph
-from file_util import vm_files
+
 ###############################################################################
 
 

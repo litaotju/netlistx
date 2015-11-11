@@ -13,11 +13,13 @@ import matplotlib.pylab as plt
 import networkx       as nx
 
 # user-defined module
-import netlist_util   as nu
+import netlistx.netlist_util   as nu
+from netlistx.exception import *
+
 from circuitgraph    import CircuitGraph
-from crgraph import CloudRegGraph
-from ballast import Ballaster
-from exception import *
+from crgraph         import CloudRegGraph
+from ballast         import Ballaster
+
 ###############################################################################
 def get_graph(fname):
 

@@ -4,13 +4,16 @@ Created on Sun Jun 21 13:35:57 2015
 
 @author: litao
 """
-import networkx as nx
-import matplotlib.pyplot as plt
+
 import copy
 import os.path
 
+import networkx as nx
+import matplotlib.pyplot as plt
+
 # user-defined module
-import class_circuit as cc
+import netlistx.class_circuit as cc
+
 ###############################################################################
 class s_graph(nx.DiGraph):
     '''

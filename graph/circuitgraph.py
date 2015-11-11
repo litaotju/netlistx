@@ -13,8 +13,7 @@ import matplotlib.pyplot as plt
 # user-defined module
 import netlistx.class_circuit as cc
 import netlistx.netlist_util as nu
-from sgraph import s_graph
-from exception import *
+from   netlistx.exception import *
 
 class CircuitGraph(nx.DiGraph):
     '''

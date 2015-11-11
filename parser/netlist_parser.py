@@ -4,18 +4,18 @@ Created on Mon Jun 29 21:13:37 2015
 
 @author: litao
 """
+import re
 import sys
 import os
 
+import netlistx.class_circuit as cc
+
 import netlist_lexer
-import re
-tokens=netlist_lexer.tokens
-if __name__ == '__main__':
-    import test.class_circuit as cc
-else:
-    import netlistx.class_circuit as cc
-###############################################################################
 import yacc
+
+tokens=netlist_lexer.tokens
+
+###############################################################################
 def p_vmfile(p):
     '''vm_file : module_decl port_decl_list signal_decl_list primitive_list assign_stm_list ENDMODULE
                | module_decl port_decl_list signal_decl_list primitive_list ENDMODULE
