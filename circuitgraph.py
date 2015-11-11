@@ -165,10 +165,12 @@ class CircuitGraph(nx.DiGraph):
                     #po_dict[wire]['source'] = (eachPrim, eachPort)
                     continue
 
-                # 规则检查 如果当前端口的类型是Clock，而且图包含PIPO，那么Clock必须连接在PIPO上
-                if eachPort.port_type == 'clock' and self.include_pipo :
-                    clock = eachPort.port_assign.string
-                    assert piname.has_key(clock), "Clock:%s has no connect to PI" % clock
+                ## 规则检查 如果当前端口的类型是Clock，而且图包含PIPO，那么Clock必须连接在PIPO上
+                #if eachPort.port_type == 'clock' and self.include_pipo :
+                #    clock = eachPort.port_assign.string
+                #    assert piname.has_key(clock), "Clock:%s has no connect to PI" % clock
+                #    continue
+                if eachPort.port_type == "clock":
                     continue
 
                 # 如果这个信号的名字既没包含在PI也没包含在PO,那只能是Prim之间的连接了
@@ -310,8 +312,8 @@ class CircuitGraph(nx.DiGraph):
             source = SourceSinkDict['source']
             sinks = SourceSinkDict['sink']
             if not source:
-                print "Warning: no source of signal %s " % eachWire
-                # print "Error: no source of signal %s " % eachWire
+                if self.include_pipo : 
+                    print "Warning: no source of signal %s " % eachWire
                 # raise CircuitGraphError
                 continue
             if len(sinks) < 1 :
@@ -356,9 +358,12 @@ class CircuitGraph(nx.DiGraph):
         self.edge_set = self.pi_edge_list + self.po_edge_list + self.prim_edge_list
         print "Note : get all the edges succsfully"
         return None
+
     #------------------------------------------------------------------------------
     def info(self, verbose = False) :
-        print "----- module %s -- CircuitGraph info:----- " % self.m_list[0].name
+        print "\n------------------------------------------------------"
+        print "module %s   CircuitGraph info: " % self.m_list[0].name
+        print "pipo included : ", self.include_pipo
         print nx.info(self)
         if verbose:
             print "Info :%d nodes in graph. Node Set Are:"% self.number_of_nodes()
@@ -406,55 +411,55 @@ class CircuitGraph(nx.DiGraph):
         return None
         
 
-    ###############################################################################
-    def get_s_graph(self):
-        '''
-           >>>self.s_graph.copy(),根据已有的图来生成s-graph
-           生成的s图完全是nx.DiGraph类的，不是自定义类，初步评估发现，用这种方法
-           生成s图比 原先graph_s_graph中的只处理边集和点集更快速。所以有必要修改
-           该类的定义和构造函数。
-        '''
-        care_type=('FD')
-        ##step1
-        ##无聊的初始化过程，先建一个s_graph的对象，然后直接对数据属性进行赋值
-        s1=s_graph(self.include_pipo)
-        s1.name=self.name
-        if self.include_pipo:
-            for x in self.pipo_vertex_list:
-                if x.port_type=='input':
-                    s1.pi_nodes.append(x)
-                else:
-                    s1.po_nodes.append(x)
-        for fd in self.prim_vertex_list:
-            if fd.m_type=='FD':
-                s1.fd_nodes.append(fd)
-        ##为DiGraph内核添加节点与边
-        s1.add_nodes_from(self.vertex_set)
-        for eachEdge in self.edge_set:
-            s1.add_edge(eachEdge[0][0],eachEdge[0][1],\
-                    port_pair=eachEdge[1],cnt=eachEdge[2])
-        node_type_dict=nx.get_node_attributes(self,'node_type')   
+    ################################################################################
+    #def get_s_graph(self):
+    #    '''
+    #       >>>self.s_graph.copy(),根据已有的图来生成s-graph
+    #       生成的s图完全是nx.DiGraph类的，不是自定义类，初步评估发现，用这种方法
+    #       生成s图比 原先graph_s_graph中的只处理边集和点集更快速。所以有必要修改
+    #       该类的定义和构造函数。
+    #    '''
+    #    care_type=('FD')
+    #    ##step1
+    #    ##无聊的初始化过程，先建一个s_graph的对象，然后直接对数据属性进行赋值
+    #    s1=s_graph(self.include_pipo)
+    #    s1.name=self.name
+    #    if self.include_pipo:
+    #        for x in self.pipo_vertex_list:
+    #            if x.port_type=='input':
+    #                s1.pi_nodes.append(x)
+    #            else:
+    #                s1.po_nodes.append(x)
+    #    for fd in self.prim_vertex_list:
+    #        if fd.m_type=='FD':
+    #            s1.fd_nodes.append(fd)
+    #    ##为DiGraph内核添加节点与边
+    #    s1.add_nodes_from(self.vertex_set)
+    #    for eachEdge in self.edge_set:
+    #        s1.add_edge(eachEdge[0][0],eachEdge[0][1],\
+    #                port_pair=eachEdge[1],cnt=eachEdge[2])
+    #    node_type_dict=nx.get_node_attributes(self,'node_type')   
         
-        ##step2
-        ##ignore 每一个非FD的primitive节点
-        new_edge=[]
-        for eachNode in self.nodes_iter():
-            if node_type_dict[eachNode] not in ['input','output']:
-                if eachNode.m_type not in care_type:
-                    pre=[]
-                    suc=[]
-                    pre=s1.predecessors(eachNode)
-                    suc=s1.successors(eachNode)
-                    s1.remove_node(eachNode)
-                    if pre and suc:
-                        for eachS in pre:
-                            for eachD in suc:
-                                new_edge.append((eachS,eachD))
-                                s1.add_edge(eachS,eachD)
-        ##为新添加的边归类，
-        s1.new_edges=new_edge
-        self.s_graph=s1
-        return s1.copy()
+    #    ##step2
+    #    ##ignore 每一个非FD的primitive节点
+    #    new_edge=[]
+    #    for eachNode in self.nodes_iter():
+    #        if node_type_dict[eachNode] not in ['input','output']:
+    #            if eachNode.m_type not in care_type:
+    #                pre=[]
+    #                suc=[]
+    #                pre=s1.predecessors(eachNode)
+    #                suc=s1.successors(eachNode)
+    #                s1.remove_node(eachNode)
+    #                if pre and suc:
+    #                    for eachS in pre:
+    #                        for eachD in suc:
+    #                            new_edge.append((eachS,eachD))
+    #                            s1.add_edge(eachS,eachD)
+    #    ##为新添加的边归类，
+    #    s1.new_edges=new_edge
+    #    self.s_graph=s1
+    #    return s1.copy()
 
     def to_gexf_file(self, filename):
         '''把图写入gexf文件，不对原图做任何改变
@@ -502,31 +507,30 @@ class CircuitGraph(nx.DiGraph):
 
 #------------------------------------------------------------------------------
         
-def get_graph_from_raw_input(fname = None):
-    '''for test only'''
-    import netlist_util as nu
-    if not fname:
-        fname = raw_input("plz enter file name:")
+def get_graph(fname = None):
+    '''@param: fname, a vm file name
+       @return: g1, a nx.DiGraph obj
+       @brief: 从文件名获得一个图
+    '''
+    if not fname: fname = raw_input("plz enter file name:")
     info = nu.vm_parse(fname)
-    m_list = info['m_list']
+    m_list      = info['m_list']
     assign_list = info["assign_stm_list"]
-    print "Info: top module is:\n    %s" % m_list[0].name 
-
     nu.mark_the_circut(m_list, allow_unkown = False)
     #nu.rules_check(m_list)
     g1 = CircuitGraph(m_list, assign_list, include_pipo = True)
-    debug = True
-    if debug:
-        # 打印扇入为0的FD的信息
-        fd_nodes = [fd for fd in g1.nodes_iter() if isinstance(fd, cc.circut_module) and fd.m_type=='FD']
-        print "Info: 0 in-degree fd:"
-        for fd in fd_nodes:
-            if g1.in_degree(fd) == 0:
-                print fd
+    #debug = True
+    #if debug:
+    #    # 打印扇入为0的FD的信息
+    #    fd_nodes = [fd for fd in g1.nodes_iter() if isinstance(fd, cc.circut_module) and fd.m_type=='FD']
+    #    print "Info: 0 in-degree fd:"
+    #    for fd in fd_nodes:
+    #        if g1.in_degree(fd) == 0:
+    #            print fd
     return g1
     
-def __test():
-    '''for test only,输入一个文件名，生成带PIPO和不带PIPO的图，
+def __graph():
+    '''输入一个文件名，生成带PIPO和不带PIPO的图，
        然后将生成的图分别保存到tmp\\下的.dot文件和.gexf文件
     '''
 
@@ -547,20 +551,16 @@ def __test():
     g2.to_gexf_file('tmp\\%s_nopipo.gexf' % g2.name)
     g2.to_dot_file("tmp\\%s_nopipo.dot" % g2.name)
     if len(m_list) <= 20:
-        for eachPrim in m_list:
-            print eachPrim
-            verbose_info =True
+        print "\n".join( [str(eachPrim) for eachPrim in m_list] )
+        verbose_info =True
     else:
         verbose_info = False
-        print "Info: THE m_list is too long >20. should not inspected by hand. ignore..."
-    print "----NO PIPO-----------"
+        print "Info: The m_list is too long >20. ignore..."
     g2.info(verbose_info)
-    print "----Including PIPO----"    
     g1.info(verbose_info)
     return None
 
 def fanout_stat(graph):
-
     '''统计图中的FD节点和组合逻辑节点的扇出，打印到标准输出上
     '''
     g1 = graph #local variable
@@ -583,7 +583,8 @@ def fanout_stat(graph):
     print "fd node degree stat are:"
     for key ,val in fd_degree_stat.iteritems():
         print "%d %d" % (key, val)
-    return None
+    return fd_degree_stat, com_degree_stat
+
 #------------------------------------------------------------------------------
 if __name__ =='__main__':
     while(1):
@@ -593,9 +594,9 @@ if __name__ =='__main__':
         print u"exit:退出主程序"
         cmd = raw_input("plz enter command:")
         if cmd == "grh" :
-            __test()
+            __graph()
         if cmd == "fanout":
-            g1 = get_graph_from_raw_input()
+            g1 = get_graph()
             fanout_stat(g1)
         if cmd == "exit":
             break

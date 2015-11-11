@@ -18,7 +18,7 @@ import netlistx.class_circuit as cc
 from circuitgraph import CircuitGraph
 from exception import *
 
-from circuitgraph import get_graph_from_raw_input
+from circuitgraph import get_graph
 from file_util import vm_files
 ###############################################################################
 
@@ -28,7 +28,7 @@ class CloudRegGraph(nx.DiGraph):
         本图的节点分为两类，一类是cloud,也就是一个有向子图。一类是reg,也就是FD primitive
         子图中有存储了关于组合逻辑节点的互联信息
     '''
-    def __init__(self, basegraph ):
+    def __init__(self, basegraph, debug = False ):
         'parameter :basegraph ，a CircuitGraph Object'
         assert isinstance(basegraph, CircuitGraph) ,"%s" % str(basegraph.__class__)
         nx.DiGraph.__init__(self)
@@ -38,7 +38,7 @@ class CloudRegGraph(nx.DiGraph):
         self.name = basegraph.name
         
         # 调试标志和保存路径
-        self.debug = True
+        self.debug = debug
         debugpath = os.path.join( os.getcwd(), "test","crgraph" ,self.name )
         
         # 将所有的组合逻辑找到，相连接的归为一个Cloud
@@ -287,7 +287,7 @@ class CloudRegGraph(nx.DiGraph):
                     (reg.cellref, reg.name, npre)
                 print "\n".join([ str(eachPre.__class__) for eachPre in self.predecessors(reg)])
                 raise CrgraphRuleError
-            if usuc > 1:
+            if nsuc > 1:
                 print "Crgrpah Rules Error : %s %s has  %d >1 successors" %\
                     (reg.cellref, reg.name, nsuc)
                 print "\n".join([ str(eachSuc.__class__) for eachSuc in self.successors(reg)])
@@ -389,15 +389,15 @@ class CloudRegGraph(nx.DiGraph):
         if not os.path.exists( path):
             os.makedirs( path)
             print "Making directory", path ,"OK"
-        
+        def nm( name ):
+            return name[1:] if name[0] == "\\" else name
         namegraph = nx.DiGraph( name = self.name)
-        namegraph.add_edges_from( [(edge[0].name, edge[1].name ) for edge in self.edges_iter() ] )
+        namegraph.add_edges_from( [(nm(edge[0].name), nm(edge[1].name) ) for edge in self.edges_iter() ] )
         nx.write_dot( namegraph, os.path.join(path, self.name+".dot") )
 
         clouds = [ node for node in self.nodes_iter() if isinstance(node, nx.DiGraph)   ]
         regs = [node for node in self.nodes_iter() if isinstance(node, cc.circut_module) ]
-        def nm( name ):
-            return name[1:] if name[0] == "\\" else name
+
         for cloud in clouds:
             dotfile = os.path.join(path, cloud.name+".dot")
             namegraph = nx.DiGraph(name = cloud.name)
@@ -417,9 +417,9 @@ def main(path):
     for eachVm in vm_files(path):
         # 输入netlist 文件，得到 CircuitGraph对象g2
         inputfile =os.path.join(path, eachVm)
-        g2 = get_graph_from_raw_input( inputfile )
+        g2 = get_graph( inputfile )
         g2.info()
-        cr2 = CloudRegGraph(g2) 
+        cr2 = CloudRegGraph(g2, debug = True) 
         cr2.info()
         cr2.to_gexf_file( opath + "\\%s_crgraph.gexf" % cr2.name)
         if cr2.number_of_nodes() <= 100:

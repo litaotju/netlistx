@@ -15,7 +15,7 @@ import matplotlib.pylab as plt
 import netlistx.class_circuit as cc
 from netlistx.exception    import *
 from netlistx.crgraph      import CloudRegGraph
-from netlistx.circuitgraph import get_graph_from_raw_input
+from netlistx.circuitgraph import get_graph
 from netlistx.file_util    import vm_files
 
 
@@ -331,7 +331,7 @@ def __paint_intgraph(path= None):
     if not os.path.exists(picpath):
         os.mkdir(path+"pic\\")
     for eachVm in vm_files(path):
-        g = get_graph_from_raw_input(path+eachVm)
+        g = get_graph(path+eachVm)
         g.info()
         crgraph = CloudRegGraph(g)
         crgraph.info()

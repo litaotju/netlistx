@@ -2,7 +2,8 @@
 
 
 class CircuitGraphError(Exception):
-    pass
+    def __init__(self, msg = ""):
+        Exception.__init__(self, msg)
 
 
 class CrgraphError(Exception):
