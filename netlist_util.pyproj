@@ -35,10 +35,10 @@
     </Compile>
     <Compile Include="graph\ballast.py" />
     <Compile Include="graph\circuitgraph.py" />
+    <Compile Include="graph\cloudgraph.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="graph\crgraph.py" />
-    <Compile Include="graph\graph_top.py" />
-    <Compile Include="graph\graph_util.py" />
-    <Compile Include="graph\sgraph.py" />
     <Compile Include="graph\__init__.py">
       <SubType>Code</SubType>
     </Compile>
@@ -54,8 +54,6 @@
     <Compile Include="parser\netlist_lexer.py" />
     <Compile Include="parser\netlist_parser.py" />
     <Compile Include="parser\parsetab.py" />
-    <Compile Include="parser\test\class_circuit.py" />
-    <Compile Include="parser\test\__init__.py" />
     <Compile Include="parser\yacc.py" />
     <Compile Include="parser\__init__.py" />
     <Compile Include="netlist_util.py" />
@@ -92,7 +90,6 @@
     <Folder Include="itrans\" />
     <Folder Include="scan\" />
     <Folder Include="parser\" />
-    <Folder Include="parser\test\" />
     <Folder Include="prototype\" />
     <Folder Include="unittest\" />
   </ItemGroup>
