@@ -357,7 +357,14 @@ class CircuitGraph(nx.DiGraph):
         self.edge_set = self.pi_edge_list + self.po_edge_list + self.prim_edge_list
         print "Note : get all the edges succsfully"
         return None
-
+    
+    def topo_copy( self ):
+        gcopy = nx.DiGraph()
+        for edge in self.edges_iter():
+            gcopy.add_edge( edge[0], edge[1])
+        for node in self.nodes_iter():
+            gcopy.add_node( node )
+        return gcopy
     #------------------------------------------------------------------------------
     def info(self, verbose = False) :
         print "\n------------------------------------------------------"
