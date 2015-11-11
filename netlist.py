@@ -191,11 +191,6 @@ class Netlist(object):
         else:
             return assign
 
-        
-    # 加入扫描链的方法
-    def scan_insert(self):
-        pass
-
     # 输出组的方法
     def write(self, path):
         filename = os.path.join(path, self.top_module.name)+".v"

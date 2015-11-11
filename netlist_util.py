@@ -226,15 +226,6 @@ def get_lut_cnt2_FD(m_list,all_fd_dict,verbose=False,K=6):
 ###############################################################################
 def get_clk_in_fd(all_fd_dict,verbose=False):
     clock_list=[]
-    ##原来的版本是从m_list从提取,现在只需要从all_fd_dict中提取就好了
-#    for eachModule in m_list[1:]:
-#        if eachModule.name in all_fd_list:
-#            for eachPort in eachModule.port_list:
-#                if eachPort.port_type=="clock":
-#                    if eachPort.port_assign not in clock_list:
-#                        clock_list.append(eachPort.port_assign)
-#                    else:
-#                        continue
     for eachFD in all_fd_dict.keys():
         assert all_fd_dict[eachFD].has_key("C"),"Error:FD %s has no C port" % eachFD
         current_clk=all_fd_dict[eachFD]['C'].string
@@ -357,7 +348,7 @@ def rules_check(m_list):
     clock_signal = get_clk_in_fd(all_fd_dict, True)
     print "Process: finding all reset and async reset of fd..."
     reset_list, async_reset_list = get_reset_in_fd(all_fd_dict, True)
-    ##注意一个潜在的问题，只有网表的端口宽度为1时，也就是信号与string相同时，规则检查才有效
+
     single_bit_pi = []
     if len(clock_signal) == 1 : # 时钟个数为0时 ， 不用检查时钟了
         clock_flag = False    
