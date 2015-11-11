@@ -42,6 +42,9 @@
     <Compile Include="netlist.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="netlist_rules.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="parser\lex.py" />
     <Compile Include="parser\netlist_lexer.py" />
     <Compile Include="parser\netlist_parser.py" />
@@ -69,6 +72,9 @@
     <Compile Include="sgraph.py" />
     <Compile Include="scan\testbench_generate.py" />
     <Compile Include="unittest\testCrgraph.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="unittest\testDrc.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="unittest\testNetlist.py" />
