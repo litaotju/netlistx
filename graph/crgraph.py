@@ -237,13 +237,8 @@ class CloudRegGraph(nx.DiGraph):
               
     def __merge_cloud(self):
         '合并多个cloud'
-        # ------------------------------------------------------------------
-        # step 1 对每一个多扇出的FD，将FD的多个扇出succ cloud合并成一个大的cloud
         print "Processing: merging cloud into big cloud... "
         for eachFD in self.regs:
-            #if self.debug:
-            #    print "    Processing %s ..." % eachFD.name
-
             # 不论有没有扇入只有0-1个扇出的时候，查找下一个FD
             # 有多于1个的扇出的时候，将它的后继节点的所有cloud合并为一个cloud
             # 合并的大cloud的前驱结点，也就是与同级FD相邻的FD与大cloud相连接
@@ -261,15 +256,10 @@ class CloudRegGraph(nx.DiGraph):
                 succ_fds = succ_fds.union( set(self.successors(succ_cloud)) )
                 self.remove_node(succ_cloud)
             self.add_node(big_cloud)
-            #if self.debug:
-            #    print "        %d nodes in cuurent graph" % self.number_of_nodes()
-            #    print "        %d egdes before adding edges-to bigclouds" % self.number_of_edges()
             for pre_fd in pre_fds:
                 self.add_edge(pre_fd, big_cloud)
             for succ_fd in succ_fds:
                 self.add_edge(big_cloud, succ_fd)
-            #if self.debug:
-            #    print "        %d edges in current graph" % self.number_of_edges()
 
         self.big_clouds = [node for node in self.nodes_iter() if isinstance(node, nx.DiGraph) ]
         print "Note: merge_cloud() successfully."
@@ -318,7 +308,9 @@ class CloudRegGraph(nx.DiGraph):
                             % ( str(edge),int(has_cloud),int(has_fd) )
                 raise CrgraphRuleError
         print "Info: Check Rules2 of cloud_reg_graph succfully,\n    every edge is FD-cloud edge"
-
+    
+    #--------------------------------------------------------------------
+    # 以下的几个函数和输出图像手动检查有关
     def paint(self, path = None):
         label_dict={}
         for eachCloud in self.big_clouds:
