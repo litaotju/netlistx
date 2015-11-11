@@ -19,10 +19,17 @@ def unbalance_paths(G):
     nodes = [node for node in G.nodes() if G.out_degree(node)>1]
     for s in nodes:
         upath[s] = find_upath(G, s)
-        print "Snode, Tnodes: %s %s" % ( str(s),str(upath[s]) )
-        upath2[s] = [] 
+        if __name__ == "__main__":
+            print "Snode, Tnodes: %s %s" % ( str(s), str(upath[s]) )
         for t in upath[s]:
-            upath2[s] += nx.all_simple_paths(G, s, t)
+            assert not upath2.has_key( (s,t) )
+            unbalance_path_st = list( nx.all_simple_paths(G, s, t) )
+            if len(unbalance_path_st) >= 2:
+                upath2[ (s,t) ] = unbalance_path_st
+            else:
+                #print "Error Only one path s:%s->t:%s, %s" %(s, t, unbalance_path_st )
+                #raise AssertionError
+                continue
     return upath2
     
 def find_upath(G, s):
@@ -30,8 +37,8 @@ def find_upath(G, s):
              : s, a node in G
         @return: reconvergent nodes in from s.
     '''
-    # 这个函数是tab来缩进的，，，
-    print "Searching node: %s" % s
+    if __name__ == "__main__":
+        print "Searching node: %s" % s
     time = 0
     depth = {}
     depth[s] = [0]
@@ -41,12 +48,13 @@ def find_upath(G, s):
     while(len(bfs_list) != 0 ):
         time += 1
         next_list = []
-        print "bfs_list: ",
-        print bfs_list
+        if __name__ == "__main__":
+            print "bfs_list: ",
+            print bfs_list
         # 传递进来的一定是没有经过访问的标定深度的节点
         # 所以为每一个标定一下深度
         for node in bfs_list:
-            if node is s:
+            if node is s or node == s:
                 continue
             assert not depth.has_key(node) ,"Node: %s" % str(node)
             depth[node] = (time)
@@ -55,7 +63,12 @@ def find_upath(G, s):
         # 找出下一级的节点，（本级没有包含，前级也没有包含的节点）
         # 如果本级包含或者前级包含了，那么该节点一定是重汇聚节点
         for node in bfs_list:
+            if node is s or node == s:
+                continue
             for next_level_node in G.succ[node].keys():
+                if next_level_node is node:
+                    #print "Finding:self-loop %s" % node
+                    continue
                 if depth.has_key(next_level_node):
                     if not (next_level_node in reconvergent_nodes):
                         reconvergent_nodes.append(next_level_node)
@@ -102,19 +115,18 @@ if __name__ == "__main__":
 		('c', 'e'),('d','e'),
 		('e','f'),('a','a'),
 	]
-    edges2 = [('a','b'), ('b','c'), ('c','a')]
+    edges2 = [('a','b'), ('b','c'), ('c','a'), ('f','f')]
     edges3 = [('a','b'),('b','a'),('b','c'),('c','a')]
-    G.add_edges_from(edges2)
+    edges4 = [('a','b'),("a",'c'),('a','a')]
+    G.add_edges_from( edges+ edges2)
     u = unbalance_paths(G)
     cycles = []
     print "Un-balance Paths:"
     for key , val in u.items():
         for path in val:
             if path[0] is path[-1]:
-                cycles.append(path)
+                continue
             else:
                 print "%s %s " % (str(key), str(path))
-    print "Cycles Are:"
-    for cycle in cycles:
-        print cycle
+
 
