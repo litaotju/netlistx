@@ -25,10 +25,7 @@ from circuitgraph import get_graph
 
 
 class CloudRegGraph(nx.DiGraph):
-    '''
-        本图的节点分为两类，一类是cloud,也就是一个有向子图。一类是reg,也就是FD primitive
-        子图中有存储了关于组合逻辑节点的互联信息
-    '''
+    # BUGY:没有减掉直接连接到GND或者VCC的触发器
     def __init__(self, basegraph, debug = False ):
         'parameter :basegraph ，a CircuitGraph Object'
         assert isinstance(basegraph, CircuitGraph) ,"%s" % str(basegraph.__class__)
@@ -338,7 +335,8 @@ class CloudRegGraph(nx.DiGraph):
         return True
 
     def info(self , verbose = False):
-        print "--------------Cloud_Reg_graph info:-----------------"
+        print "------------------------------------------------------"
+        print "CloudRegGraph info:"
         print nx.info(self)
         ncloud = 0
         nreg = 0
