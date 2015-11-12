@@ -2,6 +2,7 @@
 
 #built-in
 import os
+import time
 
 #3-rd party
 import networkx as nx
@@ -10,12 +11,12 @@ import networkx as nx
 import netlistx.class_circuit as cc
 from netlistx.file_util import vm_files
 
-from circuitgraph import CircuitGraph
-from circuitgraph import get_graph
-import crgraph as old
+from netlistx.graph.circuitgraph import CircuitGraph
+from netlistx.graph.circuitgraph import get_graph
+import netlistx.graph.crgraph as old
 
 class CloudRegGraph(nx.DiGraph):
-    """new CloudRegGraph class"""
+    """node as cloud, edge as fds"""
     REMAIN_FD_PORT = ['D','Q']
 
     def __init__(self, graph):
@@ -31,9 +32,10 @@ class CloudRegGraph(nx.DiGraph):
         self.fds = []
         self.constfds = []
         self.arcs = {}
+
         self.__getself(graph)
         self.__merge()
-        self.__fd2edge()
+        #self.__fd2edge()
 
     def __getself(self, graph):
         gcopy = graph.topo_copy()
@@ -48,9 +50,8 @@ class CloudRegGraph(nx.DiGraph):
             ccnt += 1
             cloud.name = "cloud%d" % ccnt
             clouds.append( cloud )
-        self.add_nodes_from( fds )
-        self.add_nodes_from( cloud )
-        
+        nodes = fds + clouds
+        print "Info: %d connected_componenent subgraph after remove FD [GND_VCC]*" % len(clouds)
         # edges
         constfds = []
         edges = []
@@ -65,7 +66,7 @@ class CloudRegGraph(nx.DiGraph):
                 if (preport not in  CloudRegGraph.REMAIN_FD_PORT)\
                     or (succport not in CloudRegGraph.REMAIN_FD_PORT):
                     continue
-                empty = nx.DiGraph()
+                empty = nx.DiGraph(name = "between:" + pre.name +succ.name)
                 edges.append( (pre, empty) )
                 edges.append( (empty, succ) )
                 continue
@@ -84,9 +85,15 @@ class CloudRegGraph(nx.DiGraph):
                 fdport = succport
                 credge = self.__credge( succ, pre, clouds, fdport, fdispre = False)
             if credge: edges.append( credge )
-               
+
+        self.add_nodes_from( nodes)
         self.add_edges_from( edges)
+        
+        #移除不必要节点，包括constfd, solocloud
         self.remove_nodes_from( constfds )
+        solocloud = [cloud for cloud in clouds if self.degree(cloud) == 0]
+        self.remove_nodes_from( solocloud )
+
         self.fds = [node for node in self.nodes() if isfd(node) ]
         self.constfds = constfds
         self.clouds = clouds
@@ -107,16 +114,17 @@ class CloudRegGraph(nx.DiGraph):
                 raise Exception, err
         return credge
 
+
     def __merge(self):
-        print "----------------------------"
-        print "Before_merge"
-        print nx.info(self)
-        print "----------------------------"
+        #print "Before merge"
+        #self.info()
+        time.clock()
         for fd in self.fds:
             succs = self.successors( fd)
             if len(succs ) <= 1:
                 continue
             else:
+                # TODO: 制约系统速度的关键
                 big_cloud = nx.union_all(succs)
             pre_fds = set()
             succ_fds = set()
@@ -133,6 +141,7 @@ class CloudRegGraph(nx.DiGraph):
                 err = "Error: %s indegree:%d outdegree:%d" %\
                     (fd, self.in_degree(fd), self.out_degree(fd) )
                 raise Exception, err 
+        print "Time spend in merging: %s" % time.clock()
 
     def __fd2edge(self):
         arc = {}
@@ -158,6 +167,30 @@ class CloudRegGraph(nx.DiGraph):
             raise Exception, err 
         self.arc = arc
 
+    def info(self , verbose = False):
+        print "------------------------------------------------------"
+        print "CloudRegGraph info:"
+        print nx.info(self)
+        ncloud = 0
+        nreg = 0
+        for node in self.nodes_iter():
+            if isinstance(node, nx.DiGraph): 
+                ncloud += 1
+                if node.number_of_nodes() == 0:
+                    if verbose: print "cloud ::\n empty cloud\n"
+                    continue
+                elif verbose: print "Cloud::"
+                for prim in node.nodes_iter():       
+                    if verbose: print prim
+            else:
+                assert isfd(node)
+                if verbose: print "node::\n", node
+                nreg += 1
+        print "Number of cloud      : %d" % ncloud
+        print "Number of remainfd   : %d" % nreg
+        print "Number of constfd    : %d" % len( self.constfds)
+        print "---------------------------------------------------"
+
 def isfd( node):
     if isinstance(node, cc.circut_module) and node.m_type == 'FD':
         return True
@@ -171,17 +204,15 @@ def isvccgnd(node):
 def main(path):
     '''从目录来提取其中的每一个网表的CR图的信息
     '''
-    opath = os.path.join(path, "graphpic")
-    if not os.path.exists(opath):
-        os.mkdir( opath )
     for eachVm in vm_files(path):
         inputfile =os.path.join(path, eachVm)
         g2 = get_graph( inputfile )
         g2.info()
         cr2 = CloudRegGraph(g2) 
-        print nx.info(cr2)
+        cr2.info()
         cr3 = old.CloudRegGraph(g2)
-        print nx.info(cr3)
+        cr3.info()
+        
 
 if __name__ == '__main__':
     print u"Usage:输入一个目录，将该目录下的所有.v或者。vm文件的进行crgraph建模"
