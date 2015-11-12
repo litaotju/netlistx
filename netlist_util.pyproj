@@ -5,8 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{0eebc94c-7a90-45ac-b811-c90bcaed4af8}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>
-    </StartupFile>
+    <StartupFile>graph\cloudgraph.py</StartupFile>
     <SearchPath>prototype\;..\</SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
@@ -39,6 +38,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="graph\crgraph.py" />
+    <Compile Include="graph\test\testCloud.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="graph\__init__.py">
       <SubType>Code</SubType>
     </Compile>
@@ -87,6 +89,7 @@
   <ItemGroup>
     <Folder Include="cell_construct" />
     <Folder Include="graph\" />
+    <Folder Include="graph\test\" />
     <Folder Include="itrans\" />
     <Folder Include="scan\" />
     <Folder Include="parser\" />
