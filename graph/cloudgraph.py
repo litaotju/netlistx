@@ -10,6 +10,7 @@ import networkx as nx
 #user-defined
 import netlistx.class_circuit as cc
 from netlistx.file_util import vm_files
+from netlistx.exception import CrgraphError
 
 from netlistx.graph.circuitgraph import CircuitGraph
 from netlistx.graph.circuitgraph import get_graph
@@ -35,7 +36,7 @@ class CloudRegGraph(nx.DiGraph):
 
         self.__getself(graph)
         self.__merge()
-        #self.__fd2edge()
+        self.__fd2edge()
 
     def __getself(self, graph):
         gcopy = graph.topo_copy()
@@ -48,8 +49,9 @@ class CloudRegGraph(nx.DiGraph):
         clouds = []
         for cloud in nx.weakly_connected_component_subgraphs(gcopy, copy = False):
             ccnt += 1
-            cloud.name = "cloud%d" % ccnt
-            clouds.append( cloud )
+            tmpgraph = nx.DiGraph( cloud, name = "cloud%d" % ccnt )
+            #cloud.name = 
+            clouds.append( tmpgraph )
         nodes = fds + clouds
         print "Info: %d connected_componenent subgraph after remove FD [GND_VCC]*" % len(clouds)
         # edges
@@ -66,7 +68,8 @@ class CloudRegGraph(nx.DiGraph):
                 if (preport not in  CloudRegGraph.REMAIN_FD_PORT)\
                     or (succport not in CloudRegGraph.REMAIN_FD_PORT):
                     continue
-                empty = nx.DiGraph(name = "between:" + pre.name +succ.name)
+                ccnt += 1
+                empty = nx.DiGraph(name = "empty_cloud%d" % ccnt )
                 edges.append( (pre, empty) )
                 edges.append( (empty, succ) )
                 continue
@@ -98,6 +101,8 @@ class CloudRegGraph(nx.DiGraph):
         self.constfds = constfds
         self.clouds = clouds
 
+        self.check()
+
     def __credge(self, fd, nonfd, clouds, fdport, fdispre):
         '''是为了找出FD与Non-FD相连接的边
         '''
@@ -114,10 +119,7 @@ class CloudRegGraph(nx.DiGraph):
                 raise Exception, err
         return credge
 
-
     def __merge(self):
-        #print "Before merge"
-        #self.info()
         time.clock()
         for fd in self.fds:
             succs = self.successors( fd)
@@ -126,6 +128,7 @@ class CloudRegGraph(nx.DiGraph):
             else:
                 # TODO: 制约系统速度的关键
                 big_cloud = nx.union_all(succs)
+                # ----
             pre_fds = set()
             succ_fds = set()
             for succ_cloud in succs:
@@ -140,7 +143,8 @@ class CloudRegGraph(nx.DiGraph):
             if self.out_degree(fd) != 1 or self.in_degree(fd) != 1:
                 err = "Error: %s indegree:%d outdegree:%d" %\
                     (fd, self.in_degree(fd), self.out_degree(fd) )
-                raise Exception, err 
+                raise CrgraphError, err 
+        self.check()
         print "Time spend in merging: %s" % time.clock()
 
     def __fd2edge(self):
@@ -165,7 +169,8 @@ class CloudRegGraph(nx.DiGraph):
         if remain_reg != len(self.fds):
             err = "Error: %d/%d fd remains in crgraph" % (remain_reg, len(fds))
             raise Exception, err 
-        self.arc = arc
+        self.check()
+        self.arcs = arc
 
     def info(self , verbose = False):
         print "------------------------------------------------------"
@@ -177,7 +182,7 @@ class CloudRegGraph(nx.DiGraph):
             if isinstance(node, nx.DiGraph): 
                 ncloud += 1
                 if node.number_of_nodes() == 0:
-                    if verbose: print "cloud ::\n empty cloud\n"
+                    if verbose: print "Cloud ::\n empty cloud\n"
                     continue
                 elif verbose: print "Cloud::"
                 for prim in node.nodes_iter():       
@@ -190,6 +195,48 @@ class CloudRegGraph(nx.DiGraph):
         print "Number of remainfd   : %d" % nreg
         print "Number of constfd    : %d" % len( self.constfds)
         print "---------------------------------------------------"
+
+    def snapshot(self, path):
+        '''@param： path, 一个输出路径
+           @brief: 将当前图中的所有cloud(nx.DiGraph)和fd(cc.circut_module)以
+                    以dot的形式保存在当前路径中
+        '''
+        if not os.path.exists( path):
+            os.makedirs( path)
+        def nm( name ):
+            return name[1:] if name[0] == "\\" else name
+        #总的图
+        namegraph = nx.DiGraph( name = self.name)
+        for pre, succ, data in self.edges_iter(data = True):
+            namegraph.add_edge( nm(pre.name), nm(succ.name),\
+                 weight = data['weight'], label = data['label'])
+        nx.write_dot( namegraph, os.path.join(path, self.name+".dot") )
+        
+        #各cloud
+        for cloud in self.nodes_iter():
+            if cloud.number_of_nodes() == 0:
+                continue
+            dotfile = os.path.join(path , cloud.name+".dot")
+            namegraph = nx.DiGraph(name = cloud.name)
+            namegraph.add_nodes_from( [ nm(node.name) for node in cloud.nodes_iter() ] )
+            namegraph.add_edges_from ( [ ( nm(edge[0].name), nm( edge[1].name ) ) for edge in cloud.edges_iter() ])
+            nx.write_dot( namegraph, dotfile)
+        #fd边的记录
+        edgerecord = os.path.join(path, self.name + "_arcs.txt")
+        out = open( edgerecord, 'w')
+        for edge, fds in self.arcs.iteritems():
+            out.write("\nEdge: %s, %s\n" % (edge[0].name, edge[1].name) )
+            out.write("has %d FDs:\n" % len(fds) )
+            for fd in fds:
+                if not isfd(fd):
+                    print "Waring: %s" % fd.name, "is not fd" 
+                out.write("    %s \n" % fd.name) 
+        out.close()
+    
+    def check(self):
+        for node in self.nodes_iter():
+            if not isfd( node):
+                assert isinstance(node, nx.DiGraph), str( node.__class__ )
 
 def isfd( node):
     if isinstance(node, cc.circut_module) and node.m_type == 'FD':
@@ -208,10 +255,14 @@ def main(path):
         inputfile =os.path.join(path, eachVm)
         g2 = get_graph( inputfile )
         g2.info()
-        cr2 = CloudRegGraph(g2) 
+        try:
+            cr2 = CloudRegGraph(g2) 
+        except CrgraphError:
+            continue
         cr2.info()
-        cr3 = old.CloudRegGraph(g2)
-        cr3.info()
+        cr2.snapshot(path + "\\final\\" +g2.name )
+        #cr3 = old.CloudRegGraph(g2)
+        #cr3.info()
         
 
 if __name__ == '__main__':
