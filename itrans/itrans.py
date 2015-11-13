@@ -507,7 +507,8 @@ def convert2opt(cr, ewight, upaths, cycles):
     SOLVE   = '''solvesdp(constraints,obj, ops);'''
     DISPLAY = '''for i = 1:%d\n fprintf('x %%d  ',i);\n display(x(i));\n end''' % len(all_edges )
     ALL_FD = sum([ len(fdlist) for fdlist in ewight.itervalues()])
-    RUSULT = "display( %d-x*W' );" % ALL_FD
+    print "%%All fd number is: %d"  % ALL_FD 
+    RUSULT = "display( sum(W) -x*W' );" 
     print SOLVE
     print DISPLAY
     print RUSULT

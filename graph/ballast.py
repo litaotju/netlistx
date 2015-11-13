@@ -285,6 +285,7 @@ def __test_with_intgraph():
     b1 = Ballaster(g1)
     b1.feedbackset()
     print "FAS is %s" % g1.fas
+
     g2 = nx.DiGraph()
     g2.add_path([1,0,5,1])
     g2.add_path([5,1,3,5])
@@ -299,7 +300,7 @@ def __test_with_crgraph():
     '''输入一个vm文件来测试 Ballaster算法
     '''
     # 第一步：获取cr图
-    g = get_graph_from_raw_input()
+    g = get_graph()
     g.info()
     crgraph = CloudRegGraph(g)
     crgraph.info()
