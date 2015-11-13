@@ -16,6 +16,7 @@ from netlistx.graph.circuitgraph import CircuitGraph
 from netlistx.graph.circuitgraph import get_graph
 import netlistx.graph.crgraph as old
 
+__all__ = ["CloudRegGraph" ]
 class CloudRegGraph(nx.DiGraph):
     """node as cloud, edge as fds"""
     REMAIN_FD_PORT = ['D','Q']
@@ -248,24 +249,20 @@ def isvccgnd(node):
         return True
     return False
     
-def main(path):
-    '''从目录来提取其中的每一个网表的CR图的信息
-    '''
+def main():
+    print u"Usage:输入一个目录，将该目录下的所有.v或者.vm文件的进行crgraph建模"
+    print u"      输出结果保存在final子目录下。"
+    path = raw_input("plz set working directory:")
     for eachVm in vm_files(path):
         inputfile =os.path.join(path, eachVm)
         g2 = get_graph( inputfile )
         g2.info()
-        try:
-            cr2 = CloudRegGraph(g2) 
-        except CrgraphError:
-            continue
+        cr2 = CloudRegGraph(g2)
+        assert isinstance( cr2, nx.DiGraph )
         cr2.info()
         cr2.snapshot(path + "\\final\\" +g2.name )
         #cr3 = old.CloudRegGraph(g2)
         #cr3.info()
-        
 
 if __name__ == '__main__':
-    print u"Usage:输入一个目录，将该目录下的所有.v或者。vm文件的进行crgraph建模"
-    path = raw_input("plz set working directory:")
-    main(path)
+    main()

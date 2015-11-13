@@ -15,6 +15,8 @@ import netlistx.class_circuit as cc
 import netlistx.netlist_util as nu
 from   netlistx.exception import *
 
+__all__ = [ "CircuitGraph", "get_graph" ]
+
 class CircuitGraph(nx.DiGraph):
     '''
        This class is a sonclass of nx.DiGraph and construct with a m_list[]
