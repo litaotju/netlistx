@@ -4,7 +4,7 @@ import unittest
 import os
 
 import matplotlib.pylab as plt
-from netlistx.circuitgraph import get_graph_from_raw_input
+from netlistx.graph.circuitgraph import get_graph
 from netlistx.file_util import vm_files
 from netlistx import CloudRegGraph
 
@@ -21,7 +21,7 @@ class Test_testCrgraph(unittest.TestCase):
         path = self.path
         print path
         for eachVm in vm_files(path):
-            g2 = get_graph_from_raw_input(path+eachVm) # 输入netlist 文件，得到 CircuitGraph对象g2
+            g2 = get_graph(path+eachVm) # 输入netlist 文件，得到 CircuitGraph对象g2
             g2.info() #打印原图的详细信息
             cr2 = CloudRegGraph(g2) 
             cr2.info()
