@@ -38,6 +38,12 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="graph\crgraph.py" />
+    <Compile Include="scan\partialBallast.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="scan\partialOpt.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="graph\test\testCloud.py">
       <SubType>Code</SubType>
     </Compile>
@@ -69,12 +75,12 @@
     <Compile Include="prototype\__init__.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="scan\full_replace.py" />
-    <Compile Include="scan\using_lut.py" />
+    <Compile Include="scan\fullReplace.py" />
+    <Compile Include="scan\fullUsingLut.py" />
     <Compile Include="scan\__init__.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="scan\testbench_generate.py" />
+    <Compile Include="scan\testbenchGenerate.py" />
     <Compile Include="unittest\testCrgraph.py">
       <SubType>Code</SubType>
     </Compile>
@@ -82,6 +88,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="unittest\testNetlist.py" />
+    <Compile Include="unittest\testPartialBallast.py" />
     <Compile Include="__init__.py">
       <SubType>Code</SubType>
     </Compile>
