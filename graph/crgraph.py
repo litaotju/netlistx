@@ -15,11 +15,11 @@ import matplotlib.pylab as plt
 
 # user-defined module
 import netlistx.class_circuit as cc
-from netlistx.file_util import vm_files
-from netlistx.exception import *
 
-from circuitgraph import CircuitGraph
-from circuitgraph import get_graph
+from netlistx.exception import *
+from netlistx.file_util import vm_files
+from netlistx.graph.circuitgraph import CircuitGraph
+from netlistx.graph.circuitgraph import get_graph
 
 class CloudRegGraph(nx.DiGraph):
     # BUGY:没有减掉直接连接到GND或者VCC的触发器
@@ -34,7 +34,7 @@ class CloudRegGraph(nx.DiGraph):
         self.arcs = {}
         self.name = basegraph.name    
         
-        debugpath = os.path.join( os.getcwd(), "test","CrgraphDebug" ,self.name )
+        debugpath = os.path.join( os.getcwd(), "test","CrgraphDebugPathTemp", self.name )
 
         self.debug = debug
         self.__get_cloud_reg_graph(basegraph) 
@@ -43,7 +43,6 @@ class CloudRegGraph(nx.DiGraph):
         if self.basegraph.include_pipo: self.__add_pipo_empty_cloud() 
         if self.debug: self.snapshot( debugpath + "\\2after_add_pipo")
 
-        #self.stat_fd_outdegree()
         self.__merge_cloud()               
         if self.debug: self.snapshot( debugpath + "\\3after_merge")
         self.__check_rules()
@@ -260,8 +259,9 @@ class CloudRegGraph(nx.DiGraph):
                 print "Waring :%s %s has no prec" % (reg.cellref, reg.name)
             graph.remove_node(reg)
         remain_reg = 0
-        for key, val in arc.iteritems():
-            remain_reg += len(val)
+        for edge, regs in arc.iteritems():
+            remain_reg += len(regs)
+            self.add_edge( edge[0], edge[1], weight = len(regs ), label = len(regs))
         if not remain_reg == len(graph.regs):
             print "Waring: %d / %d regs remained in intgraph" % (remain_reg, len(graph.regs) )
         self.arcs = arc
@@ -376,7 +376,7 @@ class CloudRegGraph(nx.DiGraph):
                 if verbose: print "FD::\n", node
                 nreg += 1
         print "Number of cloud:%d " % ncloud
-        print "Number of register:%d" % nreg
+        print "Number of register:%d" % len(self.regs)
         print "---------------------------------------------------"
 
     def to_gexf_file(self, filename):
@@ -398,11 +398,15 @@ class CloudRegGraph(nx.DiGraph):
         '''
         if not os.path.exists( path):
             os.makedirs( path)
-            print "Making directory", path ,"OK"
         def nm( name ):
             return name[1:] if name[0] == "\\" else name
         namegraph = nx.DiGraph( name = self.name)
-        namegraph.add_edges_from( [(nm(edge[0].name), nm(edge[1].name) ) for edge in self.edges_iter() ] )
+        for pre, succ, data in self.edges_iter(data = True):
+            if data.has_key('weight') and data.has_key('label'):
+                namegraph.add_edge( nm(pre.name), nm(succ.name),\
+                     weight = data['weight'], label = data['label'])
+            else:
+                namegraph.add_edge( nm(pre.name), nm(succ.name) )
         nx.write_dot( namegraph, os.path.join(path, self.name+".dot") )
 
         clouds = [ node for node in self.nodes_iter() if isinstance(node, nx.DiGraph)   ]
@@ -417,25 +421,3 @@ class CloudRegGraph(nx.DiGraph):
         with open( os.path.join(path,"%s_regs.txt" % self.name),'w' ) as regfile:
             for reg in regs:
                 regfile.write( str(reg)+"\n" )
-
-def main(path):
-    '''从目录来提取其中的每一个网表的CR图的信息
-    '''
-    opath = os.path.join(path, "graphpic")
-    if not os.path.exists(opath):
-        os.mkdir( opath )
-    for eachVm in vm_files(path):
-        # 输入netlist 文件，得到 CircuitGraph对象g2
-        inputfile =os.path.join(path, eachVm)
-        g2 = get_graph( inputfile )
-        g2.info()
-        cr2 = CloudRegGraph(g2, debug = True) 
-        cr2.info()
-        cr2.to_gexf_file( opath + "\\%s_crgraph.gexf" % cr2.name)
-        if cr2.number_of_nodes() <= 100:
-            cr2.paint( opath )
-
-if __name__ == '__main__':
-    print u"Usage:输入一个目录，将该目录下的所有.v或者。vm文件的进行crgraph建模"
-    path = raw_input("plz set working directory:")
-    main(path)
