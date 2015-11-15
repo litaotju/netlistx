@@ -12,7 +12,7 @@ import copy
 # user-defined module
 from netlistx.parser.netlist_parser import parser
 
-def mark_the_circut(m_list, allow_dsp=False, allow_unkown=True ):
+def mark_the_circut(primtives, allow_dsp=False, allow_unkown=True ):
     'mark all the module with a type'
     cellref_list=[]
     FD_TYPE=('FDCE','FDPE','FDRE','FDSE','FDC','FDP','FDR','FDS','FDE', 'FD')
@@ -21,15 +21,15 @@ def mark_the_circut(m_list, allow_dsp=False, allow_unkown=True ):
               'LUT6_2')
     OTHER_COMBIN=('MUXCY','MUXCY_L','MUXF7','MUXF8','XORCY','INV','MULT_AND','MUXF5',
                   'MUXF6')
-    for eachModule in m_list[1:]:
-        if eachModule.cellref not in cellref_list:
-            cellref_list.append(eachModule.cellref)
+    for prim in primtives:
+        if prim.cellref not in cellref_list:
+            cellref_list.append(prim.cellref)
         #FD--------------------------------------------------------------------
-        if re.match('FD\w*',eachModule.cellref) is not None:
-            assert eachModule.cellref in FD_TYPE,\
-                "%s ,%s not in predefined FD_TYPE"%(eachModule.cellref,eachModule.name)
-            eachModule.m_type='FD'
-            for eachPort in eachModule.port_list:
+        if re.match('FD\w*',prim.cellref) is not None:
+            assert prim.cellref in FD_TYPE,\
+                "%s ,%s not in predefined FD_TYPE"%(prim.cellref,prim.name)
+            prim.m_type='FD'
+            for eachPort in prim.port_list:
                 if eachPort.port_name in ('D', 'CE','R','S','CLR','PRE'):
                     eachPort.port_type='input'
                 elif eachPort.port_name=='Q':
@@ -39,58 +39,58 @@ def mark_the_circut(m_list, allow_dsp=False, allow_unkown=True ):
                 else:
                     raise AssertionError, "FD has no defined thie port: %s"% eachPort.port_name
         # LUT------------------------------------------------------------------
-        elif re.match('LUT\w+',eachModule.cellref) is not None:
-            eachModule.m_type='LUT'
-            assert eachModule.cellref in LUT_TYPE,\
-                "%s ,%s not in predefined LUT_TYPE"%(eachModule.cellref,eachModule.name)
-            for eachPort in eachModule.port_list:
+        elif re.match('LUT\w+',prim.cellref) is not None:
+            prim.m_type='LUT'
+            assert prim.cellref in LUT_TYPE,\
+                "%s ,%s not in predefined LUT_TYPE"%(prim.cellref,prim.name)
+            for eachPort in prim.port_list:
                 if eachPort.port_name[0]=='I':
                     eachPort.port_type='input'
                 else:
                     assert eachPort.port_name in ['O','LO','O5','O6'],\
-                        eachModule.cellref+"  "+eachModule.name+"  "+eachPort.port_name
+                        prim.cellref+"  "+prim.name+"  "+eachPort.port_name
                     eachPort.port_type='output'
 
         # MUX and XOR----------------------------------------------------------
-        elif eachModule.cellref in OTHER_COMBIN:
-            eachModule.m_type=eachModule.cellref
-            for eachPort in eachModule.port_list[:-1]:
+        elif prim.cellref in OTHER_COMBIN:
+            prim.m_type=prim.cellref
+            for eachPort in prim.port_list[:-1]:
                 eachPort.port_type='input'
-            eachModule.port_list[-1].port_type='output'
+            prim.port_list[-1].port_type='output'
             
         #BUF------------------------------------------------------------------
-        elif re.match('\w*BUF\w*',eachModule.cellref) is not None:
-            eachModule.m_type='BUF'
-            for eachPort in eachModule.port_list:
+        elif re.match('\w*BUF\w*',prim.cellref) is not None:
+            prim.m_type='BUF'
+            for eachPort in prim.port_list:
                 assert eachPort.port_name in ['I','O'],\
-                    "BUF:%s has a port neither I or O" %eachModule.name
+                    "BUF:%s has a port neither I or O" %prim.name
                 if eachPort.port_name=='I':
                     eachPort.port_type='input'
                 elif eachPort.port_name=='O':
                     eachPort.port_type='output'
         #GND VCC---------------------------------------------------------------
-        elif (eachModule.cellref=='GND' or eachModule.cellref=='VCC'):
-            eachModule.m_type=eachModule.cellref
-            assert len(eachModule.port_list)==1, "GND VCC:%s has more than 1 port."  % eachModule.name 
-            for eachPort in eachModule.port_list:
+        elif (prim.cellref=='GND' or prim.cellref=='VCC'):
+            prim.m_type=prim.cellref
+            assert len(prim.port_list)==1, "GND VCC:%s has more than 1 port."  % prim.name 
+            for eachPort in prim.port_list:
                 eachPort.port_type='output'
 
         #DSP48E---------------------------------------------------------------
-        elif re.match('DSP48|DSP48E\w*',eachModule.cellref) is not None:
-            eachModule.m_type='DSP'
+        elif re.match('DSP48|DSP48E\w*',prim.cellref) is not None:
+            prim.m_type='DSP'
             if not allow_dsp:
                 raise AssertionError,"Error:find %s : %s in this netlist"\
-                    %(eachModule.cellref,eachModule.name)
+                    %(prim.cellref,prim.name)
             else:
                 print "Warning:find %s : %s in this netlist"\
-                        %(eachModule.cellref,eachModule.name)
+                        %(prim.cellref,prim.name)
         else:
             if not allow_unkown:
                 raise AssertionError,\
-                 'Error:unknown cellref:'+eachModule.cellref+"  "+eachModule.name+'\n'+\
+                 'Error:unknown cellref:'+prim.cellref+"  "+prim.name+'\n'+\
                       "plz update the mark_the_circut() to keep this programe pratical"
             else:
-                print 'Warning:unknown cellref:'+eachModule.cellref+"  "+eachModule.name+'\n'+\
+                print 'Warning:unknown cellref:'+prim.cellref+"  "+prim.name+'\n'+\
                       "plz update the mark_the_circut() to keep this programe pratical"
     print "Note: mark_the_circut() successfully !"
     return cellref_list
