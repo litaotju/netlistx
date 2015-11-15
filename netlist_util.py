@@ -94,7 +94,6 @@ def mark_the_circut(primtives, allow_dsp=False, allow_unkown=True ):
                       "plz update the mark_the_circut() to keep this programe pratical"
     return cellref_list
 
-###############################################################################
 def get_all_fd(m_list,verbose=False):
     '''--get all the FD and its port list--
         retutn :all_fd_dict = { eachFD.name: port_info{...} } 
@@ -120,7 +119,7 @@ def get_all_fd(m_list,verbose=False):
                 print '\n'
     print "Note: get_all_fd() sucessfully !"
     return all_fd_dict
-###############################################################################
+
 def get_all_lut(m_list,lut_type_cnt=[0]*6,verbose=False):
     ''''get_all_lut(m_list,lut_type_cnt,verbose)
         ->>the all_lut_dict,key is name, calue is cellref and port_info'''
@@ -142,8 +141,6 @@ def get_all_lut(m_list,lut_type_cnt=[0]*6,verbose=False):
     assert len(all_lut_dict.keys())==sum(lut_type_cnt),'Assertion Error: LUT cnt error'
     return all_lut_dict
     
-    
-###############################################################################
 def get_lut_cnt2_FD(m_list,all_fd_dict,verbose=False,K=6):
     '''get all the LUT that has a connection to a FDs D port ,and PIN_NUM <= K-2
         return: 
@@ -177,7 +174,7 @@ def get_lut_cnt2_FD(m_list,all_fd_dict,verbose=False,K=6):
         print "Info: found %d (K-2)LUT connected to FD's D port."% cnt
     print 'Note: get_lut_cnt2_FD() successfully !'
     return lut_out2_FD_dict,FD_din_lut_list
-###############################################################################
+
 def get_clk_in_fd(all_fd_dict,verbose=False):
     clock_list=[]
     for eachFD in all_fd_dict.keys():
@@ -195,7 +192,6 @@ def get_clk_in_fd(all_fd_dict,verbose=False):
     print "Note: get_all_clock() successfully !"
     return clock_list
     
-###############################################################################   
 def get_ce_in_fd(all_fd_dict,verbose=False):
     '''para: 
             all_fd_dict,verbose=False
@@ -220,8 +216,7 @@ def get_ce_in_fd(all_fd_dict,verbose=False):
             print "Info: no ce found in netlist"
     print"Note: get_ce_in_fd() successfully !"
     return ce_signal_list,fd_has_ce_list
-###############################################################################
-#featured 7.15
+
 def get_reset_in_fd(all_fd_dict,verbose=False):
     'get all the async and sync reset of all fd in this m_list'
     async_reset_list=[]    
@@ -255,7 +250,7 @@ def get_reset_in_fd(all_fd_dict,verbose=False):
     print "Note: get_reset_in_fd() successfully"
     return reset_list,async_reset_list
     
-###############################################################################
+
 def get_lut_cnt2_ce(m_list,ce_signal_list,K=6,verbose=False):
     '''para: 
             m_list, ce_signal_list, K=6, verbose =False
@@ -287,10 +282,7 @@ def get_lut_cnt2_ce(m_list,ce_signal_list,K=6,verbose=False):
             print x
     print "Note: get_lut_cnt2_ce() !"
     return lut_cnt2_ce,un_opt_ce_list
-    
-    
-###############################################################################
-#featured 7.15    
+      
 def rules_check(m_list):
     '''保证只有一个时钟域，保证时钟和复位信号都是通过外部引脚进行控制的。
     ''' 
@@ -324,62 +316,6 @@ def rules_check(m_list):
                     'ASYNC_RESET':async_reset_list}
     print "Info: Rules check successfully, no rules vialation to model with a graph"
     return special_signal
-###############################################################################  
-if __name__=='__main__':
-    'the test func of this module'
-    import sys
-    ##单个文件测试
-    if len(sys.argv)==1:
-        verbose=False
-        gene_tb=False
-        print "Current PATH is:"+os.getcwd()
-        cellref_set=set()
-        fname=raw_input('plz enter the file name:') 
-        K=int(raw_input('plz enter the K parameter of FPGA:K='))
-        ##网表解析与后续标记
-        info=vm_parse(fname)
-        signal_list=info['signal_decl_list']
-        m_list=info['m_list']
-        cellref_list=mark_the_circut(m_list,allow_dsp=True,allow_unkown=False,verbose=False)
-        cellref_set=cellref_set|(set(cellref_list))
-        print "All the primitibve type in file are:"
-        for eachCellref in cellref_set:
-            print eachCellref        
-        ##获取D触发器和LUT信息,的测试 
-        
-        lut_type_cnt=[0]*6    
-        all_fd_dict=get_all_fd(m_list,verbose)
-        all_lut_dict=get_all_lut(m_list,lut_type_cnt,verbose)
-        lut_out2_FD_dict,FD_din_lut_list=get_lut_cnt2_FD(m_list,all_fd_dict,verbose,K) 
-        ##D触发器的特殊信号 
-        ce_signal_list             =get_ce_in_fd(all_fd_dict,verbose)
-        clock_signal_list          =get_clk_in_fd(all_fd_dict,verbose)
-        reset_list,async_reset_list=get_reset_in_fd(all_fd_dict,verbose)
-        
-        ##产生test_bench
-        if gene_tb:
-            import testbench_generate as gt
-            gt.generate_testbench(m_list[0],len(all_fd_dict),os.getcwd())
-        
-    ##文件夹测试
-    elif sys.argv[1]=='-many':
-        parent_dir=os.getcwd()
-        input_file_dir=parent_dir+"\\test_input_netlist\\bench_virtex7" 
-        print parent_dir
-        print input_file_dir 
-        cellref_set=set()
-        cellref_set.update()
-        for eachFile in os.listdir(input_file_dir):
-            print eachFile
-            if os.path.splitext(eachFile)[1] in ['.v','.vm']:
-                input_file=os.path.join(input_file_dir,eachFile)    
-                info=vm_parse(input_file)
-                signal_list=info['signal_decl_list']
-                m_list=info['m_list']
-                cellref_list=mark_the_circut(m_list,allow_dsp=True,allow_unkown=False,verbose=False)
-                cellref_set=cellref_set|set(cellref_list)
-        for eachCellref in cellref_set:
-            print eachCellref
 
 
 
