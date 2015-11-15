@@ -128,6 +128,10 @@ def ballast( crgraph):
     intgraph, map, invmap = convert2int( crgraph )
     fas = feedbackset( intgraph )
     r = balance( intgraph )
+    print "FAS:", len(fas)
+    print "R:", len(r)
+    if not r:
+        print "Info: %s is blance after cycle removed" % crgraph.name
     scanfds = []
     for edge in fas + r:
         realedge = invmap[edge[0]], invmap[edge[1]]
@@ -135,12 +139,19 @@ def ballast( crgraph):
     return scanfds
 
 def main():
+    path = os.getcwd() + "\\test\\cloudGraphs"
     inputfile = raw_input("plz enter file name:")
     g = get_graph( inputfile )
     g.info()
     cr = CloudRegGraph( g )
     cr.info()
+    cr.snapshot( path + "\\" +g.name )
     scanfds = ballast( cr )
+    with open( os.path.join(path, cr.name + "_scanfds.txt" ), 'w') as out:
+        for fd in scanfds:
+            out.write("%s %s\n " % (fd.cellref, fd.name) )
+        out.write( "FD NUMBER: %d" % len(cr.constfds + cr.fds) )
+        out.write( "SCAN_FD number: %d" % len( scanfds) )
     print "FD number:", len(cr.constfds + cr.fds)
     print "SCAN_FD number: ", len(scanfds)
 

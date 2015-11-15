@@ -253,7 +253,7 @@ def main():
         try:
             cr2 = CloudRegGraph(g2)
             cr2.info()
-            cr2.snapshot(path + "\\final\\" +g2.name )
+            cr2.snapshot(path + "\\CloudGraphs\\" +g2.name )
         except CrgraphError:
             print "Waring:", g2.name, "Cannot has a valid CloudGraph"
             continue

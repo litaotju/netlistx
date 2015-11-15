@@ -4,7 +4,9 @@ import sys
 import re
 
 # user-defined module
-from netlistx.exception import *
+from netlistx import vm_parse
+from netlistx.exception import * 
+import netlistx.netlist_util as nu
 import netlistx.class_circuit as cc
 
 
@@ -26,6 +28,8 @@ class Netlist(object):
             self.primtives   = vminfo['primitive_list']
             self.assigns     = vminfo['assign_stm_list']
         '''
+        print "Job: getting Netlist..."
+        self.m_list = vminfo['m_list']
         # 根据解析器的信息存储
         self.top_module  = vminfo['m_list'][0]
         self.ports       = vminfo['port_decl_list']        
@@ -46,6 +50,8 @@ class Netlist(object):
                    'primitives':self.search_prim, 
                    'assigns':   self.search_assign
                    }
+        self.cellrefs = nu.mark_the_circut( self.primitives, allow_unkown = False)
+        print "Job: Netlist get. OK!\n"
         return None
 
     # 建立内部字典和查询内部字典的工厂方法
@@ -105,19 +111,23 @@ class Netlist(object):
             dict_container[element.name] = element
             
     # 查询的方法组
-    def top(self):
+    def get_top(self):
         return self.top_module
  
     def search_port(self, name):
+        "@para: top module's port_name"
         return self.__search_dict("_ports", name )
 
     def search_wire(self, name):
+        "@para: wire's name"
         return self.__search_dict("_wires", name)
 
     def search_prim(self, name):
+        "@para: prim's name"
         return self.__search_dict("_primitives", name )
     
     def search_assign(self, name):
+        "@para: assign's left name"
         return self.__search_dict("_assigns", name )
 
     # 插入的方法组
@@ -193,6 +203,8 @@ class Netlist(object):
 
     # 输出组的方法
     def write(self, path):
+        if not os.path.exists( path ):
+            os.makedirs( path )
         filename = os.path.join(path, self.top_module.name)+".v"
         try:
             fobj = open(filename,'w')
@@ -214,3 +226,11 @@ class Netlist(object):
             print "endmodule;"
             sys.stdout = console
             fobj.close()
+
+if __name__ == "__main__":
+
+    fname = raw_input("plz enter file name>")
+    info = vm_parse( fname)
+    netlist    = Netlist(info)
+    print "Cellref in netlist: ", netlist.cellrefs
+    netlist.write("test\\1115")
