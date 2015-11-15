@@ -28,32 +28,29 @@ class Ballaster:
         ''' para: graph, a CloudRegGraph instance
         '''
         # 9.25 修改构造函数
-        assert isinstance(graph, (CloudRegGraph, nx.DiGraph)), str(graph.__class__)
+        assert isinstance(graph, nx.DiGraph), str(graph.__class__)
         self.graph = graph
-        self.arc = graph.arcs if isinstance(graph, CloudRegGraph)\
-                else {(edge[0],edge[1]): graph[edge[0]][edge[1]]['weight'] for edge in graph.edges_iter()}
-        self.intgraph , self.node_mapping = self.__convert2intgraph()
-    
+        self.intgraph = nx.DiGraph( name = graph.name + "_intgraph")
+        self.node_map = {}
+        self.inv_node_map = {}
+        self.__convert2intgraph()
+        
     def __convert2intgraph(self):
         ''' 
             拓扑图只是包含了节点以及他们的连接，所以在进行基于结构的算法时候只需要
             把图转换成每一个节点是独特的整数的图就可以了,同时返回节点队列，
             用于算法找到整数边之后，get_scan_fd的查询
         '''
-        graph = self.graph
-        intgraph = nx.DiGraph()
-        intgraph.name = graph.name + "_intgraph"
-        nodes = graph.nodes()
-        print "Info: intgraph edges are:"
-        for edge in graph.edges_iter():
-            intedge = (nodes.index(edge[0]), nodes.index(edge[1]))
-            # 将FD的数量作为每一条边的权重加入到整数图中
-            intgraph.add_edge(intedge[0], intedge[1],{'weight':len(self.arc[edge]),\
-                                                       'label':len(self.arc[edge])})
-            print "%s %d" % ( str(intedge), len(self.arc[edge]) )
-        node_mapping = nodes #每一个整数对应的Cloud,存储在这个列表当中
-        # TODO: for debugability, should print the info of eachNodes in nodes_mapping
-        return intgraph, node_mapping
+        nodes = self.graph.nodes()
+        for i in range(0, len(nodes) ):
+            self.node_map[i] = nodes[i]
+            self.inv_node_map[ nodes[i] ] = i
+        weight = nx.get_edge_attributes( self.graph, "weight" )
+        if not weight:
+            weight = {edge: 1 for edge in self.graph.edges_iter() }
+        for edge in self.graph.edges_iter():
+            intedge = (self.inv_node_map[edge[0]], self.inv_node_map[ edge[1] ] )
+            self.intgraph.add_edge(intedge[0], intedge[1], {'weight': weight[edge],'label': weight[edge]})
         
     def feedbackset(self):
         '''
@@ -72,7 +69,7 @@ class Ballaster:
             if not edge in feedbackset_index: # 因为edge是一个整数型元组，所以这是对的
                 feedbackset_index.append(edge)
         for index in feedbackset_index:
-            graph.fas.append( (self.node_mapping[index[0]], self.node_mapping[index[1]]) )
+            graph.fas.append( (self.node_map[index[0]], self.node_map[index[1]]) )
         # 只是在整数图上进行移除，所以下面的操作也只是针对整数图
         self.intgraph.remove_edges_from(feedbackset_index)  
         self.intgraph.fas = feedbackset_index
@@ -206,133 +203,20 @@ class Ballaster:
         assert len(glist) == 2
         return rcs, glist[0], glist[1]
 
-    #--------------------------------------------------------------------------------
-
-    def get_scan_fd(self,scans):
+    def get_scan_fd(self, scans):
         '''从边来获取要扫描的D触发器
             para：r
             return: scan_fds , a list of cc.circuit_module instance
         '''
-        debug = True
+        if not isinstance( self.graph, CloudRegGraph):
+            print "Not a cloudRegGraph, has cannot get scanfd."
+            return []
         scan_fds = []
         for eachEdge  in scans:
-            source = self.node_mapping[eachEdge[0]]
-            sink   = self.node_mapping[eachEdge[1]]
+            source = self.node_map[eachEdge[0]]
+            sink   = self.node_map[eachEdge[1]]
             scan_fds += self.arc[(source,sink)]
-        if debug:
-            print "Info: %d has to been scan " % len(scan_fds)
-            #对详细的结果，扫描的FD的名字打印到 tmp/目录相应的文件下
-            import sys
-            log_name = "tmp\\"+self.graph.name +"_scan_fds.log"
-            fobj = open(log_name,'w')
-            console = sys.stdout
-            sys.stdout = fobj
-            print "The scan FDs are:" 
-            print "\n".join([fd.name for fd in scan_fds])
-            # 打印完详细的结果，将输出重定向到console上
-            sys.stdout = console
-            fobj.close()
-        return None
-# --------------------------------------------------------------------------------------
-
-def __test_with_intgraph():
-    '''使用整数图来测试Ballaster的算法
-    '''
-    g1 = nx.DiGraph()
-    g1.add_path([0,1,2,0])
-    g1.add_path([2,3,4,2])
-    b1 = Ballaster(g1)
-    b1.feedbackset()
-    print "FAS is %s" % g1.fas
-
-    g2 = nx.DiGraph()
-    g2.add_path([1,0,5,1])
-    g2.add_path([5,1,3,5])
-    g2.add_path([2,1,3,2])
-    g2.add_path([5,4,3,5])
-    b2 = Ballaster(g2)
-    b2.feedbackset()
-    b2.balance(b2.intgraph)
-    print "FAS is %s" % g2.fas
-
-def __test_with_crgraph():
-    '''输入一个vm文件来测试 Ballaster算法
-    '''
-    # 第一步：获取cr图
-    g = get_graph()
-    g.info()
-    crgraph = CloudRegGraph(g)
-    crgraph.info()
-
-    # 第二步进行ballaster
-    ballast1 = Ballaster(crgraph)
-    fas = ballast1.feedbackset()
-    print "Ballaster.intgraph.fas is:"
-    print ballast1.intgraph.fas
-    print "Ballaster intgraph info After removed FAS:"
-    print nx.info(ballast1.intgraph)
-    r = ballast1.balance(ballast1.intgraph)
-    if not r:
-        print "Info: B-structure after FAS removed.\nInfo: balance function found 0 fds "
-    
-    # 第三步 输出扫描D触发器，同时画出图形
-    scans = r + fas
-    ballast1.get_scan_fd(scans)
-    plt.figure(ballast1.intgraph.name+"_after FAS")
-    nx.draw(ballast1.intgraph)
-    plt.show()
-
-def __paint_intgraph(path= None):
-    '''将path目录下的每一个的intgraph画出来
-    '''
-    if not path:
-        path = raw_input("plz enter a vmfiles path:")+"\\"
-    picpath = path+"pic\\"
-    if not os.path.exists(picpath):
-        os.mkdir(path+"pic\\")
-    for eachVm in vm_files(path):
-        g = get_graph(path+eachVm)
-        g.info()
-        crgraph = CloudRegGraph(g)
-        crgraph.info()
-        ballast1 = Ballaster(crgraph)
-        p = ballast1.intgraph #整数图
-        
-        savefile = picpath+"int_"+g.name
-        nx.write_dot(p, savefile+".dot")
-        try:
-            result = os.system("dot -Tjpg -o %s_dot.jpg %s.dot" %(savefile, savefile ))
-            if result != 0:
-                print "Failed to convert dot to png"
-                exit(-1)
-        except Exception,e:
-            print e
-            exit(-1)
-    
-if __name__ == '__main__':
-    'test the ballaster'
-    print "Ballaster Help:"
-    print u" int: 使用内置(脚本中定义好的)的int类型图来进行测试"
-    print u" cr:输入一个vm文件，然后使用ballast，输出扫描FD的结果"
-    print u" pint: 输入一个目录，对所有该目录下的.v或者.vm文件进行crgraph建模，并且保存.dot图形"
-    cmdlist = ["int", "cr", "pint", 'exit']
-    while(1):
-        cmd = raw_input("plz enter command:")
-        if cmd not in cmdlist:
-            print "WRONG CMD"
-            continue
-        if cmd =="int":
-            __test_with_intgraph()
-            continue
-        if cmd == "cr":
-            __test_with_crgraph()
-            continue
-        if cmd =="pint":
-            __paint_intgraph()
-            continue
-        else: # exit
-            break
-
+        return scan_fds
 
 
 
