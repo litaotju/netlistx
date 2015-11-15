@@ -25,7 +25,8 @@ class CloudRegGraph(nx.DiGraph):
         '''@param: graph, a CircuitGraph obj
                    every node is a cc.port obj or cc.circuit_module obj
         '''
-        assert isinstance( graph, CircuitGraph)
+        print "Job: getting CloudRegGraph.."
+        assert isinstance( graph, CircuitGraph), str(graph.__class__)
         assert graph.include_pipo == True
 
         nx.DiGraph.__init__(self)
@@ -38,6 +39,7 @@ class CloudRegGraph(nx.DiGraph):
         self.__getself(graph)
         self.__merge()
         self.__fd2edge()
+        print "Job: CloudRegGraph grt.OK!"
 
     def __getself(self, graph):
         gcopy = graph.topo_copy()
@@ -58,36 +60,37 @@ class CloudRegGraph(nx.DiGraph):
         constfds = []
         edges = []
         for pre, succ, data in graph.edges_iter(data = True ):
-            port_pair = data['port_pair']
-            preport = port_pair[0].name
-            succport = port_pair[1].name
-            credge = ()
+            port_pairs = data['port_pairs']
+            for port_pair in port_pairs:
+                preport = port_pair[0].name
+                succport = port_pair[1].name
+                credge = ()
 
-            #两个D触发器相连接
-            if isfd( pre ) and isfd( succ):
-                if (preport not in  CloudRegGraph.REMAIN_FD_PORT)\
-                    or (succport not in CloudRegGraph.REMAIN_FD_PORT):
+                #两个D触发器相连接
+                if isfd( pre ) and isfd( succ):
+                    if (preport not in  CloudRegGraph.REMAIN_FD_PORT)\
+                        or (succport not in CloudRegGraph.REMAIN_FD_PORT):
+                        continue
+                    ccnt += 1
+                    empty = nx.DiGraph(name = "empty_cloud%d" % ccnt )
+                    edges.append( (pre, empty) )
+                    edges.append( (empty, succ) )
                     continue
-                ccnt += 1
-                empty = nx.DiGraph(name = "empty_cloud%d" % ccnt )
-                edges.append( (pre, empty) )
-                edges.append( (empty, succ) )
-                continue
             
-            # D触发器连接到非D触发器
-            elif isfd( pre ):
-                #注意，常数的D触发器在这一步可能会加入进来
-                fdport = preport
-                credge = self.__credge( pre,  succ, clouds, fdport, fdispre = True)
+                # D触发器连接到非D触发器
+                elif isfd( pre ):
+                    #注意，常数的D触发器在这一步可能会加入进来
+                    fdport = preport
+                    credge = self.__credge( pre,  succ, clouds, fdport, fdispre = True)
 
-            # 非D触发器连接到D触发器
-            elif isfd( succ ):
-                if isvccgnd( pre ):
-                    constfds.append( succ )
-                    continue
-                fdport = succport
-                credge = self.__credge( succ, pre, clouds, fdport, fdispre = False)
-            if credge: edges.append( credge )
+                # 非D触发器连接到D触发器
+                elif isfd( succ ):
+                    if isvccgnd( pre ):
+                        constfds.append( succ )
+                        continue
+                    fdport = succport
+                    credge = self.__credge( succ, pre, clouds, fdport, fdispre = False)
+                if credge: edges.append( credge )
 
         self.add_nodes_from( nodes)
         self.add_edges_from( edges)
@@ -120,7 +123,6 @@ class CloudRegGraph(nx.DiGraph):
         return credge
 
     def __merge(self):
-        time.clock()
         for fd in self.fds:
             succs = self.successors( fd)
             if len(succs ) <= 1:
@@ -145,7 +147,6 @@ class CloudRegGraph(nx.DiGraph):
                     (fd, self.in_degree(fd), self.out_degree(fd) )
                 raise CrgraphError, err 
         self.check()
-        print "Time spend in merging: %s" % time.clock()
 
     def __fd2edge(self):
         arc = {}
@@ -189,7 +190,7 @@ class CloudRegGraph(nx.DiGraph):
                 if verbose: print "FD:: %s %s \n" % (node.cellref, node.name)
                 nreg += 1
         print "Number of cloud      : %d" % ncloud
-        print "Number of remainfd   : %d" % nreg
+        print "Number of remainfd   : %d" % len(self.fds)
         print "Number of constfd    : %d" % len( self.constfds)
         print "---------------------------------------------------"
 
@@ -241,24 +242,3 @@ def isvccgnd(node):
     if isinstance(node ,cc.circut_module ) and node.cellref in ['GND', "VCC"]:
         return True
     return False
-    
-def main():
-    print u"Usage:输入一个目录，将该目录下的所有.v或者.vm文件的进行crgraph建模"
-    print u"      输出结果保存在final子目录下。"
-    path = raw_input("plz set working directory:")
-    for eachVm in vm_files(path):
-        inputfile =os.path.join(path, eachVm)
-        g2 = get_graph( inputfile )
-        g2.info()
-        try:
-            cr2 = CloudRegGraph(g2)
-            cr2.info()
-            cr2.snapshot(path + "\\CloudGraphs\\" +g2.name )
-            cr3 = old.CloudRegGraph(g2,debug = True)
-            cr3.info()
-        except CrgraphError:
-            print "Waring:", g2.name, "Cannot has a valid CloudGraph"
-            continue
-
-if __name__ == '__main__':
-    main()

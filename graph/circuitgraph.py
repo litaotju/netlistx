@@ -67,6 +67,7 @@ class CircuitGraph(nx.DiGraph):
         self.__get_edge_from_prim_list()
         self.cloud_reg_graph = None
         self.s_graph = None
+        if include_pipo: self.consistency_check()
         print "Job: CircuitGraph get. OK!\n"
 
     def __add_vertex_from_m_list(self):
@@ -79,8 +80,8 @@ class CircuitGraph(nx.DiGraph):
         #vertex
         prim_vertex_list = self.m_list[1:]
         for eachPrim in self.m_list[1:]:
-            assert eachPrim.cellref not in ['DSP48','DSP48E1','DSP48E'],\
-                "CircuitGraph Error: %s found %s " % (eachPrim.cellref, eachPrim.name)
+            # assert eachPrim.cellref not in ['DSP48','DSP48E1','DSP48E'],\
+            #     "CircuitGraph Error: %s found %s " % (eachPrim.cellref, eachPrim.name)
             self.add_node(eachPrim, node_type = eachPrim.cellref, name = eachPrim.name)
         if self.include_pipo:
             tmplist = self.m_list[0].port_list
@@ -333,7 +334,7 @@ class CircuitGraph(nx.DiGraph):
                 #    (eachWire, source[0].cellref, source[0].name, source[1].port_name)
                 #continue
             for eachSink in sinks:
-                self.add_edge(source[0], eachSink[0],\
+                self.add_medge(source[0], eachSink[0],\
                     port_pair = (source[1], eachSink[1]),\
                     connection = eachWire)
                 prim_edge = [ [source[0], eachSink[0]],[source[1], eachSink[1]], eachWire ]
@@ -350,7 +351,7 @@ class CircuitGraph(nx.DiGraph):
             source = piConnect['source']  # cc.port instance
             sinks = piConnect['sink']
             for eachSink in sinks:
-                self.add_edge(source,eachSink[0],\
+                self.add_medge(source,eachSink[0],\
                               port_pair = (source,eachSink[1]),\
                               connection = eachWire)
                 pi_edge = [ [source,eachSink[0]], [source, eachSink[1]],eachWire]
@@ -358,7 +359,7 @@ class CircuitGraph(nx.DiGraph):
         for eachWire, poConnect in po_dict.iteritems():
             source = poConnect['source'] # a tuple (prim, port)
             sink = poConnect['sink']   #cc.port instance
-            self.add_edge(source[0], sink,\
+            self.add_medge(source[0], sink,\
                           port_pair = (source[1], sink),\
                           connection= eachWire)
             po_edge = [ [source[0], sink], [source[1], sink], eachWire]
@@ -367,7 +368,51 @@ class CircuitGraph(nx.DiGraph):
         self.edge_set = self.pi_edge_list + self.po_edge_list + self.prim_edge_list
         print "Note : get all the edges succsfully"
         return None
-    
+
+    def add_medge(self, source, sink, port_pair, connection):
+        if self[source].has_key(sink):
+            port_pairs = self[source][sink]['port_pairs']
+            connections = self[source][sink]['connections']
+        else:
+            port_pairs =[]
+            connections = []
+        port_pairs.append(port_pair)
+        connections.append( connection)
+        self.add_edge( source, sink, {"port_pairs": port_pairs, "connections": connections} )
+
+    def consistency_check(self):
+        '''根据每一个节点的输入来检查图的完整性，只能检查带有PIPO的图
+            具体的方法是，如果是一个原语。原语的入度应该等于其input端口或者clock端口的数量
+            如果是一个端口，input端口的入度为0，output端口的出度为0
+        '''
+        if not self.include_pipo:
+            print "Warining: cannot check consistency for no pipo graph"
+            return None
+        for node in self.nodes_iter():
+            if isinstance(node, cc.circut_module):
+                inports = [port for port in node.port_list if port.port_type in ('clock', 'input')]
+                if not self.in_degree( node) == len( inports):
+                    realinports = []
+                    for pre in self.predecessors_iter(node):
+                        realinports += self[pre][node]['port_pairs']
+                    if len(realinports) != len(inports):
+                        errmsg = "Prim:%s %s has %d input ports,  %d been connected. indegree:%d" %\
+                        (node.cellref, node.name, len(inports), len(realinports), self.in_degree(node))
+                        raise AssertionError, errmsg
+                    else:
+                        print "Info: node:%s %s has pre with multi connection" % (node.cellref, node.name)
+            elif isinstance(node, cc.port):
+                if node.port_type == "output":
+                    if  self.in_degree( node) != 1 or self.out_degree( node ) != 0 :
+                        errmsg = "Port: %s %s indegree %d, outdegree %d" %\
+                         (node.port_type, node.port_name, self.in_degree(node) , self.out_degree( node) )
+                        raise AssertionError, errmsg
+                elif  node.port_type == 'input':
+                    if self.in_degree( node ) != 0 :
+                        errmsg = "Port: %s %s indegree %d, outdegree %d" %\
+                         (node.port_type, node.port_name, self.in_degree(node) , self.out_degree( node) )
+                        raise AssertionError, errmsg
+
     def topo_copy( self ):
         gcopy = nx.DiGraph()
         for edge in self.edges_iter():
@@ -395,8 +440,7 @@ class CircuitGraph(nx.DiGraph):
                 print "    (%s -> %s):(wire %s, port:%s->%s)" % \
                 (eachEdge[0].name,eachEdge[1].name,connection[eachEdge]\
                 ,port_pair[eachEdge][0].name,port_pair[eachEdge][1].name)
-        return None
-    #------------------------------------------------------------------------------
+        print "------------------------------------------------------"
     
     def paint(self):
         ''' 给电路图，分组画出来，不同的颜色和标签标明了不同的prim '''
@@ -484,23 +528,16 @@ def get_graph(fname = None):
     g1 = CircuitGraph(netlist)
     return g1
     
-def save_graphs():
+def save_graphs(fname, path):
     '''输入一个文件名，生成带PIPO和不带PIPO的图，
        然后将生成的图分别保存到tmp\\下的.dot文件和.gexf文件
     '''
-
-
-    fname = raw_input("plz enter file name:")
     info = vm_parse(fname)
     netlist = Netlist( info)
     
     #生成保存图的路径
-    today = time.localtime()
-    subpath = "%s%s%s" % (today.tm_year, today.tm_mon, today.tm_mday)
-    path = os.path.join("test","GexfDotGraphs", subpath)
     if not os.path.exists( path):
         os.makedirs( path )
-
     #生成带pipo的图
     g1 = CircuitGraph(netlist, include_pipo = True)
     g1.to_gexf_file(path + '\\%s_icpipo.gexf' % g1.name)
@@ -546,23 +583,3 @@ def fanout_stat(graph):
     for key ,val in fd_degree_stat.iteritems():
         print "%d      %d" % (key, val)
     return fd_degree_stat, com_degree_stat
-
-#------------------------------------------------------------------------------
-if __name__ =='__main__':
-    while(1):
-        print u"命令行帮助，可选命令如下"
-        print u"grh:输入一个文件名称，分别生成两个图（包含和不包含PIPO），保存图的信息到\\test\\GexfDotGraphs下"
-        print u"fanout:输入一个文件名称，统计其中组合逻辑和FD节点的扇出数目统计"
-        print u"get:输入一个文件，获取并返回图.打印图的基本信息"
-        print u"exit:退出主程序"
-        cmd = raw_input("plz enter command:")
-        if cmd == "grh" :
-            save_graphs()
-        if cmd == "fanout":
-            g1 = get_graph()
-            fanout_stat(g1)
-        if cmd == "get":
-            g1 = get_graph()
-            g1.info()
-        if cmd == "exit":
-            break
