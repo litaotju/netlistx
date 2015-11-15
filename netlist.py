@@ -223,7 +223,7 @@ class Netlist(object):
                 print prim
             for assign in self.assigns:
                 print assign
-            print "endmodule;"
+            print "endmodule"
             sys.stdout = console
             fobj.close()
 
