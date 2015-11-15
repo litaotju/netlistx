@@ -5,52 +5,14 @@ Created on Thu Jun 18 16:30:03 2015
 this file is composed of a lot of functions to parse and util the netlist Src file
 """
 
-import os, re, copy
+import os
+import re
+import copy
 
 # user-defined module
 from netlistx.parser.netlist_parser import parser
-###############################################################################
-def vm_parse(input_file, write= False):
-    '''returns info of input vm file as a dict
-    '''
-    try:
-        fobj=open(input_file,'r')
-    except IOError,e:
-        print "Error: file open error:",e
-        raise SystemExit
-    else:
-        all_lines=fobj.read()
-        fobj.close()
-        p=parser.parse(all_lines)
-        #--------------------------------
-        #打印部分
-        #--------------------------------
-        if write:
-            fname = os.path.splitext(input_file)[0]+"_parse_rewirte.vm"
-            fobj2 = open(fname, 'w')
-            console=sys.stdout
-            sys.stdout=fobj2
-            p['m_list'][0].__print__() #top-module
-            for eachPort_decl in p['port_decl_list']:
-                eachPort_decl.__print__(pipo_decl=True)
-            for eachSignal in p['signal_decl_list']:
-                eachSignal.__print__(is_wire_decl=True)
-            for eachPrimitive in p['m_list'][1:]:
-                print eachPrimitive
-            for eachAssign in p['assign_stm_list']:
-                print eachAssign
-            print "endmodule;"
-            sys.stdout=console
-            fobj2.close()
-        #------------------------------------
-        #解析完完全打印出来
-        #------------------------------------
-        parser.restart()
-        print "Note: parse the netlist file %s finished."% input_file
-        return p
 
-###############################################################################
-def mark_the_circut(m_list,allow_dsp=False,allow_unkown=True,verbose=False):
+def mark_the_circut(m_list, allow_dsp=False, allow_unkown=True ):
     'mark all the module with a type'
     cellref_list=[]
     FD_TYPE=('FDCE','FDPE','FDRE','FDSE','FDC','FDP','FDR','FDS','FDE', 'FD')
@@ -68,17 +30,14 @@ def mark_the_circut(m_list,allow_dsp=False,allow_unkown=True,verbose=False):
                 "%s ,%s not in predefined FD_TYPE"%(eachModule.cellref,eachModule.name)
             eachModule.m_type='FD'
             for eachPort in eachModule.port_list:
-                if eachPort.port_name=='D':
+                if eachPort.port_name in ('D', 'CE','R','S','CLR','PRE'):
                     eachPort.port_type='input'
                 elif eachPort.port_name=='Q':
                     eachPort.port_type='output'
                 elif eachPort.port_name=='C':
                     eachPort.port_type='clock'
-                elif eachPort.port_name=='CE':
-                    eachPort.port_type='input'
                 else:
-                    eachPort.port_type='input'
-        
+                    raise AssertionError, "FD has no defined thie port: %s"% eachPort.port_name
         # LUT------------------------------------------------------------------
         elif re.match('LUT\w+',eachModule.cellref) is not None:
             eachModule.m_type='LUT'
@@ -112,7 +71,7 @@ def mark_the_circut(m_list,allow_dsp=False,allow_unkown=True,verbose=False):
         #GND VCC---------------------------------------------------------------
         elif (eachModule.cellref=='GND' or eachModule.cellref=='VCC'):
             eachModule.m_type=eachModule.cellref
-            assert len(eachModule.port_list)==1
+            assert len(eachModule.port_list)==1, "GND VCC:%s has more than 1 port."  % eachModule.name 
             for eachPort in eachModule.port_list:
                 eachPort.port_type='output'
 
@@ -133,10 +92,6 @@ def mark_the_circut(m_list,allow_dsp=False,allow_unkown=True,verbose=False):
             else:
                 print 'Warning:unknown cellref:'+eachModule.cellref+"  "+eachModule.name+'\n'+\
                       "plz update the mark_the_circut() to keep this programe pratical"
-    if verbose:        
-        print 'Info: module list is:'
-        for eachModule in m_list:
-            eachModule.__print__()    
     print "Note: mark_the_circut() successfully !"
     return cellref_list
 
