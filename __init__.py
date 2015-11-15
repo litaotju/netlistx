@@ -29,7 +29,7 @@ import exception
 from exception import *
 
 # 进行网表的解析有两种方法。 1.导入parser模块 2.直接导入parser模块的vm_parse方法
-import netlistx.parser.netlist_parser as parser
+#import netlistx.parser.netlist_parser as parser
 from netlistx.parser.netlist_parser import vm_parse
 
 # 所有与网表相关的类都直接被导入到包的顶层
