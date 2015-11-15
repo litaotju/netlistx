@@ -30,51 +30,10 @@ class Ballaster:
         # 9.25 修改构造函数
         assert isinstance(graph, (CloudRegGraph, nx.DiGraph)), str(graph.__class__)
         self.graph = graph
-        self.arc = self.__reg2arc() if isinstance(graph, CloudRegGraph)\
-                else {(edge[0],edge[1]):graph[edge[0]][edge[1]]['weight'] for edge in graph.edges_iter()}
+        self.arc = graph.arcs if isinstance(graph, CloudRegGraph)\
+                else {(edge[0],edge[1]): graph[edge[0]][edge[1]]['weight'] for edge in graph.edges_iter()}
         self.intgraph , self.node_mapping = self.__convert2intgraph()
     
-    def __reg2arc(self):
-        '''把所有的reg节点 ignore掉，将其前后相连，直接在原图上操作
-        '''
-        graph = self.graph   # local 变量graph
-        arc = {}             # 记录下来每一个由FD转换成的边，以及对应的FDs
-        for reg in graph.regs:
-            precs = graph.predecessors(reg)
-            succs = graph.successors(reg)
-            prec = None
-            succ = None
-            assert len(precs) <= 1
-            if len(precs) == 1 : # must be 1, if __check_rules succsfull
-                assert isinstance(precs[0], nx.DiGraph),\
-                    "reg %s %s -->> prec %s %s" % \
-                    (reg.cellref, reg.name, precs[0].cellref, precs[0].name)
-                prec = precs[0]
-            assert len(succs) == 1
-            assert isinstance(succs[0], nx.DiGraph) ,\
-                "reg %s %s -->> succ %s %s" % \
-                (reg.cellref, reg.name, succs[0].cellref, succs[0].name)
-            succ = succs[0]
-            if not prec is None: #只有两个都非空的情况下，才新加入边
-                graph.add_edge(prec, succ)
-                if not arc.has_key( (prec, succ) ):
-                    arc[(prec, succ)]= []
-                arc[(prec, succ)].append(reg)
-            else:
-                print "Waring :%s %s has no prec" % (reg.cellref, reg.name)
-                #记录下来每一条边所对对应的多个FD，将它们组成一个队列作为一个字典的值，存储起来
-                #（None,succ）表示这个点没有前驱只有后继
-                #（prec,None）表示这个点没有后继只有前驱
-            graph.remove_node(reg)
-
-        #验证每一个D触发器的数目都反映在边的权重上
-        remain_reg = 0
-        for key,val in arc.iteritems():
-            remain_reg += len(val)
-        if not remain_reg == len(graph.regs):
-            print "Waring: %d / %d regs remained in intgraph" % (remain_reg, len(graph.regs) )
-        return arc
-
     def __convert2intgraph(self):
         ''' 
             拓扑图只是包含了节点以及他们的连接，所以在进行基于结构的算法时候只需要
@@ -349,13 +308,7 @@ def __paint_intgraph(path= None):
         except Exception,e:
             print e
             exit(-1)
-        # ps = nx.spring_layout(p)
-        # label = nx.get_edge_attributes(p, "weight")
-        # nx.draw_networkx_edge_labels(p, ps, label)
-        # nx.draw(p, ps)
-        # plt.savefig(picpath+"int_"+g.name+".png")
-        # plt.close()
-#------------------------------------------------------------------------------    
+    
 if __name__ == '__main__':
     'test the ballaster'
     print "Ballaster Help:"

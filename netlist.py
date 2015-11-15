@@ -233,4 +233,3 @@ if __name__ == "__main__":
     info = vm_parse( fname)
     netlist    = Netlist(info)
     print "Cellref in netlist: ", netlist.cellrefs
-    netlist.write("test\\1115")

@@ -4,7 +4,7 @@ from netlistx.exception import *
 from netlistx.netlist import Netlist
 
 
-def check(nt):
+def check(nt, check_clk = True, check_reset = True):
     '''
     '''
     check_ports =  ['C','R','S','CLR','PRE']
@@ -13,10 +13,10 @@ def check(nt):
     clks = specials['C']
     sync_resets  = specials['R'].keys() + specials['S'].keys()
     async_resets = specials['CLR'].keys() + specials['PRE'].keys()
-    
-    _clk_check(nt, clks)
-    _reset_check( sync_resets + async_resets)
-
+    if check_clk:
+        _clk_check(nt, clks)
+    if check_reset:
+        _reset_check( nt, sync_resets + async_resets)
 
 def _get_fd_specport(nt, port_names ):
     '''@param: nt, a Netlist obj
@@ -39,7 +39,7 @@ def _get_fd_specport(nt, port_names ):
 def _clk_check(nt, clks):
     if len(clks) > 1:
         errmsg =  "Netlist has %s CLK domain.They are: %s" % ( len(clks), clks.keys() )
-        raise CircuitGraphError, errmsg
+        raise CrgraphError, errmsg
     elif len(clks) == 0:
         print "Info: no clks in this netlist"
         return None
@@ -56,7 +56,7 @@ def _clk_check(nt, clks):
         else: continue
     if not clkflag:
         errmsg = "CLK: %s do not connected to any pi" % clkname
-        raise CircuitGraphError, errmsg 
+        raise CrgraphError, errmsg 
 
 def _reset_check(nt, resets):
     single_inports = []
@@ -70,5 +70,5 @@ def _reset_check(nt, resets):
             internal_resets.append( reset)
     if internal_resets:
         errmsg = "Internal Resets: %s" % internal_resets
-        raise CircuitGraphError, errmsg 
+        raise CrgraphError, errmsg 
     

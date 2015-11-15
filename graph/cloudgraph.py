@@ -9,12 +9,12 @@ import networkx as nx
 
 #user-defined
 import netlistx.class_circuit as cc
-from netlistx.file_util import vm_files
-from netlistx.exception import CrgraphError
+import netlistx.graph.crgraph as old
 
+from netlistx.exception import CrgraphError
+from netlistx.file_util import vm_files
 from netlistx.graph.circuitgraph import CircuitGraph
 from netlistx.graph.circuitgraph import get_graph
-import netlistx.graph.crgraph as old
 
 __all__ = ["CloudRegGraph" ]
 class CloudRegGraph(nx.DiGraph):
@@ -254,11 +254,11 @@ def main():
             cr2 = CloudRegGraph(g2)
             cr2.info()
             cr2.snapshot(path + "\\CloudGraphs\\" +g2.name )
+            cr3 = old.CloudRegGraph(g2,debug = True)
+            cr3.info()
         except CrgraphError:
             print "Waring:", g2.name, "Cannot has a valid CloudGraph"
             continue
-        #cr3 = old.CloudRegGraph(g2)
-        #cr3.info()
 
 if __name__ == '__main__':
     main()

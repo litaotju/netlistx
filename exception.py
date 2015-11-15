@@ -8,7 +8,9 @@ class CircuitGraphError(Exception):
 
 class CrgraphError(Exception):
     ''''''
-    
+    def __init__(self, msg = ""):
+        Exception.__init__(self, msg)
+
 class CrgraphRuleError(CrgraphError):
     '''CrGraph图规则检查时候的Exception '''
     pass

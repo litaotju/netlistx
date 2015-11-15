@@ -21,9 +21,6 @@ from netlistx.exception import *
 from circuitgraph import CircuitGraph
 from circuitgraph import get_graph
 
-###############################################################################
-
-
 class CloudRegGraph(nx.DiGraph):
     # BUGY:没有减掉直接连接到GND或者VCC的触发器
     def __init__(self, basegraph, debug = False ):
@@ -32,30 +29,26 @@ class CloudRegGraph(nx.DiGraph):
         nx.DiGraph.__init__(self)
         self.basegraph = basegraph #记录原图的信息
         self.clouds=[]
+        self.big_clouds = []
         self.regs=[]
-        self.name = basegraph.name
+        self.arcs = {}
+        self.name = basegraph.name    
         
-        # 调试标志和保存路径
+        debugpath = os.path.join( os.getcwd(), "test","CrgraphDebug" ,self.name )
+
         self.debug = debug
-        debugpath = os.path.join( os.getcwd(), "test","crgraph" ,self.name )
-        
-        # 将所有的组合逻辑找到，相连接的归为一个Cloud
         self.__get_cloud_reg_graph(basegraph) 
         if self.debug: self.snapshot( debugpath + "\\1before_addpipo" )
         
-        #添加只与FD相连接的边，防止有的FD没有扇入，进而不会被保留在图中
         if self.basegraph.include_pipo: self.__add_pipo_empty_cloud() 
         if self.debug: self.snapshot( debugpath + "\\2after_add_pipo")
 
-        # 在merge_cloud之前统计FD的扇出信息
-        self.stat_fd_outdegree()
-
-        # 将小的cloug 变为一个大的cloud函数里面，为图增加了self.big_cloud的属性
+        #self.stat_fd_outdegree()
         self.__merge_cloud()               
         if self.debug: self.snapshot( debugpath + "\\3after_merge")
-
         self.__check_rules()
         self.__check_rules2()
+        self.__reg2arc()
 
     def __get_cloud_reg_graph(self, basegraph):
         ''' 
@@ -214,33 +207,11 @@ class CloudRegGraph(nx.DiGraph):
         print "Info: %d PIPO has been added to CloudRegGraph as cloud." % len(pipo_2cloud)
         print "Info: %d PIPO-Reg edge has been added to CloudRegGraph" % cnt
         print "Note: add_pipo_empty_cloud() to crgraph successfully ."
-
-    def stat_fd_outdegree(self):
-        '''统计在merge_cloud之前FD的fan-out频次，并将其打印到标准输出上
-        '''
-        out_degree = self.out_degree()
-        fd_outdegree = { reg: out_degree[reg] for reg in self.regs}
-        stat = {}
-        for degree in fd_outdegree.values():
-            if not stat.has_key(degree):
-                stat[degree] = 1
-            else:
-                stat[degree] += 1
-        print "FD's fanout stats are :"
-        print "    fan-out    fd-number"
-        for outdegree , frequency in stat.iteritems():
-            print "    %d       %d" % (outdegree, frequency)
-        return None
               
     def __merge_cloud(self):
         '合并多个cloud'
         print "Processing: merging cloud into big cloud... "
         for eachFD in self.regs:
-            # 不论有没有扇入只有0-1个扇出的时候，查找下一个FD
-            # 有多于1个的扇出的时候，将它的后继节点的所有cloud合并为一个cloud
-            # 合并的大cloud的前驱结点，也就是与同级FD相邻的FD与大cloud相连接
-            # 合并的大cloud的所有后继结点，连接到大的cloud上面，进而完成的任务是
-            # 每一个D只有一个扇出
             succs = self.successors(eachFD) #其中的每一个succ都是nx.DiGraph()
             if len(succs) <= 1:
                 continue
@@ -257,10 +228,43 @@ class CloudRegGraph(nx.DiGraph):
                 self.add_edge(pre_fd, big_cloud)
             for succ_fd in succ_fds:
                 self.add_edge(big_cloud, succ_fd)
-
         self.big_clouds = [node for node in self.nodes_iter() if isinstance(node, nx.DiGraph) ]
         print "Note: merge_cloud() successfully."
         return None
+
+    def __reg2arc(self):
+        '''把所有的reg节点 ignore掉，将其前后相连，直接在原图上操作
+        '''
+        graph = self   
+        arc = {}
+        for reg in graph.regs:
+            precs = graph.predecessors(reg)
+            succs = graph.successors(reg)
+            prec = None
+            succ = None
+            assert len(precs) <= 1
+            if len(precs) == 1 :
+                assert isinstance(precs[0], nx.DiGraph), "reg %s %s -->> prec %s %s" % \
+                    (reg.cellref, reg.name, precs[0].cellref, precs[0].name)
+                prec = precs[0]
+            assert len(succs) == 1
+            assert isinstance(succs[0], nx.DiGraph) , "reg %s %s -->> succ %s %s" % \
+                (reg.cellref, reg.name, succs[0].cellref, succs[0].name)
+            succ = succs[0]
+            if not prec is None: #只有两个都非空的情况下，才新加入边
+                graph.add_edge(prec, succ)
+                if not arc.has_key( (prec, succ) ):
+                    arc[(prec, succ)]= []
+                arc[(prec, succ)].append(reg)
+            else:
+                print "Waring :%s %s has no prec" % (reg.cellref, reg.name)
+            graph.remove_node(reg)
+        remain_reg = 0
+        for key, val in arc.iteritems():
+            remain_reg += len(val)
+        if not remain_reg == len(graph.regs):
+            print "Waring: %d / %d regs remained in intgraph" % (remain_reg, len(graph.regs) )
+        self.arcs = arc
 
     def __check_rules(self):
         ''' 确保每一个D触发器只有一个扇入，一个扇出
@@ -306,8 +310,23 @@ class CloudRegGraph(nx.DiGraph):
                 raise CrgraphRuleError
         print "Info: Check Rules2 of cloud_reg_graph succfully,\n    every edge is FD-cloud edge"
     
-    #--------------------------------------------------------------------
-    # 以下的几个函数和输出图像手动检查有关
+    def stat_fd_outdegree(self):
+        '''统计在merge_cloud之前FD的fan-out频次，并将其打印到标准输出上
+        '''
+        out_degree = self.out_degree()
+        fd_outdegree = { reg: out_degree[reg] for reg in self.regs}
+        stat = {}
+        for degree in fd_outdegree.values():
+            if not stat.has_key(degree):
+                stat[degree] = 1
+            else:
+                stat[degree] += 1
+        print "FD's fanout stats are :"
+        print "    fan-out    fd-number"
+        for outdegree , frequency in stat.iteritems():
+            print "    %d       %d" % (outdegree, frequency)
+        return None
+
     def paint(self, path = None):
         label_dict={}
         for eachCloud in self.big_clouds:

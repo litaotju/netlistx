@@ -9,9 +9,6 @@ import os
 import re
 import copy
 
-# user-defined module
-from netlistx.parser.netlist_parser import parser
-
 def mark_the_circut(primtives, allow_dsp=False, allow_unkown=True ):
     'mark all the module with a type'
     cellref_list=[]

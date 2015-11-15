@@ -13,12 +13,12 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 # user-defined module
-from netlistx import vm_parse
 import netlistx.class_circuit as cc
 import netlistx.netlist_util as nu
 import netlistx.netlist_rules as nr
-from netlistx.netlist import Netlist
 
+from netlistx import vm_parse
+from netlistx.netlist import Netlist
 from   netlistx.exception import *
 
 __all__ = [ "CircuitGraph", "get_graph" ]
@@ -480,7 +480,7 @@ def get_graph(fname = None):
     if not fname: fname = raw_input("plz enter file name:")
     info = vm_parse( fname)
     netlist    = Netlist(info)
-    nr.check(netlist)
+    nr.check(netlist, check_reset = False)
     g1 = CircuitGraph(netlist)
     return g1
     
