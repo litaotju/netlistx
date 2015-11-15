@@ -5,7 +5,7 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{0eebc94c-7a90-45ac-b811-c90bcaed4af8}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>graph\cloudgraph.py</StartupFile>
+    <StartupFile>graph\main.py</StartupFile>
     <SearchPath>prototype\;..\</SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
@@ -38,6 +38,12 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="graph\crgraph.py" />
+    <Compile Include="graph\main.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="graph\test\testBallast.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="scan\partialBallast.py">
       <SubType>Code</SubType>
     </Compile>
