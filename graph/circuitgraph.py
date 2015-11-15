@@ -5,14 +5,20 @@ Created on Tue Aug 25 22:31:02 2015
 @e-mail:litaotju@qq.com
 address:Tianjin University
 """
-
+import os
+import time
 import re
+
 import networkx as nx
 import matplotlib.pyplot as plt
 
 # user-defined module
+from netlistx import vm_parse
 import netlistx.class_circuit as cc
 import netlistx.netlist_util as nu
+import netlistx.netlist_rules as nr
+from netlistx.netlist import Netlist
+
 from   netlistx.exception import *
 
 __all__ = [ "CircuitGraph", "get_graph" ]
@@ -30,16 +36,18 @@ class CircuitGraph(nx.DiGraph):
            port_pair, which records the port instance pair
     '''
 
-    def __init__(self, m_list, assign_list = None, include_pipo = True):
+    def __init__(self, netlist, include_pipo = True):
         '''@param:
                 m_list : cc.circuit_module list, produced by netlist_parser
                 assign_list  : assign statement list from netlist .vm file , produced by netlist_parser 
                 include_pipo : indict that if the graph produced will have pipo vertex and edge
         '''
+        assert isinstance( netlist, Netlist)
         nx.DiGraph.__init__(self)
-        self.name = m_list[0].name
-        self.m_list = m_list
-        self.assign_list = assign_list
+        print "Job: getting CircuitGraph..."
+        self.name = netlist.m_list[0].name
+        self.m_list = netlist.m_list
+        self.assign_list = netlist.assigns
         self.include_pipo = include_pipo
 
         # vertexs containers 
@@ -59,7 +67,7 @@ class CircuitGraph(nx.DiGraph):
         self.__get_edge_from_prim_list()
         self.cloud_reg_graph = None
         self.s_graph = None
-        print "Note: circuit_graph() build successfully"
+        print "Job: CircuitGraph get. OK!\n"
 
     def __add_vertex_from_m_list(self):
 
@@ -521,45 +529,40 @@ def get_graph(fname = None):
        @brief: 从文件名获得一个图
     '''
     if not fname: fname = raw_input("plz enter file name:")
-    info = nu.vm_parse(fname)
-    m_list      = info['m_list']
-    assign_list = info["assign_stm_list"]
-    nu.mark_the_circut(m_list, allow_unkown = False)
-    #nu.rules_check(m_list)
-    g1 = CircuitGraph(m_list, assign_list, include_pipo = True)
-    #debug = True
-    #if debug:
-    #    # 打印扇入为0的FD的信息
-    #    fd_nodes = [fd for fd in g1.nodes_iter() if isinstance(fd, cc.circut_module) and fd.m_type=='FD']
-    #    print "Info: 0 in-degree fd:"
-    #    for fd in fd_nodes:
-    #        if g1.in_degree(fd) == 0:
-    #            print fd
+    info = vm_parse( fname)
+    netlist    = Netlist(info)
+    nr.check(netlist)
+    g1 = CircuitGraph(netlist)
     return g1
     
-def __graph():
+def save_graphs():
     '''输入一个文件名，生成带PIPO和不带PIPO的图，
        然后将生成的图分别保存到tmp\\下的.dot文件和.gexf文件
     '''
 
-    fname = raw_input("plz enter file name:")
-    info = nu.vm_parse(fname)
-    m_list = info['m_list']
 
-    nu.mark_the_circut(m_list, allow_unkown = False)
-    nu.rules_check(m_list)
+    fname = raw_input("plz enter file name:")
+    info = vm_parse(fname)
+    netlist = Netlist( info)
     
+    #生成保存图的路径
+    today = time.localtime()
+    subpath = "%s%s%s" % (today.tm_year, today.tm_mon, today.tm_mday)
+    path = os.path.join("test","GexfDotGraphs", subpath)
+    if not os.path.exists( path):
+        os.makedirs( path )
+
     #生成带pipo的图
-    g1 = CircuitGraph(m_list, info['assign_stm_list'], include_pipo = True)
-    g1.to_gexf_file('tmp\\%s_icpipo.gexf' % g1.name)
-    g1.to_dot_file("tmp\\%s_icpipo.dot" % g1.name)
+    g1 = CircuitGraph(netlist, include_pipo = True)
+    g1.to_gexf_file(path + '\\%s_icpipo.gexf' % g1.name)
+    g1.to_dot_file( path + "\\%s_icpipo.dot" % g1.name)
     
     #生成不带pipo的图
-    g2 = CircuitGraph(m_list, info['assign_stm_list'], include_pipo = False)
-    g2.to_gexf_file('tmp\\%s_nopipo.gexf' % g2.name)
-    g2.to_dot_file("tmp\\%s_nopipo.dot" % g2.name)
-    if len(m_list) <= 20:
-        print "\n".join( [str(eachPrim) for eachPrim in m_list] )
+    g2 = CircuitGraph(netlist, include_pipo = False)
+    g2.to_gexf_file( path + "\\%s_nopipo.gexf" % g2.name)
+    g2.to_dot_file( path +  "\\%s_nopipo.dot" % g2.name)
+    if len(netlist.m_list) <= 20:
+        print "\n".join( [str(eachPrim) for eachPrim in netlist.m_list] )
         verbose_info =True
     else:
         verbose_info = False
@@ -586,25 +589,31 @@ def fanout_stat(graph):
                     fd_degree_stat[degree]  =0
                 fd_degree_stat[degree] += 1
     print "combinational node degree are:"
+    print "outdegree node_count"
     for key, val in com_degree_stat.iteritems():
-        print "%d %d" % (key, val)
+        print "%d     %d" % (key, val)
     print "fd node degree stat are:"
+    print "outdegree node_count"
     for key ,val in fd_degree_stat.iteritems():
-        print "%d %d" % (key, val)
+        print "%d      %d" % (key, val)
     return fd_degree_stat, com_degree_stat
 
 #------------------------------------------------------------------------------
 if __name__ =='__main__':
     while(1):
         print u"命令行帮助，可选命令如下"
-        print u"grh:输入一个文件名称，分别生成两个图（包含和不包含PIPO），保存图的信息到\\tmp下"
+        print u"grh:输入一个文件名称，分别生成两个图（包含和不包含PIPO），保存图的信息到\\test\\GexfDotGraphs下"
         print u"fanout:输入一个文件名称，统计其中组合逻辑和FD节点的扇出数目统计"
+        print u"get:输入一个文件，获取并返回图.打印图的基本信息"
         print u"exit:退出主程序"
         cmd = raw_input("plz enter command:")
         if cmd == "grh" :
-            __graph()
+            save_graphs()
         if cmd == "fanout":
             g1 = get_graph()
             fanout_stat(g1)
+        if cmd == "get":
+            g1 = get_graph()
+            g1.info()
         if cmd == "exit":
             break
