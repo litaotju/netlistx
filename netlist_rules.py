@@ -58,5 +58,17 @@ def _clk_check(nt, clks):
         errmsg = "CLK: %s do not connected to any pi" % clkname
         raise CircuitGraphError, errmsg 
 
-def _reset_check(resets):
-    pass
+def _reset_check(nt, resets):
+    single_inports = []
+    for port in nt.ports:
+        if port.port_type == "input":
+            single_inports += port.split()
+    strings = [port.port_assign.string for port in single_inports]
+    internal_resets = []
+    for reset in resets:
+        if reset not in strings:
+            internal_resets.append( reset)
+    if internal_resets:
+        errmsg = "Internal Resets: %s" % internal_resets
+        raise CircuitGraphError, errmsg 
+    
