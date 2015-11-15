@@ -51,7 +51,6 @@ class CloudRegGraph(nx.DiGraph):
         for cloud in nx.weakly_connected_component_subgraphs(gcopy, copy = False):
             ccnt += 1
             tmpgraph = nx.DiGraph( cloud, name = "cloud%d" % ccnt )
-            #cloud.name = 
             clouds.append( tmpgraph )
         nodes = fds + clouds
         print "Info: %d connected_componenent subgraph after remove FD [GND_VCC]*" % len(clouds)
@@ -117,7 +116,7 @@ class CloudRegGraph(nx.DiGraph):
             if not credge:
                 err = "None of the cloud has node:%s %s , " % ( nonfd.__class__, nonfd.name )
                 err += "FD: %s, FD_PORT: %s" %( fd.name, fdport)
-                raise Exception, err
+                raise CrgraphError, err
         return credge
 
     def __merge(self):
@@ -167,9 +166,6 @@ class CloudRegGraph(nx.DiGraph):
             fdnum = len( reg )
             remain_reg += fdnum
             self.add_edge(edge[0], edge[1], weight = fdnum, label = fdnum)
-        if remain_reg != len(self.fds):
-            err = "Error: %d/%d fd remains in crgraph" % (remain_reg, len(fds))
-            raise Exception, err 
         self.check()
         self.arcs = arc
 
@@ -183,14 +179,14 @@ class CloudRegGraph(nx.DiGraph):
             if isinstance(node, nx.DiGraph): 
                 ncloud += 1
                 if node.number_of_nodes() == 0:
-                    if verbose: print "Cloud ::\n empty cloud\n"
+                    if verbose: print "%s ::\n empty cloud\n" % node.name
                     continue
-                elif verbose: print "Cloud::"
+                elif verbose: print "%s::" % node.name
                 for prim in node.nodes_iter():       
-                    if verbose: print prim
+                    if verbose: print prim.name
             else:
                 assert isfd(node)
-                if verbose: print "node::\n", node
+                if verbose: print "FD:: %s %s \n" % (node.cellref, node.name)
                 nreg += 1
         print "Number of cloud      : %d" % ncloud
         print "Number of remainfd   : %d" % nreg
@@ -217,23 +213,20 @@ class CloudRegGraph(nx.DiGraph):
         for cloud in self.nodes_iter():
             if cloud.number_of_nodes() == 0:
                 continue
-            dotfile = os.path.join(path , cloud.name+".dot")
             namegraph = nx.DiGraph(name = cloud.name)
             namegraph.add_nodes_from( [ nm(node.name) for node in cloud.nodes_iter() ] )
             namegraph.add_edges_from ( [ ( nm(edge[0].name), nm( edge[1].name ) ) for edge in cloud.edges_iter() ])
-            nx.write_dot( namegraph, dotfile)
+            nx.write_dot( namegraph, os.path.join(path , cloud.name + ".dot"))
         #fd边的记录
-        edgerecord = os.path.join(path, self.name + "_arcs.txt")
-        out = open( edgerecord, 'w')
+        out = open( os.path.join(path, self.name + "_arcs.txt"), 'w')
         for edge, fds in self.arcs.iteritems():
             out.write("\nEdge: %s, %s\n" % (edge[0].name, edge[1].name) )
             out.write("has %d FDs:\n" % len(fds) )
             for fd in fds:
-                if not isfd(fd):
-                    print "Waring: %s" % fd.name, "is not fd" 
-                out.write("    %s \n" % fd.name) 
+                out.write("   %s %s \n" % (fd.cellref, fd.name) )
         out.close()
-    
+        print "Snapshot %s OK!" % self.name
+
     def check(self):
         for node in self.nodes_iter():
             if not isfd( node):
@@ -257,10 +250,13 @@ def main():
         inputfile =os.path.join(path, eachVm)
         g2 = get_graph( inputfile )
         g2.info()
-        cr2 = CloudRegGraph(g2)
-        assert isinstance( cr2, nx.DiGraph )
-        cr2.info()
-        cr2.snapshot(path + "\\final\\" +g2.name )
+        try:
+            cr2 = CloudRegGraph(g2)
+            cr2.info()
+            cr2.snapshot(path + "\\final\\" +g2.name )
+        except CrgraphError:
+            print "Waring:", g2.name, "Cannot has a valid CloudGraph"
+            continue
         #cr3 = old.CloudRegGraph(g2)
         #cr3.info()
 

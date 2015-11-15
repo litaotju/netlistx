@@ -92,7 +92,6 @@ def mark_the_circut(primtives, allow_dsp=False, allow_unkown=True ):
             else:
                 print 'Warning:unknown cellref:'+prim.cellref+"  "+prim.name+'\n'+\
                       "plz update the mark_the_circut() to keep this programe pratical"
-    print "Note: mark_the_circut() successfully !"
     return cellref_list
 
 ###############################################################################

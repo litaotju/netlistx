@@ -38,7 +38,7 @@ def _get_fd_specport(nt, port_names ):
 
 def _clk_check(nt, clks):
     if len(clks) > 1:
-        errmsg =  "Netlist has %s CLK domain." % len(clks)
+        errmsg =  "Netlist has %s CLK domain.They are: %s" % ( len(clks), clks.keys() )
         raise CircuitGraphError, errmsg
     elif len(clks) == 0:
         print "Info: no clks in this netlist"
