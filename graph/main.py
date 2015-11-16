@@ -11,6 +11,16 @@ import netlistx.graph.crgraph as old
 class GraphFunc:
     def __init__(self):
         self.path = ""
+        self.call = {}
+        self.__bindcmd2func()
+
+    def __bindcmd2func(self):
+        '''将cmd命令和调用的函数绑定
+        '''
+        self.call["help"]  = self.print_usage
+        self.call["cloud"] = self.cloudgraph
+        self.call["graph"] = self.circuitgraph
+        self.call['oldcr'] = self.crgraph 
 
     def crgraph(self):
         opath = os.path.join(self.path, "oldCrgraphs")
@@ -77,28 +87,26 @@ class GraphMainApp(GraphFunc):
         self.path = "\\test"
         self.cmd = ""
         self.opt = ""
-        self.call = {}
-        self.__bindcmd2func()
+        self.call["cd"] = self.set_path
+        self.call["cwd"] = self.show_path
+        self.call["ls"] = self.list_path
 
-    def __bindcmd2func(self):
-        '''将cmd命令和调用的函数绑定
-        '''
-        self.call["help"]  = self.print_usage
-        self.call["cloud"] = self.cloudgraph
-        self.call["graph"] = self.circuitgraph
-        self.call['oldcr'] = self.crgraph 
-        self.call["setpath"] = self.set_path
- 
     def getcmd( self):
         args = raw_input("netlistx>:").split()
         self.cmd = args[0]
         self.opt = args[1:]
 
     def set_path( self):
-        self.path = raw_input("plz enter path>") if not self.opt else self.opt
+        self.path = raw_input("plz enter path>") if not self.opt else self.opt[0]
         if not os.path.exists( self.path):
-            print "Invalid path"
+            print "Invalid path. Set Again"
             self.set_path()
+
+    def show_path(self):
+        print "Current path: ", self.path
+
+    def list_path(self):
+        print "    ".join( [ file for file in os.listdir(self.path)] )
 
     def run(self):
         self.set_path()
@@ -114,6 +122,7 @@ class GraphMainApp(GraphFunc):
                     self.call['help']()
             else:
                 callfunc()
+
 if __name__ == "__main__":  
     App = GraphMainApp()
     App.run()
