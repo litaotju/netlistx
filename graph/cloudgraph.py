@@ -142,10 +142,14 @@ class CloudRegGraph(nx.DiGraph):
             self.add_edges_from( [ (pre_fd, big_cloud) for pre_fd in pre_fds] )
             self.add_edges_from( [ (big_cloud, succ_fd) for succ_fd in succ_fds] )
         for fd in self.fds:
-            if self.out_degree(fd) != 1 or self.in_degree(fd) != 1:
+            if self.out_degree(fd) > 1 or self.in_degree(fd) != 1:
                 err = "Error: %s indegree:%d outdegree:%d" %\
                     (fd, self.in_degree(fd), self.out_degree(fd) )
                 raise CrgraphError, err 
+            elif self.out_degree(fd) < 1:
+                self.remove_node( fd)
+                print "Waring FD:%s has no succ. Removed" % fd.name 
+        self.fds = [node for node in self.nodes_iter() if isfd(node )]
         self.check()
 
     def __fd2edge(self):
