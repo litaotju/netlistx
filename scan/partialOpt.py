@@ -54,19 +54,23 @@ def convert2opt(cr, upaths, cycles):
     edge2x = {}       #名称字典,键为名称边，值为X变量的索引
     all_edges = {}    #权重字典,键为名称边，值为权重
     cycle_const = []
-    
+
+    self_loops = []    
     # 下面进行cycles列表的获取
     for cycle in cycles:
-        edges = []
-        for i in range(0, len(cycle)-1 ):
-            edge = (cycle[i], cycle[i+1]) 
-            edges.append( edge )
-            all_edges[ edge ] = namewight[ edge ]
-        back_edge = (cycle[-1], cycle[0])
-        all_edges[ back_edge ] = namewight[ back_edge ]
-        edges.append( back_edge )
-        cycle_const.append( edges )
-
+        if len(cycle) == 1:
+            self_loops.append( (cycle[0],cycle[0]) )
+        else:
+            edges = []
+            for i in range(0, len(cycle)-1 ):
+                edge = (cycle[i], cycle[i+1]) 
+                edges.append( edge )
+                all_edges[ edge ] = namewight[ edge ]
+            back_edge = (cycle[-1], cycle[0])
+            all_edges[ back_edge ] = namewight[ back_edge ]
+            edges.append( back_edge )
+            cycle_const.append( edges )
+    
     # 下面字典的每一个Key是（s,t）tuple，值是s.t之间的所有路径的列表
     unbalance_const = {}
     for (s,t), path_bwt in upaths.iteritems():
@@ -80,6 +84,17 @@ def convert2opt(cr, upaths, cycles):
                 edges.append( edge )
                 all_edges[ edge ] = namewight[ edge ]
             unbalance_const[ (s,t) ].append( edges )
+    
+    # Self-loop 数目
+    self_loopfd_count = 0
+    for loop in self_loops:
+        print "%%Self-loop: %s, weight:%d" % (loop, namewight[loop] )
+        self_loopfd_count += namewight[loop]
+    print "%%All self_loopfd count is: %d" % self_loopfd_count
+    
+    if (not cycle_const) and (not unbalance_const):
+        print "%%Graph Is blance after self-loop remove."
+        return None
 
     # 准备进行权重和约束的输出
     cnt = 0
@@ -143,10 +158,12 @@ def convert2opt(cr, upaths, cycles):
                 print "%% k%d * k%d" %(i, j)
                 print length_list[i]+"*"+length_list[j] + "<= 1/100000;..." 
     print "];"
+    if not unbalance_const:
+        print "%% There is no unbalance path in this graph. So Opt is same with Ballast"
     SOLVE   = '''solvesdp(constraints,obj, ops);'''
     DISPLAY = '''for i = 1:%d\n fprintf('x %%d  ',i);\n display(x(i));\n end''' % len(all_edges )
     ALL_FD = sum([ len(fdlist) for fdlist in ewight.itervalues()])
-    RUSULT = "display( sum(W)-x*W' );"
+    RUSULT = "display( sum(W)-x*W'+%d );" % self_loopfd_count
     print "%%All fd number is: %d"  % ALL_FD 
     print SOLVE
     print DISPLAY
@@ -159,8 +176,8 @@ if __name__ == "__main__":
     for eachvm in vm_files( path ):
         g = get_graph( os.path.join(path, eachvm) )
         cr = CloudRegGraph( g )
+        cr.info()
         upaths, cycles = upath_cycle( cr)
-    
         console = sys.stdout 
         mscript =  open("test\\partialOptMatlab\\" + g.name +".m" ,'w')
         sys.stdout = mscript
