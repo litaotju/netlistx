@@ -44,9 +44,9 @@ class GraphFunc:
             cr2 = CloudRegGraph(g2)
             cr2.info()
             cr2.snapshot(self.path + "\\CloudGraphs\\" +g2.name )
-            cr3 = old.CloudRegGraph(g2, debug = True)
-            cr3.info()
-            cr3.snapshot(self.path + "\\oldCrgraphs\\" + g2.name )
+            # cr3 = old.CloudRegGraph(g2, debug = True)
+            # cr3.info()
+            # cr3.snapshot(self.path + "\\oldCrgraphs\\" + g2.name )
             #except CrgraphError:
             #    print "Waring:", g2.name, "Cannot has a valid CloudGraph"
             #    continue
