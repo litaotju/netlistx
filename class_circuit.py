@@ -21,7 +21,7 @@ class port:
         '''将一个多bit的端口自动的分解为单bit的端口，用于图的建模，便于将PIPO分解
            @return：一个队列，含有拆分后的一个或多个port类对象
         '''
-        if self.port_width <= 1:
+        if self.port_assign.vector == None:
             return [self]
         ports = []
         lsb, msb = self.port_assign.lsb, self.port_assign.msb 
@@ -161,8 +161,7 @@ class signal:
         if vector==None:
             self.string=name
         else:
-            self.string=name+vector;
-        if not self.vector==None:
+            self.string=name+vector
             self.__get_width()
 
     def __get_width(self):
@@ -171,8 +170,11 @@ class signal:
         if vector_match is not None:
             l=int(vector_match.groups()[0])
             r=int(vector_match.groups()[1])
-            assert l>=r
-            self.width=l-r+1
+            #assert l>=r
+            if l >= r:
+                self.width = l - r + 1
+            else:
+                self.width = r - l + 1
             ##featured 7.2,将信号的高位与低位两个数字存下来,之后在判断Prim端口是否向连接,有作用
             self.lsb=l
             self.msb=r
