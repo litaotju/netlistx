@@ -44,6 +44,12 @@
     <Compile Include="graph\test\testBallast.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="prototype\fas.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="prototype\test\testFas.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="scan\partialBallast.py">
       <SubType>Code</SubType>
     </Compile>
@@ -104,6 +110,7 @@
     <Folder Include="graph\" />
     <Folder Include="graph\test\" />
     <Folder Include="itrans\" />
+    <Folder Include="prototype\test\" />
     <Folder Include="scan\" />
     <Folder Include="parser\" />
     <Folder Include="prototype\" />
