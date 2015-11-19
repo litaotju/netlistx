@@ -78,3 +78,13 @@ Issue #8 Status:UN_Resolved Question
 问题：使用grhtest\b01 ,b17.vm进行ballast实验，发现所有的移除的D触发器都是在FAS那一步移去的，
 	  第二步根本没有电路可以用来做B-structure。并且b17只有4个节点，三条边。
 	  
+#-------------------------------------------------------------------------------------
+Issue #9 当电路中存在IBUF的时候连接有问题？
+	解决方法：综合是都Disable BUF Insertion。
+
+Issue #10 [0:0]的input如何split?如果不split的话。在电路连接输入端口的名称　［0:0］input_i , port: input_i, prim_port: input_i[0]
+	解决方法：修改 port类的split函数. port.port_assign.vector == None时，只返回名字，其他时候都返回名字加[\d+]
+
+
+
+

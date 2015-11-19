@@ -524,7 +524,7 @@ def get_graph(fname = None):
     if not fname: fname = raw_input("plz enter file name:")
     info = vm_parse( fname)
     netlist    = Netlist(info)
-    nr.check(netlist, check_reset = False)
+    #nr.check(netlist, check_reset = False)
     g1 = CircuitGraph(netlist)
     return g1
     
