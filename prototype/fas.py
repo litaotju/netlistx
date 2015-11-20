@@ -24,7 +24,9 @@ def comb_fas( graph):
     '''@param: graph, a nx.DiGraph obj
     '''
     assert isinstance( graph, nx.DiGraph)
-    weight = nx.get_edge_attributes( graph, 'weight')
+    origin_weight = nx.get_edge_attributes( graph, 'weight')
+    weight = origin_weight.copy()
+
     assert len(weight) == graph.number_of_edges(), "Some edge doesnot has a weight attr."
     fas = []
     while( not nx.is_directed_acyclic_graph(graph) ):
@@ -40,11 +42,12 @@ def comb_fas( graph):
                 graph.remove_edge( eachEdge[0], eachEdge[1] )
 
     for eachEdge in copy.copy(fas):
-        graph.add_edge( eachEdge[0], eachEdge[1], {'weight' : weight[eachEdge]} )
+        graph.add_edge( eachEdge[0], eachEdge[1], {'weight' : origin_weight[eachEdge]} )
         if nx.is_directed_acyclic_graph( graph):
             fas.remove(eachEdge)
             continue
         else:
             graph.remove_edge( eachEdge[0], eachEdge[1] )
+
     return fas
 
