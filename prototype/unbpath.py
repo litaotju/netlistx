@@ -12,7 +12,7 @@ def unbalance_paths(G):
     @return：{}  upath2, all unbalance unbpath, 
         key: multi fanout node A, value: paths from A
     '''
-    # BUGY：该程序不能找到所有的环，只能找到所有的不平衡路径。原因是，在搜索的时候，只搜索了所有
+    # 该程序不能找到所有的环，只能找到所有的不平衡路径。原因是，在搜索的时候，只搜索了所有
     # 出度大于1的节点，可以进行改进。将第一步没有搜索的点，全部搜索一遍，从而找出图中的环
     upath = {}
     upath2 = {}
