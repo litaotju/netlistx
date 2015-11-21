@@ -10,6 +10,7 @@ from netlistx.file_util    import vm_files
 
 from netlistx.graph.cloudgraph      import CloudRegGraph
 from netlistx.graph.circuitgraph    import get_graph
+from netlistx.prototype.fas         import comb_fas
 
 __all__ = [ "feedbackset", "balance", "ballast" ]
 
@@ -33,17 +34,21 @@ def balance( graph):
     r = [] # removed set
     if __check(graph):
         return r
+    weight = nx.get_edge_attributes( graph, 'weight')
+    assert len(weight) == graph.number_of_edges()
     cs, g1, g2 = __cut(graph) 
     r = balance(g1) + balance(g2) + cs
     csl = []
-    for eachEdge in cs:
+    cs.sort( key = lambda x: weight[x], reverse = True)
+    for i in range( 0, len(cs) ):
+        eachEdge = cs[i]
         under_check_graph = graph.copy()
         under_check_graph.remove_edges_from(r)
         under_check_graph.add_edges_from(csl)
         under_check_graph.add_edge(eachEdge[0], eachEdge[1])
         if __check(under_check_graph):
             csl.append(eachEdge)
-            graph.add_edge(eachEdge[0],eachEdge[1])
+            graph.add_edge(eachEdge[0],eachEdge[1], {'weight':weight[eachEdge] } )
     for eachEdge in csl:
         r.remove(eachEdge)
     return r
@@ -126,34 +131,42 @@ def convert2int( graph):
 
 def ballast( crgraph):
     intgraph, map, invmap = convert2int( crgraph )
-    fas = feedbackset( intgraph )
-    r = balance( intgraph )
-    print "FAS:", len(fas)
-    print "R:", len(r)
+    #intgraph2 = intgraph.copy()
+    #fas = feedbackset( intgraphs2 )
+    #print "FAS:", fas
+    comfas = []
+    r = []
+    for subgraph in nx.weakly_connected_component_subgraphs( intgraph ):
+        comfas += comb_fas( subgraph)
+        r += balance( subgraph )
+    print "CombFAS:", comfas
+    print "R:", r
     if not r:
         print "Info: %s is blance after cycle removed" % crgraph.name
     scanfds = []
-    for edge in fas + r:
+    for edge in comfas + r:
         realedge = invmap[edge[0]], invmap[edge[1]]
         scanfds += crgraph.arcs[realedge]
     return scanfds
 
 def main():
     path = os.getcwd() + "\\test\\cloudGraphs"
-    inputfile = raw_input("plz enter file name:")
-    g = get_graph( inputfile )
-    g.info()
-    cr = CloudRegGraph( g )
-    cr.info()
-    cr.snapshot( path + "\\" +g.name )
-    scanfds = ballast( cr )
-    with open( os.path.join(path, cr.name + "_scanfds.txt" ), 'w') as out:
-        for fd in scanfds:
-            out.write("%s %s\n " % (fd.cellref, fd.name) )
-        out.write( "FD NUMBER: %d" % len(cr.constfds + cr.fds) )
-        out.write( "SCAN_FD number: %d" % len( scanfds) )
-    print "FD number:", len(cr.constfds + cr.fds)
-    print "SCAN_FD number: ", len(scanfds)
+    srcpath = raw_input("plz enter path:")
+    for eachVm in vm_files( srcpath ):
+        inputfile = os.path.join( srcpath, eachVm)
+        g = get_graph( inputfile )
+        g.info()
+        cr = CloudRegGraph( g )
+        cr.info()
+        #cr.snapshot( srcpath + "\\" +g.name )
+        scanfds = ballast( cr )
+        with open( os.path.join(srcpath, cr.name + "_scanfds.txt" ), 'w') as out:
+            for fd in scanfds:
+                out.write("%s %s\n " % (fd.cellref, fd.name) )
+            out.write( "FD NUMBER: %d" % len(cr.constfds + cr.fds) )
+            out.write( "SCAN_FD number: %d" % len( scanfds) )
+        print "FD number:", len(cr.constfds + cr.fds)
+        print "SCAN_FD number: ", len(scanfds)
 
 if __name__ == "__main__":
     main()
