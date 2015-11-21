@@ -45,11 +45,11 @@ def convert2opt(cr, upaths, cycles):
 
     names ={ node:node.name for node in cr.nodes() }
     namewight = {}
-    for edge, weight in ewight.iteritems():
+    for edge, fds in ewight.iteritems():
         name0 = names[ edge[0] ]
         name1 = names[ edge[1] ]
         assert not namewight.has_key( (name0, name1) )
-        namewight[(name0, name1)] = len(weight)
+        namewight[(name0, name1)] = len(fds)
 
     edge2x = {}       #名称字典,键为名称边，值为X变量的索引
     all_edges = {}    #权重字典,键为名称边，值为权重
@@ -173,13 +173,16 @@ def convert2opt(cr, upaths, cycles):
 
 if __name__ == "__main__":
     path = raw_input("plz enter path>")
+    opath =  os.path.join( path, "OptMatlab")  #存放matlab脚本的目录
+    if not os.path.exists(): os.mkdir( opath )
     for eachvm in vm_files( path ):
         g = get_graph( os.path.join(path, eachvm) )
         cr = CloudRegGraph( g )
         cr.info()
         upaths, cycles = upath_cycle( cr)
+
         console = sys.stdout 
-        mscript =  open("test\\partialOptMatlab\\" + g.name +".m" ,'w')
+        mscript =  open( os.path.join(opath, g.name +".m") ,'w')
         sys.stdout = mscript
         convert2opt(cr, upaths, cycles)
         sys.stdout = console
