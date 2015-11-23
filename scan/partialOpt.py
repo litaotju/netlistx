@@ -218,10 +218,16 @@ def get_scan_fds(cr, path):
     for edge in readsolution( solutionfile, edge2x):
         scan_fds += cr.arcs[ name_edge[edge] ]
         cr.remove_edge( name_edge[edge][0], name_edge[edge][1] )
-
-    #import partialBallast as pb
-    #if not pb.__check(cr):
-    #    print "Wrong Answer"
+    
+    #将自环加进来
+    selfloops = cr.selfloop_edges()
+    cr.remove_edges_from( selfloops)
+    for edge in selfloops:
+        scan_fds += cr.arcs[ edge]
+    import partialBallast as pb
+    if not pb.__check(cr):
+        print "Wrong Answer"
+    
     return scan_fds
 
 if __name__ == "__main__":
