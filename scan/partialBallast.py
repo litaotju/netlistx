@@ -146,7 +146,7 @@ def main():
 
         scanfds = ballast( cr )
         
-        with open( os.path.join(srcpath, cr.name + "_scanfds.txt" ), 'w') as out:
+        with open( os.path.join(srcpath, cr.name[:-11] + "_balScanFDs.txt" ), 'w') as out:
             for fd in scanfds:
                 out.write("%s %s\n " % (fd.cellref, fd.name) )
             out.write( "FD NUMBER: %d" % len(cr.constfds + cr.fds) )
