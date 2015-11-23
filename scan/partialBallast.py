@@ -2,6 +2,7 @@
 
 
 import os
+import time
 import networkx as nx
 
 # user-defined module
@@ -14,20 +15,6 @@ from netlistx.prototype.fas         import comb_fas
 
 __all__ = [ "feedbackset", "balance", "ballast" ]
 
-def feedbackset(graph):
-    assert isinstance( graph, nx.DiGraph )
-    fas = []
-    for c in nx.simple_cycles(graph):
-        # self-loop
-        if len(c) == 1: 
-            edge = (c[0], c[0])
-        else:
-            edge = (c[0], c[1])
-        if not edge in fas:
-            fas.append( edge )
-    graph.remove_edges_from( fas )  
-    return fas
-        
 def balance( graph):
     assert nx.is_directed_acyclic_graph(graph),\
         "The target graph you want to banlance is not a DAG"
@@ -131,14 +118,13 @@ def convert2int( graph):
 
 def ballast( crgraph):
     intgraph, map, invmap = convert2int( crgraph )
-    #intgraph2 = intgraph.copy()
-    #fas = feedbackset( intgraphs2 )
-    #print "FAS:", fas
     comfas = []
     r = []
+    start = time.clock()
     for subgraph in nx.weakly_connected_component_subgraphs( intgraph ):
         comfas += comb_fas( subgraph)
         r += balance( subgraph )
+    print crgraph.name, u" 耗时 ", time.clock()-start, u"秒"
     print "CombFAS:", comfas
     print "R:", r
     if not r:
@@ -150,7 +136,6 @@ def ballast( crgraph):
     return scanfds
 
 def main():
-    path = os.getcwd() + "\\test\\cloudGraphs"
     srcpath = raw_input("plz enter path:")
     for eachVm in vm_files( srcpath ):
         inputfile = os.path.join( srcpath, eachVm)
@@ -158,8 +143,9 @@ def main():
         g.info()
         cr = CloudRegGraph( g )
         cr.info()
-        #cr.snapshot( srcpath + "\\" +g.name )
+
         scanfds = ballast( cr )
+        
         with open( os.path.join(srcpath, cr.name + "_scanfds.txt" ), 'w') as out:
             for fd in scanfds:
                 out.write("%s %s\n " % (fd.cellref, fd.name) )
