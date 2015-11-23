@@ -1,40 +1,42 @@
-﻿# -*-coding:utf-8 -*- #
+# -*-coding:utf-8 -*- #
 import re
 import os
 import sys
 import copy
+import time
 
 import networkx as nx
 
-from netlistx.file_util import vm_files
+from netlistx.file_util import vm_files, StdOutRedirect
 
 from netlistx.prototype.unbpath import unbalance_paths
 from netlistx.graph.cloudgraph import CloudRegGraph
 from netlistx.graph.circuitgraph import CircuitGraph
 from netlistx.graph.circuitgraph import get_graph
 
-def upath_cycle(cr):
-    '''@ param: cr, a nx.DiGraph,每一个节点必须有一个独特的name属性与其他节点不同
-       @ return: upaths, cycles ,图中所有的不平衡路径和环
-       @ brief: 将每一个图转化成节点的名字为节点的图，然后找出图中所有的不平衡路径和环
-    '''
+def get_namegraph(cr):
     tmp = {}
     for node in cr.nodes_iter():
         assert not tmp.has_key( node.name), \
             "Node:%s, has the same name with:%s, name:%s" % (node, tmp[node.name], node.name)
         tmp[node.name] = node
-
     namegraph = nx.DiGraph()
     for edge in cr.edges():
         namegraph.add_edge( edge[0].name, edge[1].name )
-        
+    return namegraph
+
+def upath_cycle(namegraph):
+    '''@ param: cr, a nx.DiGraph,每一个节点必须有一个独特的name属性与其他节点不同
+       @ return: upaths, cycles ,图中所有的不平衡路径和环
+       @ brief: 将每一个图转化成节点的名字为节点的图，然后找出图中所有的不平衡路径和环
+    '''       
     upaths = unbalance_paths( namegraph)
     cycles = []
     for cycle in nx.simple_cycles(namegraph):
         cycles.append( cycle)
     return upaths, cycles
 
-def convert2opt(cr, upaths, cycles):
+def convert2opt(cr, upaths, cycles ):
     '''@param: cr, a graph, every node is a nx.DiGraph obj
                eweight, a dict, cr's edge -> weight
                upaths,  a dict, (s, t )   -> [ all unbalance paths bwt (s, t)]
@@ -150,25 +152,84 @@ def convert2opt(cr, upaths, cycles):
         print "%% There is no unbalance path in this graph. So Opt is same with Ballast"
   
     ALL_FD = sum([ len(fdlist) for fdlist in ewight.itervalues()])
-    print "%%All fd number is: %d"  % ALL_FD 
+    print "%%All fd number is: %d"  % ALL_FD
+    print "tic;"
     print "solvesdp(constraints,obj, ops);"
-    print "for i = 1:%d\n fprintf('x %%d  ',i);\n display(x(i));\n end" % len(all_edges )
+    print "t = toc;"
+    print "toc"
+    print "fid = fopen('%s_partialOptScanEdge.txt','w');" % cr.name[:-11]
+    print "for i = 1:%d" % len(all_edges )
+    print "    fprintf(fid, 'x(%d)  %d\\n', i, double(x(i)));"
+    print "end" 
+    print "result = double(x);"
+    print "fprintf(fid, '//all fd:%d\\n');" % ALL_FD
     print "%%the number to scan:"
-    print "display( sum(W)-x*W'+%d );" % self_loopfd_count
-    return None
+    print "fprintf('scan fd:%%d\\n', double(sum(W)-x*W'+%d ));" % self_loopfd_count
+    print "fprintf(fid,'//scan fd:%%d\\n', double(sum(W)-x*W'+%d ));" % self_loopfd_count
+    print "fprintf(fid,'//time spent solve sdp: %.4f', t);"
+    print "fclose(fid);"
+    print "exit();"
+    return edge2x
+
+
+def readsolution(solutionfile, edge2x):
+    '''读取matlab的计算结果，得到需要变为扫描的边
+    '''
+    scan_edges = []
+    x2edge = { val:key for key,val in edge2x.iteritems() }
+    with open(solutionfile,'r') as solution:
+        for line in solution:
+            if line.startswith("//"): continue
+            (x, val) = tuple(line.strip().split())
+            if int(val) == 0:
+                scan_edges.append( x2edge[x] )
+    return scan_edges
+
+def get_scan_fds(cr, path):
+    '''由图找约束，由约束得m脚本，运行m脚本得解，由解得扫描触发器
+    '''
+    basename = cr.name[:-11]
+
+    namegraph = get_namegraph(cr)
+    upaths, cycles = upath_cycle( namegraph )
+
+    opath =  os.path.join( path, "OptMatlab")  #存放matlab脚本的目录
+    if not os.path.exists( opath ):
+        os.mkdir( opath )    
+    with StdOutRedirect( os.path.join(opath, basename +".m") ):
+        edge2x = convert2opt(cr, upaths, cycles)
+
+    solutionfile = os.path.join(opath, "%s_partialOptScanEdge.txt" % basename)
+    if os.path.exists(solutionfile):
+        os.remove( solutionfile )
+        print solutionfile, " removed"
+
+    os.system("matlab -nodesktop -sd  %s -r %s" % ( opath, basename ) )
+
+    print "Matlab excuting..."
+    #注意线程安全，matlab写完了文件之后才能读
+    while( not os.path.exists(solutionfile) ):
+        time.sleep(30)
+        print "Waiting for matlab result"
+    time.sleep(60)
+    print "Matlab result OK!" 
+    name_edge = {(edge[0].name, edge[1].name): edge for edge in cr.arcs}
+    scan_fds = []
+    for edge in readsolution( solutionfile, edge2x):
+        scan_fds += cr.arcs[ name_edge[edge] ]
+        cr.remove_edge( name_edge[edge][0], name_edge[edge][1] )
+
+    #import partialBallast as pb
+    #if not pb.__check(cr):
+    #    print "Wrong Answer"
+    return scan_fds
 
 if __name__ == "__main__":
     path = raw_input("plz enter path>")
-    opath =  os.path.join( path, "OptMatlab")  #存放matlab脚本的目录
-    if not os.path.exists( opath ): os.mkdir( opath )
     for eachvm in vm_files( path ):
         g = get_graph( os.path.join(path, eachvm) )
         cr = CloudRegGraph( g )
         cr.info()
-        upaths, cycles = upath_cycle( cr)
-        console = sys.stdout 
-        mscript =  open( os.path.join(opath, g.name +".m") ,'w')
-        sys.stdout = mscript
-        convert2opt(cr, upaths, cycles)
-        sys.stdout = console
-        mscript.close()
+        scan_fds = get_scan_fds(cr, path)
+        with StdOutRedirect( os.path.join(path, cr.name[:-11]+"_optScanFDs.txt")):
+            print "\n".join([ "%s %s" % (fd.cellref, fd.name) for fd in scan_fds] )
