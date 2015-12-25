@@ -212,24 +212,26 @@ def get_scan_fds(cr, path):
     with StdOutRedirect( os.path.join(opath, basename +".m") ):
         edge2x = convert2opt(cr, upaths, cycles, socket_port)
 
-    #执行生成的Matlab，使用socket接受Matlab的信息。执行完毕再读取文件
-    os.system("matlab -nodesktop -sd  %s -r %s" % ( opath, basename ) )
-    connection, addr = serverSocket.accept()
-    if connection.recv( 100) == "valid":
-        print "Matlab excuted OK!"
-        # send an i to close Matlab
-        connection.send("i")
-    connection.close()
-    serverSocket.close()
-    
-    #从Matlab的结果中读取，获得扫描触发器列表 scan_fds
-    name_edge = {(edge[0].name, edge[1].name): edge for edge in cr.arcs}
     scan_fds = []
-    solutionfile = os.path.join(opath, "%s_partialOptScanEdge.txt" % basename)
-    for edge in readsolution( solutionfile, edge2x):
-        scan_fds += cr.arcs[ name_edge[edge] ]
-        cr.remove_edge( name_edge[edge][0], name_edge[edge][1] )
+    if edge2x is not None: # 空的Matlab脚本
+        #执行生成的Matlab，使用socket接受Matlab的信息。执行完毕再读取文件
+        os.system("matlab -nodesktop -sd  %s -r %s" % ( opath, basename ) )
+        connection, addr = serverSocket.accept()
+        if connection.recv( 100) == "valid":
+            print "Matlab excuted OK!"
+            # send an i to close Matlab
+            connection.send("i")
+        connection.close()
+        serverSocket.close()
     
+        #从Matlab的结果中读取，获得扫描触发器列表 scan_fds
+        name_edge = {(edge[0].name, edge[1].name): edge for edge in cr.arcs}
+        solutionfile = os.path.join(opath, "%s_partialOptScanEdge.txt" % basename)
+        for edge in readsolution( solutionfile, edge2x):
+            scan_fds += cr.arcs[ name_edge[edge] ]
+            cr.remove_edge( name_edge[edge][0], name_edge[edge][1] )
+    else:
+        serverSocket.close()
     #将自环加进来
     selfloops = cr.selfloop_edges()
     cr.remove_edges_from( selfloops)
