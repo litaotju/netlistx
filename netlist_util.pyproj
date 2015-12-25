@@ -53,6 +53,9 @@
     <Compile Include="scan\partialBallast.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="scan\partialFusion.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="scan\partialOpt.py">
       <SubType>Code</SubType>
     </Compile>
