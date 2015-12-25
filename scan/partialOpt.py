@@ -4,6 +4,7 @@ import os
 import sys
 import copy
 import time
+import socket
 
 import networkx as nx
 
@@ -36,7 +37,7 @@ def upath_cycle(namegraph):
         cycles.append( cycle)
     return upaths, cycles
 
-def convert2opt(cr, upaths, cycles ):
+def convert2opt(cr, upaths, cycles, socket_port):
     '''@param: cr, a graph, every node is a nx.DiGraph obj
                eweight, a dict, cr's edge -> weight
                upaths,  a dict, (s, t )   -> [ all unbalance paths bwt (s, t)]
@@ -168,7 +169,12 @@ def convert2opt(cr, upaths, cycles ):
     print "fprintf(fid,'//scan fd:%%d\\n', double(sum(W)-x*W'+%d ));" % self_loopfd_count
     print "fprintf(fid,'//time spent solve sdp: %.4f', t);"
     print "fclose(fid);"
+    print "t = tcpip('localhost', %d, 'NetworkRole', 'client');" % socket_port
+    print "fopen(t)"
+    print "fwrite(t, 'valid')"
+    print "if ( fread(t) == 105 )"
     print "exit();"
+    print "end"
     return edge2x
 
 
@@ -192,29 +198,34 @@ def get_scan_fds(cr, path):
 
     namegraph = get_namegraph(cr)
     upaths, cycles = upath_cycle( namegraph )
-
+    
+    # 启动Socket服务器
+    socket_port = 14001
+    serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM ) 
+    serverSocket.bind(('', socket_port))
+    serverSocket.listen(1) 
+    
+    #生成Matlab脚本
     opath =  os.path.join( path, "OptMatlab")  #存放matlab脚本的目录
     if not os.path.exists( opath ):
         os.mkdir( opath )    
     with StdOutRedirect( os.path.join(opath, basename +".m") ):
-        edge2x = convert2opt(cr, upaths, cycles)
+        edge2x = convert2opt(cr, upaths, cycles, socket_port)
 
-    solutionfile = os.path.join(opath, "%s_partialOptScanEdge.txt" % basename)
-    if os.path.exists(solutionfile):
-        os.remove( solutionfile )
-        print solutionfile, " removed"
-
+    #执行生成的Matlab，使用socket接受Matlab的信息。执行完毕再读取文件
     os.system("matlab -nodesktop -sd  %s -r %s" % ( opath, basename ) )
-
-    print "Matlab excuting..."
-    #注意线程安全，matlab写完了文件之后才能读
-    while( not os.path.exists(solutionfile) ):
-        time.sleep(30)
-        print "Waiting for matlab result"
-    time.sleep(60)
-    print "Matlab result OK!" 
+    connection, addr = serverSocket.accept()
+    if connection.recv( 100) == "valid":
+        print "Matlab excuted OK!"
+        # send an i to close Matlab
+        connection.send("i")
+    connection.close()
+    serverSocket.close()
+    
+    #从Matlab的结果中读取，获得扫描触发器列表 scan_fds
     name_edge = {(edge[0].name, edge[1].name): edge for edge in cr.arcs}
     scan_fds = []
+    solutionfile = os.path.join(opath, "%s_partialOptScanEdge.txt" % basename)
     for edge in readsolution( solutionfile, edge2x):
         scan_fds += cr.arcs[ name_edge[edge] ]
         cr.remove_edge( name_edge[edge][0], name_edge[edge][1] )
@@ -227,7 +238,7 @@ def get_scan_fds(cr, path):
     import partialBallast as pb
     if not pb.__check(cr):
         print "Wrong Answer"
-    
+   
     return scan_fds
 
 if __name__ == "__main__":
