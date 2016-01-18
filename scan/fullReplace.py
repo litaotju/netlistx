@@ -1,12 +1,12 @@
-﻿import os
+﻿# -*-coding:utf-8 -*-
+
+import os
 import os.path
 import re
 
 # user-defined module
 import netlistx.netlist_util as nu
-
-#扫描D触发器的库的位置
-scanlib = '`include "E:\ISE_WORKSPACE\scan_lib\scan_cells_ce_gated.v"'
+from netlistx.scan.config import SCAN_LIB
 
 def full_replace_scan_chain(fname,verbose=True,input_file_dir=os.getcwd(),output_file_dir=os.getcwd()+"\\out\\"):
     input_file = os.path.join(input_file_dir, fname)
@@ -19,8 +19,7 @@ def full_replace_scan_chain(fname,verbose=True,input_file_dir=os.getcwd(),output
         print "Error: file open error:",e
         return False          
     #add the include file @begin of a verilog design file
-    header = scanlib
-    fobj.writelines( header ) 
+    fobj.writelines( SCAN_LIB )
     #####################################################################    
     #some string constant nedd to add before a FD line
     sen ='    .SCAN_EN(scan_en),\n'
@@ -73,18 +72,14 @@ def full_replace_scan_chain(fname,verbose=True,input_file_dir=os.getcwd(),output
     print 'Job:  Replace '+fname+' done\n\n'
     return True
 
-#############################################################################################
-if __name__=='__main__':    
-    parent_dir=os.getcwd()
-    input_file_dir = parent_dir+"\\test\\bench_virtex4"
-    output_file_dir = parent_dir+"\\test\\bench_full_replace_virtex4"    
-    if not os.path.exists( output_file_dir ):
-        os.mkdir(output_file_dir )
-    print "CWD:", parent_dir
-    print "Output to", output_file_dir
-    print "Input netlist:", input_file_dir   
-    for eachFile in os.listdir(input_file_dir):
-        print "Handling:", eachFile, "..."
-        if os.path.splitext(eachFile)[1] in ['.v', '.vm']:
-            full_replace_scan_chain(eachFile,\
-                     False, input_file_dir, output_file_dir)
+if __name__=='__main__':
+    print os.getcwd()
+    pwd = ""
+    while(not os.path.exists(pwd)):
+        pwd = raw_input("plz enter vm files path:")
+    outpath = os.path.join(pwd,"full_replace_scanned")
+    if not os.path.exists(outpath):
+        os.mkdir(outpath)
+    vms = [ name for name in os.listdir(pwd) if os.path.splitext(name)[1] in (".v" ,".vm")]
+    for vm in vms:
+        full_replace_scan_chain(vm, True, pwd, outpath)
