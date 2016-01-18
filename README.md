@@ -25,17 +25,22 @@ netlistx一个Python包，主要的功能有：
 
         __init__.py
         exception.py     \自定义异常类型类s
-        file_util.py     \读取vm文件,输入输出重定向
-        class_circuit.py \所有与电路相关的python类s
-        netlist.py       \Netlist类
-        netlist_rules.py \规则检查
-        netlist_util.py  \网表的其他可用函数
+        file_util.py     \读取vm文件函数,输入输出重定向类
+         
+        class_circuit.py \所有与电路相关的类s: port, circut_module, ...
+        netlist.py       \Netlist类 #TODO:
+        netlist_rules.py \规则检查函数s
+        netlist_util.py  \网表的其他可用函数s
 
-        cell_construct \单元库构建
+        cell_construct \单元库构建 脚本
             construct_scan_lib.py \由xilinx unisim.v 生成扫描所需的基本单元 SCAN_FD*
-            faultlib.py \生成故障注入单元FIE
+            faultlib.py \生成故障注入单元FIE #TODO
 
-        graph \图的生成
+        itrans \iscas89门级网表翻译器 脚本.
+            itrans.py       \可执行,用来读取同目录下的iscas .v网表
+            Primitives.py   \Dff和Combi类定义
+
+        graph \图生成子包
             __init__.py
             ballast.py      \BALLAST方法的实现
             circuitgraph.py \CircuitGraph类
@@ -43,11 +48,7 @@ netlistx一个Python包，主要的功能有：
             crgraph.py      \The old CloudRegGraph类
             main.py         \与图相关的生成与验证,可以直接执行此文件
 
-        itrans \iscas89门级网表翻译器.
-            itrans.py       \可执行,用来读取同目录下的iscas .v网表
-            Primitives.py   \Dff和Combi类定义
-
-        parser \vm文件解析器 parser
+        parser \vm文件解析器子包
             __init__.py
             lex.py             \ply lex
             yacc.py            \ply yacc
@@ -55,7 +56,7 @@ netlistx一个Python包，主要的功能有：
             netlist_parser.py  \网表解析器.生成class_circuit中的定义的各种类型对象.
             parsetab.py        \自动生成的,不要修改
 
-        prototype \函数原型测试.未验证功能正确的函数暂时存放在此目录
+        prototype \未验证功能正确的函数暂时存放在此目录.
             __init__.py
             balance.py
             check.py
@@ -63,19 +64,22 @@ netlistx一个Python包，主要的功能有：
             fas.py
             unbpath.py
 
-        scan \扫描插入子包.每一个文件均可单独执行
+        scan \扫描插入脚本s
             __init__.py
             fullReplace.py
             fullUsingLut.py
             partialBallast.py
             partialOpt.py
             partialOptLinear.py
-            partialFusion.py
-            testbenchGenerate.py
+            partialFusion.py     \FCCM16 数据源.不要改动.
+            testbenchGenerate.py \对插入扫描链的网表生成TestBench #TODO:
 
 		unittest \#单元测试文件夹
-        test \测试文件目录.
+        test     \#测试输入输出存储文件夹
+        
+        其他与PTVS. Github.相关的文件,都可以删除.不直接影响程序的功能
 
-
-
+## 其他注意事项
+    无        
+    
 
