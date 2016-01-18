@@ -14,15 +14,15 @@ from netlistx.scan.config import SCAN_LIB2 as SCAN_LIB
 
 __all__ = [ "insert_scan_chain_new" ]
 
-#Êä³ö²åÈëÉ¨Ãè¼şµÄºó×º
+#è¾“å‡ºæ’å…¥æ‰«æä»¶çš„åç¼€
 _SUFFIX = "_full_scan_using_lut"
 
 def insert_scan_chain_new(fname, verbose=False, presult=True,\
                 input_file_dir = os.getcwd(), output_file_dir = os.getcwd(),\
                 K = 6):
     '''@para: fname ,input file name in current path
-             verbose, if True print µ÷ÓÃµÄ¸÷¸öº¯ÊıµÄ redandunt infomation
-             presult ,if True ´òÓ¡×îÖÕµÄ¸÷ÖÖÍ³¼ÆĞÅÏ¢
+             verbose, if True print è°ƒç”¨çš„å„ä¸ªå‡½æ•°çš„ redandunt infomation
+             presult ,if True æ‰“å°æœ€ç»ˆçš„å„ç§ç»Ÿè®¡ä¿¡æ¯
              input_file_dir, default os.getcwd(),
              output_file_dir, default os.getcwd()
     '''
@@ -42,10 +42,10 @@ def insert_scan_chain_new(fname, verbose=False, presult=True,\
     all_fd_dict  = nu.get_all_fd(m_list, verbose)
     all_lut_dict = nu.get_all_lut(m_list, lut_type_cnt, verbose) 
     
-    ##ÏÂÃæÁ½¸öÁĞ±í¼ÇÂ¼ÁËĞèÒª½øĞĞĞŞ¸ÄµÄLUTºÍD´¥·¢Æ÷µÄ
+    ##ä¸‹é¢ä¸¤ä¸ªåˆ—è¡¨è®°å½•äº†éœ€è¦è¿›è¡Œä¿®æ”¹çš„LUTå’ŒDè§¦å‘å™¨çš„
     lut_out2_FD_dict,FD_din_lut_list        =nu.get_lut_cnt2_FD(m_list,all_fd_dict,verbose,K)    
     
-    ##CEÓÅ»¯ËùĞèÒªµÄnetlistĞÅÏ¢
+    ##CEä¼˜åŒ–æ‰€éœ€è¦çš„netlistä¿¡æ¯
     ce_signal_list,fd_has_ce_list           =nu.get_ce_in_fd(all_fd_dict,verbose)
     lut_cnt2_ce,un_opt_ce_list              =nu.get_lut_cnt2_ce(m_list,ce_signal_list,K,verbose)
     fd_ce_cnt = len(fd_has_ce_list)
@@ -71,33 +71,33 @@ def insert_scan_chain_new(fname, verbose=False, presult=True,\
     fobj.writelines(SCAN_LIB)
 
     #--------------------------------------------------------------------------
-    #Ôö¼Ó¶¥²ãÉ¨Ãè¶Ë¿Ú
+    #å¢åŠ é¡¶å±‚æ‰«æç«¯å£
     #--------------------------------------------------------------------------
     add_scan_ports_top(m_list[0])    
 
     #--------------------------------------------------------------------------
-    #primitiveµÄĞŞ¸Ä
+    #primitiveçš„ä¿®æ”¹
     #--------------------------------------------------------------------------
     for eachPrimitive in m_list[1:]:
-        ##ĞŞ¸ÄLUTÔö¼ÓMUX,½øĞĞÉ¨Ãè¹¦ÄÜ²åÈë
+        ##ä¿®æ”¹LUTå¢åŠ MUX,è¿›è¡Œæ‰«æåŠŸèƒ½æ’å…¥
         if eachPrimitive.m_type=='LUT' and (eachPrimitive.name in lut_out2_FD_dict.keys()):
             counter += 1
             fusion_lut_with_mux(eachPrimitive, counter)
             fd_name = lut_out2_FD_dict[eachPrimitive.name][1]
             scan_out_list.append( all_fd_dict[fd_name]['Q'].string )
             cnt_edited_lut += 1
-        #Î´ÄÜÀûÓÃÊ£ÓàLUTµÄFD£¬½øĞĞCELLÌæ»»£¬¶Ë¿ÚÔö¼Ó
+        #æœªèƒ½åˆ©ç”¨å‰©ä½™LUTçš„FDï¼Œè¿›è¡ŒCELLæ›¿æ¢ï¼Œç«¯å£å¢åŠ 
         elif (eachPrimitive.m_type=='FD') and (eachPrimitive.name not in FD_din_lut_list):
             counter += 1
             replace_fd_with_scan_fd(eachPrimitive, counter)
             scan_out_list.append('scan_out' + str(counter))
             fd_replace_cnt+=1
-        #CEÊ±ÖÓÊ¹ÄÜ¿ØÖÆĞÅºÅµÄÓÅ»¯. ¸ÄLUT,½øĞĞÊ±ÖÓÊ¹ÄÜµÄ²åÈë,¾ÍÊÇ²åÈëÒ»¸ö»òÃÅ
+        #CEæ—¶é’Ÿä½¿èƒ½æ§åˆ¶ä¿¡å·çš„ä¼˜åŒ–. æ”¹LUT,è¿›è¡Œæ—¶é’Ÿä½¿èƒ½çš„æ’å…¥,å°±æ˜¯æ’å…¥ä¸€ä¸ªæˆ–é—¨
         elif(eachPrimitive.m_type=='LUT') and (eachPrimitive.name in lut_cnt2_ce):
             fusion_lut_with_or(eachPrimitive)
 
     #--------------------------------------------------------------------------
-    # Î´Ê¹ÓÃLUT»ìºÏÀ´gate µÄ ceĞÅºÅÃû³ÆÓ¦¸ÃĞŞ¸Ä, ºÍÖ®ºóassign²¿·ÖµÄÏàÍ¬
+    # æœªä½¿ç”¨LUTæ··åˆæ¥gate çš„ ceä¿¡å·åç§°åº”è¯¥ä¿®æ”¹, å’Œä¹‹åassignéƒ¨åˆ†çš„ç›¸åŒ
     #--------------------------------------------------------------------------
     for eachPrimitive in m_list[1:]:
         if (eachPrimitive.m_type=='FD') and (eachPrimitive.name in fd_has_ce_list):
@@ -106,13 +106,13 @@ def insert_scan_chain_new(fname, verbose=False, presult=True,\
                 gatedCE = gate_ce( current_ce )
                 new_ce_signal = cc.signal('wire', gatedCE)
                 eachPrimitive.edit_spec_port('CE', new_ce_signal)
-                #ÒòÎª¶à¸öFD¿ÉÄÜÁ¬½Óµ½ÏàÍ¬µÄCE, signal_decl_listÀïÃæÓĞÖØ¸´µÄÉùÃ÷.
+                #å› ä¸ºå¤šä¸ªFDå¯èƒ½è¿æ¥åˆ°ç›¸åŒçš„CE, signal_decl_listé‡Œé¢æœ‰é‡å¤çš„å£°æ˜.
                 if not gatedCE in gatedce_list:
                     gatedce_list.append(gatedCE)
                     signal_decl_list.append(new_ce_signal)
 
     #--------------------------------------------------------------------------
-    #É¨ÃèÁ´Ë³ĞòµÄÈ·¶¨,ÔÚ½áÎ²´¦½øĞĞassign
+    #æ‰«æé“¾é¡ºåºçš„ç¡®å®š,åœ¨ç»“å°¾å¤„è¿›è¡Œassign
     #--------------------------------------------------------------------------
     assign_stm_list.append( cc.assign('assign', cc.signal(name = "scan_in1"),
                                                 cc.signal(name = "scan_in")) )
@@ -124,14 +124,14 @@ def insert_scan_chain_new(fname, verbose=False, presult=True,\
                                 cc.signal( name = scan_out_list[counter-1])) )
     
     #--------------------------------------------------------------------------
-    #¼ì²éÊÇ·ñ³É¹¦
+    #æ£€æŸ¥æ˜¯å¦æˆåŠŸ
     #check all the numbers ,insure all wanted LUT and FD been handled
     #--------------------------------------------------------------------------
     assert (fd_replace_cnt + cnt_edited_lut) == len(all_fd_dict), "Not all the FD has been scaned !!"
     assert (cnt_edited_lut == len(FD_din_lut_list) ), "There is Usefully LUT not edited !!"
 
     #--------------------------------------------------------------------------
-    #½øĞĞÎÄ¼şµÄ´òÓ¡»òÕßÖ±½ÓÊä³öµ½stdoutÉÏÃæ
+    #è¿›è¡Œæ–‡ä»¶çš„æ‰“å°æˆ–è€…ç›´æ¥è¾“å‡ºåˆ°stdoutä¸Šé¢
     #--------------------------------------------------------------------------
     if fobj:
         console = sys.stdout
@@ -154,7 +154,7 @@ def insert_scan_chain_new(fname, verbose=False, presult=True,\
         sys.stdout=console
     fobj.close()
     #--------------------------------------------------------------------------
-    #»ù±¾Êı¾İµÄ´òÓ¡Êä³ö
+    #åŸºæœ¬æ•°æ®çš„æ‰“å°è¾“å‡º
     #--------------------------------------------------------------------------
     if presult:
         print 'Info:LUT cnt is      : '+str(len(all_lut_dict.keys()))
@@ -169,7 +169,7 @@ def insert_scan_chain_new(fname, verbose=False, presult=True,\
     return True
 
 def add_scan_ports_top(top_module):
-    '''ÔÚ¶¥²ãÄ£¿éÔö¼ÓÈı¸ö¶Ë¿Ú
+    '''åœ¨é¡¶å±‚æ¨¡å—å¢åŠ ä¸‰ä¸ªç«¯å£
     '''
     #assert isinstance(top_module, cc.circut_module)
     _scan_in = cc.signal('input', 'scan_in', None)
@@ -184,10 +184,10 @@ def add_scan_ports_top(top_module):
     return None
 
 def fusion_lut_with_mux( lut, counter ):
-    '''½«lutºÍmux½øĞĞÂß¼­»ìºÏ, ²åÈëÉ¨ÃèÂß¼­.
+    '''å°†lutå’Œmuxè¿›è¡Œé€»è¾‘æ··åˆ, æ’å…¥æ‰«æé€»è¾‘.
         In = scan_in+str(counter)
         I(n+1) = scan_en
-        ¼ÆËãĞÂµÄinit_value
+        è®¡ç®—æ–°çš„init_value
     '''
     assert isinstance(lut, cc.circut_module) and lut.m_type=="LUT"
     input_num = lut.input_count()
@@ -214,7 +214,7 @@ def fusion_lut_with_mux( lut, counter ):
     return None
 
 def replace_fd_with_scan_fd(fd, counter):
-    '''½«FD*Ìæ»»Îª SCAN_FD*, ²¢ÇÒÔö¼ÓÈı¸öºÍÉ¨ÃèÓĞ¹ØµÄ¶Ë¿Ú.
+    '''å°†FD*æ›¿æ¢ä¸º SCAN_FD*, å¹¶ä¸”å¢åŠ ä¸‰ä¸ªå’Œæ‰«ææœ‰å…³çš„ç«¯å£.
     '''
     assert isinstance(fd, cc.circut_module) and fd.m_type == "FD"
     fd.cellref = "SCAN_"+fd.cellref
@@ -227,7 +227,7 @@ def replace_fd_with_scan_fd(fd, counter):
     return None
 
 def fusion_lut_with_or(lut):
-    '''½«LUTºÍ orÃÅÂß¼­»ìºÏ.¹¦ÄÜÊÇ: O' = (In == 1'b1) ? 1'b1: O ;
+    '''å°†LUTå’Œ oré—¨é€»è¾‘æ··åˆ.åŠŸèƒ½æ˜¯: O' = (In == 1'b1) ? 1'b1: O ;
     '''
     input_num = int(lut.cellref[3])
     scan_en = cc.port('I'+str(input_num),'input',cc.signal(name="scan_en"))
@@ -248,11 +248,11 @@ def fusion_lut_with_or(lut):
     return None
 
 def gate_ce(current_ce):
-    '''½«current_ceÖØĞÂÃüÃû, ·µ»ØĞÂÃû³Æ
+    '''å°†current_ceé‡æ–°å‘½å, è¿”å›æ–°åç§°
     '''
     # if current ce start with \ , there will be a syntax error to synthesis
-    # ½«ĞÂÒıÈëµÄĞÅºÅ¸ÄÃû×ÖÓ¦¸Ã²»»á²úÉúÎÊÌâ£¬Ô­ÓĞµÄĞÅºÅÍêÈ«²»±ä£¬Ö»ÊÇ°ÑÁ¬½Óµ½FDµÄĞÅºÅ
-    # ½â¾ö·½·¨£¬¼ÓÒ»¸ögated_ prefix£¬½«ÆäÖĞµÄĞÅºÅÃû³ÆµÄ ".[]" È«±ä³É "_",×é³ÉĞÂµÄĞÅºÅÃû³Æ
+    # å°†æ–°å¼•å…¥çš„ä¿¡å·æ”¹åå­—åº”è¯¥ä¸ä¼šäº§ç”Ÿé—®é¢˜ï¼ŒåŸæœ‰çš„ä¿¡å·å®Œå…¨ä¸å˜ï¼Œåªæ˜¯æŠŠè¿æ¥åˆ°FDçš„ä¿¡å·
+    # è§£å†³æ–¹æ³•ï¼ŒåŠ ä¸€ä¸ªgated_ prefixï¼Œå°†å…¶ä¸­çš„ä¿¡å·åç§°çš„ ".[]" å…¨å˜æˆ "_",ç»„æˆæ–°çš„ä¿¡å·åç§°
     if current_ce[0] == '\\':
         gatedCE = "gated_" + re.sub("[\[\]\.]", "_", current_ce[1:])
     else:

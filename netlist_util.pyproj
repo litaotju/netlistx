@@ -98,7 +98,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="scan\fullReplace.py" />
-    <Compile Include="scan\fullUsingLut_old.py" />
     <Compile Include="scan\partialOptLinear.py">
       <SubType>Code</SubType>
     </Compile>
