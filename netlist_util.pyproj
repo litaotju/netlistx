@@ -23,6 +23,7 @@
   <ItemGroup>
     <Content Include="itrans\Readme.md" />
     <Content Include="README.md" />
+    <Content Include="requirements.txt" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="cell_construct\construct_scan_lib.py" />
@@ -48,6 +49,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="prototype\test\testFas.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="scan\config.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="scan\partialBallast.py">
@@ -92,6 +96,9 @@
     </Compile>
     <Compile Include="scan\fullReplace.py" />
     <Compile Include="scan\fullUsingLut.py" />
+    <Compile Include="scan\partialOptLinear.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="scan\__init__.py">
       <SubType>Code</SubType>
     </Compile>
