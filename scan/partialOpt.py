@@ -15,6 +15,9 @@ from netlistx.graph.cloudgraph import CloudRegGraph
 from netlistx.graph.circuitgraph import CircuitGraph
 from netlistx.graph.circuitgraph import get_graph
 
+import partialBallast as pb
+__all__ = ['get_scan_fds']
+
 def get_namegraph(cr):
     tmp = {}
     for node in cr.nodes_iter():
@@ -230,25 +233,35 @@ def get_scan_fds(cr, path):
         for edge in readsolution( solutionfile, edge2x):
             scan_fds += cr.arcs[ name_edge[edge] ]
             cr.remove_edge( name_edge[edge][0], name_edge[edge][1] )
+        time_matlab = list( open(solutionfile,'r') )[-1].strip().split()[-1]
+        time_matlab = float(time_matlab)
     else:
+        time_matlab = 0.0
         serverSocket.close()
     #将自环加进来
+    start = time.clock()
+    
     selfloops = cr.selfloop_edges()
     cr.remove_edges_from( selfloops)
+    
+    time_all = time_matlab + (time.clock() - start)
+    fobj = open("test\\timeStats_opt.txt", 'a')
+    fobj.write("%s, %.4f\n" % (cr.name[:-11], time_all) )
+    fobj.close()
+    
     for edge in selfloops:
         scan_fds += cr.arcs[ edge]
-    import partialBallast as pb
-    if not pb.__check(cr):
-        print "Wrong Answer"
-   
+    assert pb.__check(cr), "Wrong Answer, %s is not balanced after matlab + selfloop removed" % cr.name
     return scan_fds
 
 if __name__ == "__main__":
     path = raw_input("plz enter path>")
     for eachvm in vm_files( path ):
         g = get_graph( os.path.join(path, eachvm) )
-        cr = CloudRegGraph( g )
-        cr.info()
-        scan_fds = get_scan_fds(cr, path)
+        #每个文件运行十次.统计时间
+        for i in range(0,10):
+            cr = CloudRegGraph( g )
+            cr.info()
+            scan_fds = get_scan_fds(cr, path)
         with StdOutRedirect( os.path.join(path, cr.name[:-11]+"_optScanFDs.txt")):
             print "\n".join([ "%s %s" % (fd.cellref, fd.name) for fd in scan_fds] )

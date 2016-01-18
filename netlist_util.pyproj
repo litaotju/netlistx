@@ -54,6 +54,9 @@
     <Compile Include="scan\config.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="scan\fullUsingLut.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="scan\partialBallast.py">
       <SubType>Code</SubType>
     </Compile>
@@ -95,7 +98,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="scan\fullReplace.py" />
-    <Compile Include="scan\fullUsingLut.py" />
+    <Compile Include="scan\fullUsingLut_old.py" />
     <Compile Include="scan\partialOptLinear.py">
       <SubType>Code</SubType>
     </Compile>

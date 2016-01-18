@@ -1,6 +1,6 @@
 ﻿# -*- coding: utf-8 -*-
 
-
+import sys
 import os
 import time
 import networkx as nx
@@ -13,7 +13,7 @@ from netlistx.graph.cloudgraph      import CloudRegGraph
 from netlistx.graph.circuitgraph    import get_graph
 from netlistx.prototype.fas         import comb_fas
 
-__all__ = [ "feedbackset", "balance", "ballast" ]
+__all__ = [ "balance", "ballast" ]
 
 def balance( graph):
     assert nx.is_directed_acyclic_graph(graph),\
@@ -89,9 +89,8 @@ def __cut(graph):
     #CS中的边，可能不存在于原来的有向图中，所以需要将这种边的方向颠倒
     #将所有real edge,存到RCS中
     rcs = []
-    original_edges = graph.edges()
     for eachEdge in cs:
-        if not eachEdge in original_edges:
+        if not graph.has_edge( eachEdge[0], eachEdge[1] ):
             eachEdge = (eachEdge[1], eachEdge[0]) #调换方向
         rcs.append(eachEdge)
     graph.remove_edges_from(rcs)
@@ -102,6 +101,8 @@ def __cut(graph):
     return rcs, glist[0], glist[1]
 
 def convert2int( graph):
+    '''把传进来的图转化为整数图
+    '''
     intgraph = nx.DiGraph(name = graph.name + "_intgraph" )
     map = {}
     invmap = {}
@@ -117,18 +118,36 @@ def convert2int( graph):
     return intgraph, map, invmap
 
 def ballast( crgraph):
+    '''Ballast方法的完整实现
+    '''
     intgraph, map, invmap = convert2int( crgraph )
     comfas = []
     r = []
-    start = time.clock()
+
+    timecycle = 0
+    timebal = 0
+
     for subgraph in nx.weakly_connected_component_subgraphs( intgraph ):
+        start = time.clock()
         comfas += comb_fas( subgraph)
+        tcycle = time.clock()
+        
         r += balance( subgraph )
-    print crgraph.name, u" 耗时 ", time.clock()-start, u"秒"
-    print "CombFAS:", comfas
-    print "R:", r
+        tbal = time.clock()
+        
+        timecycle += (tcycle- start)
+        timebal += (tbal - tcycle)
+    fobj = open("test\\timeStats.txt", 'a')
+    fobj.write( "%s , cycle:%.3f, bal:%.3f, total:%.3f\n"\
+             %( crgraph.name[:-11], timecycle, timebal, (timecycle + timebal)) )
+    fobj.close()
+
+    #print "CombFAS:", comfas
+    #print "R:", r
     if not r:
         print "Info: %s is blance after cycle removed" % crgraph.name
+    else:
+        print "Info: %d edges removed in unblanced paths." % len(r)
     scanfds = []
     for edge in comfas + r:
         realedge = invmap[edge[0]], invmap[edge[1]]
@@ -143,16 +162,45 @@ def main():
         g.info()
         cr = CloudRegGraph( g )
         cr.info()
-
-        scanfds = ballast( cr )
+        # 每一个统计5次
+        for j in range(0, 10):
+            scanfds = ballast( cr )
         
-        with open( os.path.join(srcpath, cr.name[:-11] + "_balScanFDs.txt" ), 'w') as out:
-            for fd in scanfds:
-                out.write("%s %s\n " % (fd.cellref, fd.name) )
-            out.write( "FD NUMBER: %d" % len(cr.constfds + cr.fds) )
-            out.write( "SCAN_FD number: %d" % len( scanfds) )
-        print "FD number:", len(cr.constfds + cr.fds)
-        print "SCAN_FD number: ", len(scanfds)
+            with open( os.path.join(srcpath, cr.name[:-11] + "_balScanFDs.txt" ), 'w') as out:
+                for fd in scanfds:
+                    out.write("%s %s\n " % (fd.cellref, fd.name) )
+                out.write( "FD NUMBER: %d" % len(cr.constfds + cr.fds) )
+                out.write( "SCAN_FD number: %d" % len( scanfds) )
+            print "FD number:", len(cr.constfds + cr.fds)
+            print "SCAN_FD number: ", len(scanfds)
+
+def testA():
+    '''在这个例子里balance是最优的
+    '''
+    a = nx.DiGraph()
+    a.add_edge(1, 2, weight = 100)
+    a.add_edge(1, 3, weight = 2)
+    a.add_edge(1, 4, weight = 1)
+    a.add_edge(3, 2, weight = 2)
+    a.add_edge(4, 2, weight = 1)
+
+    r = balance(a)
+
+def testB():
+    '''本例论证了ballast方法的非最优性
+    '''
+    a = nx.DiGraph()
+    a.add_edge(1, 2, weight = 3)
+    a.add_edge(1, 3, weight = 2)
+    a.add_edge(1, 4, weight = 2)
+    a.add_edge(3, 2, weight = 2)
+    a.add_edge(4, 2, weight = 2)
+    r = balance(a)
+
+    print r
 
 if __name__ == "__main__":
     main()
+    #testB()
+
+
