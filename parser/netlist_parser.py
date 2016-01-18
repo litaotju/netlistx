@@ -294,24 +294,5 @@ if __name__=='__main__':
             if m_list:
                 print "Parse %s successfully " % fname
                 print "Info: find %d primitive in %s "% (len(m_list)-1,fname)
-    #elif sys.argv[1]=='many': 
-    #    parent_dir=os.getcwd()
-    #    while(1):
-    #        tmp1=raw_input('Plz enter the verilog source sub dir:')
-    #        input_file_dir=parent_dir+"\\test_input_netlist\\"+tmp1
-    #        if os.path.exists(input_file_dir)==False:
-    #            print 'Error : this dir dont exists!'
-    #            continue
-    #        else:
-    #            break
-    #    for eachFile in os.listdir(input_file_dir):
-    #        print  eachFile
-    #        if os.path.splitext(eachFile)[1]=='.v':
-    #            t=parser.parse(eachFile)
-    #            m_list=t['m_list']
-    #            print "Parse %s successfully " % eachFile
-    #            print "Info: find %d primitive in %s "% (len(m_list)-1,fname)                
-    #        else:
-    #            continue
 
 
