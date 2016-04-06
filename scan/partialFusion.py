@@ -7,7 +7,7 @@ import networkx as nx
 
 from netlistx.netlist import Netlist
 from netlistx.file_util import vm_files, StdOutRedirect
-from netlistx.class_circuit import *
+from netlistx.circuit import *
 
 from netlistx.parser.netlist_parser import vm_parse
 from netlistx.graph.circuitgraph import get_graph, CircuitGraph

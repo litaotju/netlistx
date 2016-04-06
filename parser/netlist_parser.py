@@ -8,7 +8,7 @@ import re
 import sys
 import os
 
-import netlistx.class_circuit as cc
+import netlistx.circuit as cc
 
 import netlist_lexer
 import yacc

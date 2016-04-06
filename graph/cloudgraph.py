@@ -8,7 +8,7 @@ import time
 import networkx as nx
 
 #user-defined
-import netlistx.class_circuit as cc
+import netlistx.circuit as cc
 import netlistx.graph.crgraph as old
 
 from netlistx.exception import CrgraphError

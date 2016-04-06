@@ -14,7 +14,7 @@ import networkx as nx
 import matplotlib.pylab as plt
 
 # user-defined module
-import netlistx.class_circuit as cc
+import netlistx.circuit as cc
 
 from netlistx.exception import *
 from netlistx.file_util import vm_files

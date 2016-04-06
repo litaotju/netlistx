@@ -7,7 +7,7 @@ import re
 from netlistx import vm_parse
 from netlistx.exception import * 
 import netlistx.netlist_util as nu
-import netlistx.class_circuit as cc
+import netlistx.circuit as cc
 
 
 class Netlist(object):

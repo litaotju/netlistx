@@ -13,21 +13,21 @@ import networkx as nx
 import matplotlib.pyplot as plt
 
 # user-defined module
-import netlistx.class_circuit as cc
+import netlistx.circuit as cc
 import netlistx.netlist_util as nu
 import netlistx.netlist_rules as nr
 
 from netlistx import vm_parse
 from netlistx.netlist import Netlist
-from   netlistx.exception import *
+from netlistx.exception import *
 
 __all__ = [ "CircuitGraph", "get_graph" ]
 
 class CircuitGraph(nx.DiGraph):
     '''
-       This class is a sonclass of nx.DiGraph and construct with a m_list[]
+       This class is a sonclass of nx.DiGraph
        Property new added :
-           self.include_pipo self.vertex_set,self.edge_set
+           self.include_pipo self.vertex_set, self.edge_set
        Node attr :
            node_type ,which is a cellref or the port_type if node is pipo
            name , which is the module.name or port.port_name
@@ -38,9 +38,8 @@ class CircuitGraph(nx.DiGraph):
 
     def __init__(self, netlist, include_pipo = True):
         '''@param:
-                m_list : cc.circuit_module list, produced by netlist_parser
-                assign_list  : assign statement list from netlist .vm file , produced by netlist_parser 
-                include_pipo : indict that if the graph produced will have pipo vertex and edge
+           netlist, an instance of netlistx.netlist.Netlist class 
+           include_pipo, a boolean variable
         '''
         assert isinstance( netlist, Netlist)
         nx.DiGraph.__init__(self)
@@ -99,7 +98,7 @@ class CircuitGraph(nx.DiGraph):
     #------------------------------------------------------------------------------
 
     def __get_edge_from_prim_list(self):
-        '''从prim_list当中获得边的连接的信息。
+        ''' 从prim_list当中获得边的连接的信息。
             如果self.include_pipo为真，此函数不仅将与PIPO相连接的边加入到生成的图中
             而且将为生成的CircuitGraph对象增加self.pi_edge_list和self.po_edge_list
             不论self.include_pipo为真与否，都会增加self.prim_edge_list和self.edge_set

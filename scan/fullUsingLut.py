@@ -7,7 +7,7 @@ from exceptions import SystemExit
 
 # user-defined module
 import netlistx.netlist_util as nu
-import netlistx.class_circuit   as cc
+import netlistx.circuit   as cc
 from netlistx.parser.netlist_parser import vm_parse
 
 from netlistx.scan.config import SCAN_LIB2 as SCAN_LIB

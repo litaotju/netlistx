@@ -33,8 +33,8 @@ from exception import *
 from netlistx.parser.netlist_parser import vm_parse
 
 # 所有与网表相关的类都直接被导入到包的顶层
-import class_circuit
-from class_circuit import *
+import circuit
+from circuit import *
 
 from netlistx.graph import *
 from netlistx.graph.crgraph import CloudRegGraph

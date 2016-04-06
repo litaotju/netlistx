@@ -6,7 +6,7 @@ import time
 import networkx as nx
 
 # user-defined module
-import netlistx.class_circuit as cc
+import netlistx.circuit as cc
 from netlistx.file_util    import vm_files
 
 from netlistx.graph.cloudgraph      import CloudRegGraph
