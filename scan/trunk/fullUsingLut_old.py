@@ -1,40 +1,42 @@
 # -*- coding: utf-8 -*-
-
 import sys
 import os
 import os.path
 import re
-import netlist_util   as nu
-import netlist_parser.netlist_parser as np
-import class_circuit   as cc
 from exceptions import SystemExit
-#import generate_testbench as gt
+
+# user-defined module
+import netlistx.netlist_util as nu
+import netlistx.class_circuit   as cc
+from netlistx.parser.netlist_parser import vm_parse
+
+from netlistx.scan.config import SCAN_LIB2 as SCAN_LIB
+
 #############################################################################################
-def insert_scan_chain_new(fname,verbose=False,presult=True,\
-                input_file_dir=os.getcwd(),output_file_dir=os.getcwd(),\
-                K=6):
-    '''para: fname ,input file name in current path
+def insert_scan_chain_new(fname, verbose=False, presult=True,\
+                input_file_dir = os.getcwd(), output_file_dir = os.getcwd(),\
+                K = 6):
+    '''@para: fname ,input file name in current path
              verbose, if True print 调用的各个函数的 redandunt infomation
              presult ,if True 打印最终的各种统计信息
              input_file_dir, default os.getcwd(),
              output_file_dir, default os.getcwd()
     '''
-    input_file=os.path.join(input_file_dir,fname)    
-    
+    input_file=os.path.join(input_file_dir , fname)    
+    suffix = "_full_scan_using_lut"
     #file -->> m_list
-    info=np.vm_parse(input_file)
-    m_list=info['m_list']
-    port_decl_list  =info['port_decl_list']
-    signal_decl_list=info['signal_decl_list']
-    assign_stm_list=[]
-    if info.has_key('assign_stm_list'):
-        assign_stm_list=info['assign_stm_list']
-    nu.mark_the_circut(m_list)
+    info = vm_parse( input_file )
+    m_list = info['m_list']
+    port_decl_list   = info['port_decl_list']
+    signal_decl_list = info['signal_decl_list']
+    assign_stm_list  = info['assign_stm_list']
+   
+    nu.mark_the_circut(m_list[1:])
     
     #m_list -->>all info need 
-    lut_type_cnt=[0,0,0,0,0,0]
-    all_fd_dict =nu.get_all_fd(m_list,verbose)
-    all_lut_dict=nu.get_all_lut(m_list,lut_type_cnt,verbose) 
+    lut_type_cnt = [0,0,0,0,0,0]
+    all_fd_dict  = nu.get_all_fd(m_list, verbose)
+    all_lut_dict = nu.get_all_lut(m_list, lut_type_cnt, verbose) 
     
     ##下面两个列表记录了需要进行修改的LUT和D触发器的
     lut_out2_FD_dict,FD_din_lut_list        =nu.get_lut_cnt2_FD(m_list,all_fd_dict,verbose,K)    
@@ -56,13 +58,13 @@ def insert_scan_chain_new(fname,verbose=False,presult=True,\
     #cnt for debug only 
     
     name_base=os.path.splitext(fname)[0]
-    output_file=os.path.join(output_file_dir,name_base+'_insert_scan_chain.v')
+    output_file=os.path.join(output_file_dir,name_base + suffix + '.v')
     try:
         fobj=open(output_file,'w')
     except IOError,e:
         print "Error: file open error:",e
         raise SystemExit
-    fobj.writelines('`include "E:/ISE_WORKSPACE/scan_lib/scan_cells.v"\n')
+    fobj.writelines(SCAN_LIB)
     #--------------------------------------------------------------------------
     #全局信号增加
     #--------------------------------------------------------------------------
@@ -75,7 +77,8 @@ def insert_scan_chain_new(fname,verbose=False,presult=True,\
     m_list[0].port_list.insert(0,port_scan_in)
     m_list[0].port_list.insert(0,port_scan_out)
     m_list[0].port_list.insert(0,port_scan_en)
-    m_list[0].print_module()
+    
+    print "Info: top module is : ", m_list[0].name 
     #--------------------------------------------------------------------------
     #primitive的修改
     #--------------------------------------------------------------------------
@@ -163,11 +166,14 @@ def insert_scan_chain_new(fname,verbose=False,presult=True,\
     #--------------------------------------------------------------------------
     #扫描链顺序的确定,在结尾处进行assign
     #--------------------------------------------------------------------------
-    assign_stm_list.append(cc.assign('assign',"scan_in1","scan_in"))
+    assign_stm_list.append( cc.assign('assign', cc.signal(name = "scan_in1"),
+                                                cc.signal(name = "scan_in")) )
     for i in range(2,counter+1):
-        tmp_assign=cc.assign('assign',"scan_in"+str(i),scan_out_list[i-2])
-        assign_stm_list.append(tmp_assign)
-    assign_stm_list.append(cc.assign('assign',"scan_out",scan_out_list[counter-1]))
+        tmp_assign = cc.assign('assign',cc.signal(name = "scan_in"+str(i) ),
+                                        cc.signal( name = scan_out_list[i-2] )) 
+        assign_stm_list.append( tmp_assign )
+    assign_stm_list.append(cc.assign('assign',cc.signal( name = "scan_out"), 
+                                cc.signal( name = scan_out_list[counter-1])) )
     
     #--------------------------------------------------------------------------
     #检查是否成功
@@ -188,10 +194,11 @@ def insert_scan_chain_new(fname,verbose=False,presult=True,\
             eachWire.__print__(is_wire_decl=True)
         for eachModule in m_list[1:]:
             assert isinstance(eachModule,cc.circut_module), eachModule
-            eachModule.print_module()
+            print eachModule
         if assign_stm_list:
             for eachAssign in assign_stm_list:
-                eachAssign.__print__()
+                print eachAssign
+
         for eachCE in un_opt_ce_list:
             if eachCE[0] == '\\':
                 gatedCE = "gated_"+re.sub("[\[\]\.]","_", eachCE[1:])
@@ -216,49 +223,27 @@ def insert_scan_chain_new(fname,verbose=False,presult=True,\
         print 'Info:ce_signal CNT is: '+str(len(ce_signal_list))
     print 'Job: Full Scan insertion of  %s done\n\n' % fname
     return True
+
 #############################################################################################
 if __name__=='__main__':
-    if len(sys.argv)==1:
-        print "Just handle one simple verilog netlist in os.get_cwd() dir"
-        fname=raw_input("plz enter the file name:")
-        k=int(raw_input("plz enter K:"))
-        insert_scan_chain_new(fname,K=k)
-    elif sys.argv[1]=='-many':    
-        parent_dir=os.getcwd()
-        while(1):
-            tmp1=raw_input('Plz enter the verilog source sub dir:')
-            input_file_dir=parent_dir+"\\test_input_netlist\\"+tmp1
-            if os.path.exists(input_file_dir)==False:
-                print 'Error : this dir dont exists!'
-                continue
-            else:
-                break
-        flag=True
-        while(flag):
-            tmp2=raw_input('Plz enter the output sub dir:')
-            output_file_dir=parent_dir+"\\test_output_dir\\"+tmp2
-            if os.path.exists(output_file_dir)==False:
-                print 'the dir: '+output_file_dir+' dont exists'
-                flag=os.mkdir(output_file_dir)
-                print 'create a dir : '+output_file_dir
-            else:
-                break           
-        K=int(raw_input('plz enter the K parameter of FPGA:K='))
+    if len(sys.argv) == 1:
+        print "single-file mode in ", os.getcwd()
+        fname = raw_input("plz enter the file name:")
+        k = int( raw_input("plz enter K:") )
+        insert_scan_chain_new(fname, K = k )
+
+    elif sys.argv[1]=='-batch': 
+        print "batch mode", os.getcwd()         
+        pwd = ""
+        while(not os.path.exists(pwd)):
+            pwd = raw_input("plz enter vm files path:")
+        outpath = os.path.join(pwd, "full_using_lut")
+        if not os.path.exists( outpath ):
+            os.mkdir(outpath)
+        K=int( raw_input('plz enter the K parameter of FPGA:K=') )
         assert (K==6 or K==4),"K not 4 or 6"
-        print "Note: current path: "+parent_dir
-        print "Note: output_file_path: "+output_file_dir
-        print "Note: input_file_path: "+input_file_dir
-    #    __console__=sys.stdout
-    #    log_obj=open("exec_log.txt",'w')
-    #    sys.stdout=log_obj
-        for eachFile in os.listdir(input_file_dir):
-            print  eachFile
+
+        for eachFile in os.listdir(pwd):
             if os.path.splitext(eachFile)[1] in ['.v','.vm']:
-                insert_scan_chain_new(eachFile,False,True,input_file_dir,output_file_dir,K)
-            else:
-                continue
-    #    sys.stdout=__console__
-    #    log_obj.close()
-        print "Job :Thingd down!!!"
-
-
+                print "Inserting scan for ", eachFile
+                insert_scan_chain_new(eachFile, False, True, pwd ,outpath, K)

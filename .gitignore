@@ -1,9 +1,15 @@
 *.txt
 *.png
 *.jpg
+*.gexf
+*.vm
 /*.vm
 /*.v
-/*test/
+/test
+/itrans/iscas*
+unittest/*test/
+unittest/htmlcov
+unittest/netlist
 test_output/
 cell_construct/FD_SRC
 #################
@@ -222,3 +228,4 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
+*.v

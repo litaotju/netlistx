@@ -11,11 +11,15 @@ display_pipo = include_pipo
 
 import matplotlib.pylab as plt
 import networkx       as nx
-import netlist_util   as nu
+
+# user-defined module
+import netlistx.netlist_util   as nu
+from netlistx.exception import *
+
 from circuitgraph    import CircuitGraph
-from crgraph import CloudRegGraph
-from ballast import Ballaster
-from exception import *
+from crgraph         import CloudRegGraph
+from ballast         import Ballaster
+
 ###############################################################################
 def get_graph(fname):
 

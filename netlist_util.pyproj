@@ -5,8 +5,8 @@
     <SchemaVersion>2.0</SchemaVersion>
     <ProjectGuid>{0eebc94c-7a90-45ac-b811-c90bcaed4af8}</ProjectGuid>
     <ProjectHome />
-    <StartupFile>graph_top.py</StartupFile>
-    <SearchPath />
+    <StartupFile>graph\main.py</StartupFile>
+    <SearchPath>prototype\;..\</SearchPath>
     <WorkingDirectory>.</WorkingDirectory>
     <OutputPath>.</OutputPath>
     <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
@@ -21,47 +21,118 @@
     <PtvsTargetsFile>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets</PtvsTargetsFile>
   </PropertyGroup>
   <ItemGroup>
-    <Content Include="crtest\crtest.png" />
-    <Content Include="crtest\crtest_log.txt" />
-    <Content Include="crtest\crtest测试前必读.txt" />
-    <Content Include="crtest\Readme.txt" />
-    <Content Include="grhtest\Readme.txt" />
+    <Content Include="itrans\Readme.md" />
     <Content Include="README.md" />
-    <Content Include="test_output\tmp\primitive_type_predefine.txt" />
+    <Content Include="requirements.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ballast.py" />
     <Compile Include="cell_construct\construct_scan_lib.py" />
     <Compile Include="cell_construct\faultfdlib.py" />
-    <Compile Include="circuitgraph.py" />
     <Compile Include="class_circuit.py" />
-    <Compile Include="crgraph.py" />
     <Compile Include="exception.py" />
-    <Compile Include="graph_top.py" />
-    <Compile Include="graph_util.py" />
-    <Compile Include="netlist_parser\lex.py" />
-    <Compile Include="netlist_parser\netlist_lexer.py" />
-    <Compile Include="netlist_parser\netlist_parser.py" />
-    <Compile Include="netlist_parser\parsetab.py" />
-    <Compile Include="netlist_parser\test\class_circuit.py" />
-    <Compile Include="netlist_parser\test\__init__.py" />
-    <Compile Include="netlist_parser\yacc.py" />
-    <Compile Include="netlist_parser\__init__.py" />
+    <Compile Include="file_util.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="graph\ballast.py" />
+    <Compile Include="graph\circuitgraph.py" />
+    <Compile Include="graph\cloudgraph.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="graph\crgraph.py" />
+    <Compile Include="graph\main.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="graph\test\testBallast.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="itrans\sgraph.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="itrans\test_getSgraph.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="prototype\fas.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="prototype\test\testFas.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="scan\config.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="scan\fullUsingLut.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="scan\partialBallast.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="scan\partialFusion.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="scan\partialOpt.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="graph\test\testCloud.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="graph\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="itrans\itrans.py" />
+    <Compile Include="itrans\Primitives.py" />
+    <Compile Include="netlist.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="netlist_rules.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="parser\lex.py" />
+    <Compile Include="parser\netlist_lexer.py" />
+    <Compile Include="parser\netlist_parser.py" />
+    <Compile Include="parser\parsetab.py" />
+    <Compile Include="parser\yacc.py" />
+    <Compile Include="parser\__init__.py" />
     <Compile Include="netlist_util.py" />
-    <Compile Include="scan_chain_full_replace.py" />
-    <Compile Include="scan_chain_insert.py" />
-    <Compile Include="sgraph.py" />
-    <Compile Include="testbench_generate.py" />
-    <Compile Include="test_output\tmp\test.py" />
+    <Compile Include="prototype\balance.py">
+      <SubType>Code</SubType>
+      <Publish>False</Publish>
+    </Compile>
+    <Compile Include="prototype\check.py" />
+    <Compile Include="prototype\cut.py" />
+    <Compile Include="prototype\unbpath.py" />
+    <Compile Include="prototype\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="scan\fullReplace.py" />
+    <Compile Include="scan\partialOptLinear.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="scan\__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="scan\testbenchGenerate.py" />
+    <Compile Include="unittest\testCrgraph.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="unittest\testDrc.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="unittest\testNetlist.py" />
+    <Compile Include="unittest\testPartialBallast.py" />
+    <Compile Include="__init__.py">
+      <SubType>Code</SubType>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="cell_construct" />
-    <Folder Include="crtest" />
-    <Folder Include="grhtest" />
-    <Folder Include="netlist_parser" />
-    <Folder Include="netlist_parser\test\" />
-    <Folder Include="test_output" />
-    <Folder Include="test_output\tmp" />
+    <Folder Include="graph\" />
+    <Folder Include="graph\test\" />
+    <Folder Include="itrans\" />
+    <Folder Include="prototype\test\" />
+    <Folder Include="scan\" />
+    <Folder Include="parser\" />
+    <Folder Include="prototype\" />
+    <Folder Include="unittest\" />
   </ItemGroup>
   <ItemGroup>
     <InterpreterReference Include="{2af0f10d-7135-4994-9156-5d01c9c11b7e}\2.7" />

@@ -4,18 +4,18 @@ Created on Mon Jun 29 21:13:37 2015
 
 @author: litao
 """
+import re
 import sys
 import os
 
+import netlistx.circuit as cc
+
 import netlist_lexer
-import re
-tokens=netlist_lexer.tokens
-if __name__ == '__main__':
-    import test.class_circuit as cc
-else:
-    import class_circuit as cc
-###############################################################################
 import yacc
+
+tokens=netlist_lexer.tokens
+
+###############################################################################
 def p_vmfile(p):
     '''vm_file : module_decl port_decl_list signal_decl_list primitive_list assign_stm_list ENDMODULE
                | module_decl port_decl_list signal_decl_list primitive_list ENDMODULE
@@ -33,7 +33,7 @@ def p_vmfile(p):
     if len(p)==7:
         p[0]['assign_stm_list']=p[5]
     else:
-        print "Info: no assign statement find in this vm file"
+        p[0]['assign_stm_list']= []
 #---------------------------------------------------------------------
 #----顶层模块声明区
 #---------------------------------------------------------------------    
@@ -268,7 +268,7 @@ def vm_parse(input_file):
             for eachSignal in p['signal_decl_list']:
                 eachSignal.__print__(is_wire_decl=True)
             for eachPrimitive in p['m_list'][1:]:
-                eachPrimitive.print_module()
+                eachPrimitive.__print__()
             if len(p)==5:
                 for eachAssign in p['assign_stm_list']:
                     eachAssign.__print__()
@@ -294,24 +294,5 @@ if __name__=='__main__':
             if m_list:
                 print "Parse %s successfully " % fname
                 print "Info: find %d primitive in %s "% (len(m_list)-1,fname)
-    #elif sys.argv[1]=='many': 
-    #    parent_dir=os.getcwd()
-    #    while(1):
-    #        tmp1=raw_input('Plz enter the verilog source sub dir:')
-    #        input_file_dir=parent_dir+"\\test_input_netlist\\"+tmp1
-    #        if os.path.exists(input_file_dir)==False:
-    #            print 'Error : this dir dont exists!'
-    #            continue
-    #        else:
-    #            break
-    #    for eachFile in os.listdir(input_file_dir):
-    #        print  eachFile
-    #        if os.path.splitext(eachFile)[1]=='.v':
-    #            t=parser.parse(eachFile)
-    #            m_list=t['m_list']
-    #            print "Parse %s successfully " % eachFile
-    #            print "Info: find %d primitive in %s "% (len(m_list)-1,fname)                
-    #        else:
-    #            continue
 
 

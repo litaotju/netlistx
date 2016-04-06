@@ -6,6 +6,8 @@ class  circuit_graph
 """
 
 import networkx as nx
+
+# user-defined module
 import class_circuit as cc
 
 def vertex_in_graph(vertex,graph):

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-debug=False
+
 import re
 
 class port:
@@ -11,16 +11,30 @@ class port:
             ("Error: add non-signal obj to port:%s"%self.port_name)
         self.port_assign=port_assign #assign_signal
         self.port_width =port_assign.width #每一个signal类型的变量会自动的计算出宽度
-        ##featured 7.2,为1取port_name的方便,与其他类的名字很类似
-        ##主要为了打印边的方便       
         self.name=self.port_name
     def edit_port_assign(self,new_assign):
         assert isinstance(new_assign,(signal,joint_signal)),\
             ("Error: non-signal obj assgin to port %s"%self.port_name)
         self.port_assign=new_assign
-        
+
+    def split(self):
+        '''将一个多bit的端口自动的分解为单bit的端口，用于图的建模，便于将PIPO分解
+           @return：一个队列，含有拆分后的一个或多个port类对象
+        '''
+        if self.port_assign.vector == None:
+            return [self]
+        ports = []
+        lsb, msb = self.port_assign.lsb, self.port_assign.msb 
+        loop = range(lsb, msb+1) if lsb <= msb else range(msb, lsb+1) 
+        for i in loop:
+            subassign = signal(self.port_type, self.name, "[%d]"% i)
+            subport = port(self.name, self.port_type, subassign )
+            ports.append( subport )
+        return ports
+
     def __print__(self,is_top_port=False,pipo_decl=False):
-        ##不同的端口有不同的打印方式,顶层模块()内的打印,pipo声明处的打印,以及primitive()的打印
+        '''不同的端口有不同的打印方式,顶层模块()内的打印,pipo声明处的打印,以及primitive()的打印
+        '''
         if is_top_port:
             print self.port_name,
         elif pipo_decl:
@@ -34,8 +48,13 @@ class port:
             self.port_assign.__print__()
             print ")",
 
+    def __str__(self):
+        '''只供调试使用，在最终输出的Verilog网表中不应该使用这样的语句来打印端口
+        '''
+        return "%s %s %s %s\n" %\
+            (self.port_type, self.port_name, self.port_assign.string, self.port_width)
+
 class circut_module:
-    '--this is a class of circut module in verilog--'
     def __init__(self,name='default',m_type='default',cellref='--top--',been_searched=False):
         self.name     =name
         self.m_type   =m_type
@@ -43,9 +62,10 @@ class circut_module:
         self.been_searched=been_searched
         self.port_list =None
         self.param_list=None
+        debug=False
         if debug:
             print 'create a %s instance:%s' %(self.cellref,self.name)
-    ##featured 7.1
+
     def add_port_list(self,port_list):
         self.port_list=port_list
         port_assign_list=[]
@@ -65,7 +85,6 @@ class circut_module:
         for eachParam in self.param_list:
             assert isinstance(eachParam,defparam),\
                 ("Error: add non-defparam obj to param_list in module %s"%self.name)
-    ##featured 7.1
                 
     def add_port_to_module(self,port_name,port_type,port_assign,port_width):
         self.port_list.append(port(port_name,port_type,port_assign,port_width))
@@ -76,10 +95,11 @@ class circut_module:
             if(current_port.port_name==name):
                 current_port.edit_port_assign(new_assign)
                 edit_flag=True
+                break
             else:
                 continue
         assert edit_flag,("There is no port: %s in  %s %s."%(name,self.cellref,self.name))
-        return edit_flag
+        return None
         
     def print_module(self):
         '--不同的模块,默认的打印方式不同,顶层模块打印时,端口没有.name(assign)--'
@@ -87,7 +107,6 @@ class circut_module:
         assert(not self.port_list==None)
         #顶层模块的端口打印
         if self.m_type=='top_module':
-#            pass
             for eachPort in self.port_list:
                 assert isinstance(eachPort,port),eachPort.name
                 eachPort.__print__(is_top_port=True)
@@ -106,38 +125,59 @@ class circut_module:
         return True
     def __print__(self):
         self.print_module()
-###----------------------------------------------------------------------------
-#featured 7.1
+    
+    def __str__(self):
+        ports = [(port.port_name, port.port_assign.string) for port in self.port_list ]
+        portlist = ""
+        if self.cellref == "module":
+            for name, assign in ports:
+                portlist += "%s ,\n" % name
+        else:
+            for name, assign in ports:
+                portlist += "    .%s( %s ),\n" % (name, assign)
+        portlist = portlist[:-2]
+        paramlist = ""
+        if self.param_list != None:
+            for para in self.param_list:
+                paramlist +=  "defparam %s .%s=%s ;\n" %\
+                             (para.name,para.attr,str(para.value) )
+        return "%s %s (\n%s\n);\n%s" % (self.cellref , self.name , portlist , paramlist)
+
+    def input_count(self):
+        return len([p for p in self.port_list if p.port_type =="input" ])
+
 
 class signal:
-    '--wire decled, primitive port_assignment--'
     def __init__(self,s_type='wire',name=None,vector=None):
+        '''@param: s_type = ['wire', 'input','output','inout']
+                   name = id_string,
+                    vector = [\d+:\d+]
+        '''
         self.s_type=s_type
         self.name  =name
         self.vector=vector #None,or string 类型的[nm1:num2]或者[num]
         self.width =1
-        
-        ##featured 7.2
         self.lsb=0
         self.msb=0
         self.bit_loc=0
-        ##feature 7.2
 
         if vector==None:
             self.string=name
         else:
-            self.string=name+vector;
-        if not self.vector==None:
-            self.__get_width__()
+            self.string=name+vector
+            self.__get_width()
 
-    def __get_width__(self):
+    def __get_width(self):
         vector_match=re.match('\[(\d+):(\d+)\]',self.vector)
         bit_match=re.match('\[(\d+)\]',self.vector)
         if vector_match is not None:
             l=int(vector_match.groups()[0])
             r=int(vector_match.groups()[1])
-            assert l>=r
-            self.width=l-r+1
+            #assert l>=r
+            if l >= r:
+                self.width = l - r + 1
+            else:
+                self.width = r - l + 1
             ##featured 7.2,将信号的高位与低位两个数字存下来,之后在判断Prim端口是否向连接,有作用
             self.lsb=l
             self.msb=r
@@ -151,6 +191,7 @@ class signal:
         assert (self.s_type in ['input','output','inout'])
         p1=port(self.name,self.s_type,self,self.width)
         return p1
+        
     def __print__(self,is_wire_decl=False):
         #在{}中与在{}外的打印方式不同。
         #在{}中时,打印不要wire,input等关键字
@@ -165,6 +206,24 @@ class signal:
                 print self.s_type+" "+self.name+" ;"
             else:
                 print self.s_type+" "+self.vector+" "+self.name+" ;"
+                
+    def __eq__(self, obj):
+         ## 比较两个signal 对象是否相等，直接比较name, s_type和vector三个字符串
+         ## 属性是否相等，相等则断言其他根据这几个属性推出的属性也必然相等
+         assert isinstance(obj, signal),"%s" % str(obj.__class__)
+         if self.name != obj.name:
+             return False
+         if self.s_type != obj.s_type:
+             return False
+         if self.vector != obj.vector:
+             return False
+         assert self.bit_loc == obj.bit_loc
+         assert self.lsb == obj.lsb
+         assert self.msb == obj.msb
+         assert self.width == self.width
+         return True
+
+
 class joint_signal:
     '--this is a special signal type for signal concut in { }--'
     def __init__(self):
@@ -183,6 +242,7 @@ class joint_signal:
                 print ",",
         print "}",
 
+
 class defparam:
     '--this is a class for defparam statement--'
     def __init__(self,name,attr,value):
@@ -198,12 +258,18 @@ class defparam:
         else:
             value_str=str(self.value)
         print "defparam %s .%s=%s ;"%(self.name,self.attr,value_str)
+        
+        
 class assign:
     '--this is a class of assign statement--'
     def __init__(self,kwd="assign",left_signal=None,right_signal=None):
-        self.kwd=kwd        
+        self.kwd=kwd
+        assert isinstance(left_signal, signal) and \
+                isinstance(right_signal, signal)
         self.left_signal =left_signal
-        self.right_signal=right_signal        
+        self.right_signal=right_signal
+        self.name = left_signal.string
+          
     def __print__(self):
         print self.kwd+" ",
         if isinstance(self.left_signal,signal):
@@ -218,34 +284,47 @@ class assign:
             assert type(self.right_signal)==str,"%s,type %s "%(self.right_signal,type(self.right_signal))
             print self.right_signal,
         print " ;"
-        
+    
+    def __str__(self):
+        "assign语句一定是以等号连接的"
+        left = self.left_signal
+        right = self.right_signal
+        return "%s %s = %s ;" % (self.kwd, left.string, right.string)
+
 ###featured 7.3--------------------------------------------------------------
 ###
-class vertex:
-    def __init__(self,obj):
-        if isinstance(obj,port):
-            self.entity=obj
-            self.type =obj.port_type
-        else:
-            assert isinstance(obj,circut_module)
-            self.entity=obj
-            self.type  =obj.cellref
-        self.label=self.type+"  "+self.obj.name
-class edge:
-    def __init__(self,s,d):
-        pass
+#class vertex:
+#    def __init__(self,obj):
+#        if isinstance(obj,port):
+#            self.entity=obj
+#            self.type =obj.port_type
+#        else:
+#            assert isinstance(obj,circut_module)
+#            self.entity=obj
+#            self.type  =obj.cellref
+#        self.label=self.type+"  "+self.obj.name
+#class edge:
+#    def __init__(self,s,d):
+#        pass
 ###featured 7.3--------------------------------------------------------------
-prim_dict={
-    "LUT6_2":{'I':['I0','I1','I2','I3','I4','I5'],'O':['O5','O6']},
-    "XORCY":{'I':['LI','CI'],'O':['O']},
-    "MULT_AND":{'I':['I0','I1'],'O':['LO']},
-    "MUXCY_L":{'I':['DI','CI','S'],'O':['LO']},
-    "MUXCY":{'I':['DI','CI','S'],'O':['O']},
-    "MUXF5":{'I':['I0','I1','S'],'O':['O']},
-    "MUXF6":{'I':['I0','I1','S'],'O':['O']},
-    "MUXF7":{'I':['I0','I1','S'],'O':['O']},
-    "MUXF8":{'I':['I0','I1','S'],'O':['O']},
-    "INV"  :{'I':['I'],'O':['O']}, 
-    "GND":{'O':['G']},
-    "VCC":{'O':['P']}
-    }           
+#prim_dict={
+#    "LUT6_2":{'I':['I0','I1','I2','I3','I4','I5'],'O':['O5','O6']},
+#    "XORCY":{'I':['LI','CI'],'O':['O']},
+#    "MULT_AND":{'I':['I0','I1'],'O':['LO']},
+#    "MUXCY_L":{'I':['DI','CI','S'],'O':['LO']},
+#    "MUXCY":{'I':['DI','CI','S'],'O':['O']},
+#    "MUXF5":{'I':['I0','I1','S'],'O':['O']},
+#    "MUXF6":{'I':['I0','I1','S'],'O':['O']},
+#    "MUXF7":{'I':['I0','I1','S'],'O':['O']},
+#    "MUXF8":{'I':['I0','I1','S'],'O':['O']},
+#    "INV"  :{'I':['I'],'O':['O']}, 
+#    "GND":{'O':['G']},
+#    "VCC":{'O':['P']}
+#    }  
+
+#if __name__ == "__main__":
+#    x = signal('wire', 'x', '[10:10]')
+#    y = signal('wire', 'x', '[10:10]')
+#    assert x == y
+#    print x == y
+#    assert not ( x is y)      
