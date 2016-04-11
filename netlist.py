@@ -5,13 +5,14 @@ import re
 
 # user-defined module
 from netlistx import vm_parse
+from netlistx.log import logger
 from netlistx.exception import * 
 import netlistx.netlist_util as nu
 import netlistx.circuit as cc
 
 
 class Netlist(object):
-    ''' 
+    u''' 
         数据属性：存储由解析器解析所得的整个网表的结构
         方法属性：查询，修改，插入，输出
         类的应用场合：确保网表在修改时候的完整性，
@@ -28,7 +29,7 @@ class Netlist(object):
             self.primtives   = vminfo['primitive_list']
             self.assigns     = vminfo['assign_stm_list']
         '''
-        print "Job: getting Netlist..."
+        logger.debug( "Job: getting Netlist...")
         self.m_list = vminfo['m_list']
         # 根据解析器的信息存储
         self.top_module  = vminfo['m_list'][0]
@@ -51,12 +52,12 @@ class Netlist(object):
                    'assigns':   self.search_assign
                    }
         self.cellrefs = nu.mark_the_circut( self.primitives, allow_unkown = False)
-        print "Job: Netlist get. OK!\n"
+        logger.debug( "Job: Netlist get. OK!\n")
         return None
 
     # 建立内部字典和查询内部字典的工厂方法
     def __build_dict(self, iterable, attr_as_key):
-        '''@param : iterable, 是一个可迭代对象或者None
+        u'''@param : iterable, 是一个可迭代对象或者None
                     attr_as_key, 可迭代对象里面的元素的一个attr名称，使用getattr获取
            @return: tdict = {}, key: 可迭代对象里面的元素的attr值
                                 val: 可迭代对象的元素本身
@@ -76,7 +77,7 @@ class Netlist(object):
         return tdict
 
     def __search_dict(self, dict_name, target):
-        '''@param: dict_name, self的一个字典数据属性
+        u'''@param: dict_name, self的一个字典数据属性
                    target, 一个ID
            @return: None或者dict_name中的一个值
         '''
@@ -93,7 +94,7 @@ class Netlist(object):
             return result
     
     def __insert_type(self, itype, element, hashable_attr = "name"):
-        '''@brief:
+        u'''@brief:
                 私有工厂方法，向 itype类型的容器里面加入一个element, 并且将这个
                 element的hashable_attr属性作为键值，进行索引，索引相同时
                 raise一个 RedeclarationError的异常。默认的索引是name属性。
@@ -132,7 +133,7 @@ class Netlist(object):
 
     # 插入的方法组
     def insert_prim(self, prim):
-        '''@param: prim, a cc.circut_module 对象
+        u'''@param: prim, a cc.circut_module 对象
            @return: 插入成功的prim对象
         '''
         assert isinstance(prim, cc.circut_module)
@@ -140,17 +141,17 @@ class Netlist(object):
         try:
             p_assigns = prim.port_assign_list
         except AttributeError:
-            print "Warning: inserted prim has no ports and port_assigns "
+            logger.warning( "inserted prim has no ports and port_assigns ")
         else:
             if len( p_assigns)==0:
-                print "Warning: inserted prim with has no port_assigns"
+                logger.warning( "inserted prim with has no port_assigns")
             else:
                 for signal in p_assigns:
                     self.insert_wire( signal )
         return prim
 
     def insert_wire(self, signal):
-        '''@param: signal, 一个signal对象，
+        u'''@param: signal, 一个signal对象，
                     或者是一个可以转化为signal的字符串.空格分隔，长度为2个词，后一个是向量.或者单个词
            @return:如果成功插入则返回一个signal对象，如果失败，则返回None
         '''
@@ -164,17 +165,17 @@ class Netlist(object):
             else:
                 s = cc.signal(name = ss[0])
         else:
-            raise FormatError,"param type error: not a signal or a string."
+            raise FormatError, "param type error: not a signal or a string."
         try:
             self.__insert_type('wires', s) 
         except RedeclarationError,e:
             # 已经插入过的线网，如果再次插入，直接保持原模原样不动就好了
-            print e, "|| so no wire get changed."
+            logger.error( "%s || so no wire get changed." % e)
             return None
         return s
         
     def insert_assign(self, target, driver, force = False):
-        '''@param: target， driver两个signal对象
+        u'''@param: target， driver两个signal对象
                     force , 决定在已经有意个target.name
                      赋值的情况下是否强制插入一个新的assign
            @return: 插入成功的assign
@@ -193,10 +194,10 @@ class Netlist(object):
             if force:
                 self._assigns[ target.name ] = assign
                 self.assigns.append( assign )
-                print "Inserted Forcelly"
+                logger.warning( "Inserted Forcelly")
                 return assign
             else:
-                print e, "|| so no assign inserted"
+                logger.warning("%s || so no assign inserted" % e)
                 return None
         else:
             return assign
@@ -209,7 +210,7 @@ class Netlist(object):
         try:
             fobj = open(filename,'w')
         except Exception,e:
-            print e
+            logger.error(e)
             return False
         else:
             console = sys.stdout
