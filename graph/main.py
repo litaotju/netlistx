@@ -140,13 +140,15 @@ class GraphMainApp(GraphFunc):
         self.path = self.DEFAULT_PATH #默认路径为 os.getcwd()当前路径
         self.cmd  = ""
         self.opt  = None
+        self.history = []
         
         self.add_function('cd', self.setPath   )
         self.add_function('pwd', self.printPath)
         self.add_function("ls", self.listPath  )
         if os.name == 'nt':
             self.add_function('clear', lambda: os.system("cls") )
-    
+        self.add_function('history', self.showHistory)
+
     def getCmd( self ):
         u'''打印netlistx:>prompt提示，并获取命令和选项
         '''
@@ -155,6 +157,7 @@ class GraphMainApp(GraphFunc):
         args = raw_input(prompt).split()
         self.cmd = args[0]
         self.opt = args[1:]
+        self.history.append( self.cmd )
 
     def setPath(self):
         u'''设置工作路径, 如果指定目录不存在，当前目录保持不变，并打印当前绝对目录
@@ -180,6 +183,11 @@ class GraphMainApp(GraphFunc):
         u'''列出当前工作目录下的信息
         '''
         print "    ".join( os.listdir(self.path) )
+
+    def showHistory(self):
+        u'''列出命令历史
+        '''
+        print os.linesep.join( self.history)
 
     def run(self):
         while True:
