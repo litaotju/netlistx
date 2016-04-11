@@ -10,6 +10,11 @@ def vm_files(dir):
         if os.path.splitext(eachFile)[1] in ['.v','.vm']:
             yield eachFile
 
+def vm_files2(dir):
+    for eachFile in os.listdir(dir):
+        if os.path.splitext(eachFile)[1] in ['.v','.vm']:
+            yield os.path.join( dir, eachFile)
+
 class StdOutRedirect:
     '''输出重定向到文件
     '''
