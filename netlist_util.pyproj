@@ -28,7 +28,7 @@
   <ItemGroup>
     <Compile Include="cell_construct\construct_scan_lib.py" />
     <Compile Include="cell_construct\faultfdlib.py" />
-    <Compile Include="class_circuit.py" />
+    <Compile Include="circuit.py" />
     <Compile Include="exception.py" />
     <Compile Include="file_util.py">
       <SubType>Code</SubType>
@@ -42,6 +42,9 @@
     <Compile Include="graph\main.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="graph\esgraph.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="graph\test\testBallast.py">
       <SubType>Code</SubType>
     </Compile>
@@ -49,6 +52,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="itrans\test_getSgraph.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="log.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="prototype\fas.py">
