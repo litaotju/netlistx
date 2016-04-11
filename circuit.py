@@ -291,6 +291,9 @@ class assign:
         right = self.right_signal
         return "%s %s = %s ;" % (self.kwd, left.string, right.string)
 
+isDff  = lambda obj: isinstance( obj, circut_module) and obj.m_type == "FD"
+isComb = lambda obj: isinstance( obj, circut_module ) and obj.m_type != "FD"
+
 ###featured 7.3--------------------------------------------------------------
 ###
 #class vertex:
