@@ -8,6 +8,7 @@ address:Tianjin University
 import os
 import time
 import re
+import traceback
 
 import networkx as nx
 import matplotlib.pyplot as plt
@@ -32,14 +33,17 @@ class CircuitGraph(nx.DiGraph):
            node_type ,which is a cellref or the port_type if node is pipo
            name , which is the module.name or port.port_name
        Edge attr :
-           connection,which is the string of wire signal name which connect prim
-           port_pair, which records the port instance pair
+           connection, which is the string of wire signal name which connect prim
+           port_pair,  which records the port instance pair
     '''
+    #边的属性的键名
+    EDGE_ATTR_PORT_PAIRS = "port_pairs"
+    EDGE_ATTR_CONNECTIONS = "connections"
 
     def __init__(self, netlist, include_pipo = True):
         '''@param:
-           netlist, an instance of netlistx.netlist.Netlist class 
-           include_pipo, a boolean variable
+                netlist, an instance of netlistx.netlist.Netlist class 
+                include_pipo, a boolean variable
         '''
         assert isinstance( netlist, Netlist)
         nx.DiGraph.__init__(self)
@@ -70,7 +74,6 @@ class CircuitGraph(nx.DiGraph):
         print "Job: CircuitGraph get. OK!\n"
 
     def __add_vertex_from_m_list(self):
-
         print "Process: searching the vertex of graph from m_list..."
         pipo_vertex_list=[]
         prim_vertex_list=[]
@@ -98,7 +101,7 @@ class CircuitGraph(nx.DiGraph):
     #------------------------------------------------------------------------------
 
     def __get_edge_from_prim_list(self):
-        ''' 从prim_list当中获得边的连接的信息。
+        u''' 从prim_list当中获得边的连接的信息。
             如果self.include_pipo为真，此函数不仅将与PIPO相连接的边加入到生成的图中
             而且将为生成的CircuitGraph对象增加self.pi_edge_list和self.po_edge_list
             不论self.include_pipo为真与否，都会增加self.prim_edge_list和self.edge_set
@@ -127,7 +130,7 @@ class CircuitGraph(nx.DiGraph):
         self.__edges_cnt(pi_dict, po_dict, cnt_dict)
 
     def __cnt_dict(self, pi_dict, po_dict, cnt_dict, piname, poname):
-        '''从prim的每一个端口连接中获取连接信息
+        u'''从prim的每一个端口连接中获取连接信息
         '''
         print "Process: searching edges from prim_vertex_list..."
         for eachPrim in self.prim_vertex_list:
@@ -203,7 +206,7 @@ class CircuitGraph(nx.DiGraph):
         return None
 
     def __assign_handle(self, pi_dict, po_dict, cnt_dict, piname, poname):
-        ''' 处理assign语句，补全电路的连接信息。assign的左边等于 target wire，右边等于 driver wire
+        u'''处理assign语句，补全电路的连接信息。assign的左边等于 target wire，右边等于 driver wire
             处理的原则是寻找target wire 的source，让其等于driver wire 的source
             顺便让driver wire的sink 附加上 target的sink。（！千万不能等于） 在电路中如果存在一个多扇出的状况的话。
         '''
@@ -307,13 +310,12 @@ class CircuitGraph(nx.DiGraph):
                 print "Waring:assignment \" %s \" maybe illegal check it." % assign
 
     def __edges_cnt(self,  pi_dict, po_dict, cnt_dict):
-        '''@param:
+        u'''@brief:
+                从这三个字典中提取所有所有的边，加入到DiGraph的属性中。
+            @param:
                 pi_dict = {}  # pi_dict[pi_wire_name] = {'source':pi,'sink':[]}
                 po_dict = {}  # po_dict[po_wire_name] = {'source':(),'sink':po }
                 cnt_dict = {} # cnt_dict[wire] = {'source':(),'sink':[(prim,port),()...]}
-
-           @brief:
-                从这三个字典中提取所有所有的边，加入到DiGraph的属性中。
         '''
         # ------------------------------------------------------------------------
         # prim_edge的找出
@@ -369,18 +371,28 @@ class CircuitGraph(nx.DiGraph):
         return None
 
     def add_medge(self, source, sink, port_pair, connection):
+        u'''@brief : 给图添加新的边（如果原来不存在），并更新边的数据
+            @params:
+                source: a port or a module obj
+                sink : a port or a module obj
+                port_pair: a tuple of (port1, port2)
+                connection: a string of wire name
+            @return:
+                None
+        '''
         if self[source].has_key(sink):
-            port_pairs = self[source][sink]['port_pairs']
-            connections = self[source][sink]['connections']
+            port_pairs = self[source][sink][ CircuitGraph.EDGE_ATTR_PORT_PAIRS ]
+            connections = self[source][sink][ CircuitGraph.EDGE_ATTR_CONNECTIONS ]
         else:
             port_pairs =[]
             connections = []
         port_pairs.append(port_pair)
         connections.append( connection)
-        self.add_edge( source, sink, {"port_pairs": port_pairs, "connections": connections} )
+        self.add_edge( source, sink, { CircuitGraph.EDGE_ATTR_PORT_PAIRS: port_pairs, 
+                                       CircuitGraph.EDGE_ATTR_CONNECTIONS: connections} )
 
     def consistency_check(self):
-        '''根据每一个节点的输入来检查图的完整性，只能检查带有PIPO的图
+        u'''根据每一个节点的输入来检查图的完整性，只能检查带有PIPO的图
             具体的方法是，如果是一个原语。原语的入度应该等于其input端口或者clock端口的数量
             如果是一个端口，input端口的入度为0，output端口的出度为0
         '''
@@ -393,7 +405,7 @@ class CircuitGraph(nx.DiGraph):
                 if not self.in_degree( node) == len( inports):
                     realinports = []
                     for pre in self.predecessors_iter(node):
-                        realinports += self[pre][node]['port_pairs']
+                        realinports += self[pre][node][CircuitGraph.EDGE_ATTR_PORT_PAIRS]
                     if len(realinports) != len(inports):
                         errmsg = "Prim:%s %s has %d input ports,  %d been connected. indegree:%d" %\
                         (node.cellref, node.name, len(inports), len(realinports), self.in_degree(node))
@@ -412,10 +424,14 @@ class CircuitGraph(nx.DiGraph):
                          (node.port_type, node.port_name, self.in_degree(node) , self.out_degree( node) )
                         raise AssertionError, errmsg
 
-    def topo_copy( self ):
-        gcopy = nx.DiGraph()
-        for edge in self.edges_iter():
-            gcopy.add_edge( edge[0], edge[1])
+    def topo_copy( self, gcopy = None):
+        if gcopy is None:
+            gcopy = nx.DiGraph()
+        else:
+            assert isinstance(gcopy, nx.DiGraph)
+            gcopy.clear()
+        for edge0, edge1, data in self.edges_iter(data = True):
+            gcopy.add_edge( edge0, edge1, data)
         for node in self.nodes_iter():
             gcopy.add_node( node )
         return gcopy
@@ -442,7 +458,7 @@ class CircuitGraph(nx.DiGraph):
         print "------------------------------------------------------"
     
     def paint(self):
-        ''' 给电路图，分组画出来，不同的颜色和标签标明了不同的prim '''
+        u''' 给电路图，分组画出来，不同的颜色和标签标明了不同的prim '''
         label_dict={}
         fd_list  = []
         pipo_list= []
@@ -470,7 +486,7 @@ class CircuitGraph(nx.DiGraph):
         return None
         
     def to_gexf_file(self, filename):
-        '''把图写入gexf文件，不对原图做任何改变
+        u'''把图写入gexf文件，不对原图做任何改变
             新图中的节点增加了id和label两个属性
         '''
         new_graph = nx.DiGraph()
@@ -484,16 +500,17 @@ class CircuitGraph(nx.DiGraph):
         try:
             nx.write_gexf(new_graph, filename)
         except Exception, e:
+            traceback.print_exc()
             print "Waring: can not write gexf file correctly", e
 
     def to_dot_file(self, filename):
-        '''把图写入到dot文件中，不对原图做什么改变
+        u'''把图写入到dot文件中，不对原图做什么改变
             新图的节点只是字符串。
         '''
         new_graph = nx.DiGraph()
         for start, end, data  in self.edges_iter(data = True):
-            port_pair = data['port_pair']
-            connection = data['connection']
+            port_pair = data[ CircuitGraph.EDGE_ATTR_PORT_PAIRS]
+            connection = data[CircuitGraph.EDGE_ATTR_CONNECTIONS]
             edge = [start, end] # 存储边的起点和终点
             node_id =['','']    # 存储节点的名称
             node_data =[{},{}]  # 存储要打印到dot中的信息
@@ -511,12 +528,13 @@ class CircuitGraph(nx.DiGraph):
         try:
             nx.write_dot(new_graph, filename)
         except Exception, e:
+            traceback.print_exc()
             print "Warning: Cannot write dot file", e
 
 #------------------------------------------------------------------------------
         
 def get_graph(fname = None):
-    '''@param: fname, a vm file name
+    u'''@param: fname, a vm file name
        @return: g1, a nx.DiGraph obj
        @brief: 从文件名获得一个图
     '''
@@ -528,32 +546,38 @@ def get_graph(fname = None):
     return g1
     
 def save_graphs(fname, path):
-    '''输入一个文件名，生成带PIPO和不带PIPO的图，
-       然后将生成的图分别保存到tmp\\下的.dot文件和.gexf文件
+    u'''@brief：输入一个文件名，生成带PIPO和不带PIPO的图，然后将生成的图分别保存到path下的.dot文件和.gexf文件
+       @params:
+            fname, a string
+            path,  a path(will make a new path if not existed)
+       @return: none
     '''
     info = vm_parse(fname)
-    netlist = Netlist( info)
-    
-    #生成保存图的路径
-    if not os.path.exists( path):
-        os.makedirs( path )
-    #生成带pipo的图
-    g1 = CircuitGraph(netlist, include_pipo = True)
-    g1.to_gexf_file(path + '\\%s_icpipo.gexf' % g1.name)
-    g1.to_dot_file( path + "\\%s_icpipo.dot" % g1.name)
-    
-    #生成不带pipo的图
-    g2 = CircuitGraph(netlist, include_pipo = False)
-    g2.to_gexf_file( path + "\\%s_nopipo.gexf" % g2.name)
-    g2.to_dot_file( path +  "\\%s_nopipo.dot" % g2.name)
+    netlist = Netlist( info )
+
+    #如果网表中模块数量小于等于20个，则逐个打印模块的信息，方便手动检查
     if len(netlist.m_list) <= 20:
         print "\n".join( [str(eachPrim) for eachPrim in netlist.m_list] )
         verbose_info =True
     else:
         verbose_info = False
         print "Info: The m_list is too long >20. ignore..."
-    g2.info(verbose_info)
+    
+    #生成保存图的路径
+    if not os.path.exists( path):
+        os.makedirs( path )
+    
+    #生成带pipo的图
+    g1 = CircuitGraph(netlist, include_pipo = True)
     g1.info(verbose_info)
+    g1.to_gexf_file(path + '\\%s_icpipo.gexf' % g1.name)
+    g1.to_dot_file( path + "\\%s_icpipo.dot" % g1.name)
+    
+    #生成不带pipo的图
+    g2 = CircuitGraph(netlist, include_pipo = False)
+    g2.info(verbose_info)
+    g2.to_gexf_file( path + "\\%s_nopipo.gexf" % g2.name)
+    g2.to_dot_file( path +  "\\%s_nopipo.dot" % g2.name)
     return None
 
 def fanout_stat(graph):
