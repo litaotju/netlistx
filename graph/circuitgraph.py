@@ -21,6 +21,7 @@ import netlistx.netlist_rules as nr
 from netlistx import vm_parse
 from netlistx.netlist import Netlist
 from netlistx.exception import *
+from netlistx.log import logger
 
 __all__ = [ "CircuitGraph", "get_graph" ]
 
@@ -47,7 +48,7 @@ class CircuitGraph(nx.DiGraph):
         '''
         assert isinstance( netlist, Netlist)
         nx.DiGraph.__init__(self)
-        print "Job: getting CircuitGraph..."
+        logger.debug( "Job: getting CircuitGraph...")
         self.name = netlist.m_list[0].name
         self.m_list = netlist.m_list
         self.assign_list = netlist.assigns
@@ -71,10 +72,10 @@ class CircuitGraph(nx.DiGraph):
         self.cloud_reg_graph = None
         self.s_graph = None
         if include_pipo: self.consistency_check()
-        print "Job: CircuitGraph get. OK!\n"
+        logger.debug( "Job: CircuitGraph get. OK!\n")
 
     def __add_vertex_from_m_list(self):
-        print "Process: searching the vertex of graph from m_list..."
+        logger.debug( "Process: searching the vertex of graph from m_list..." )
         pipo_vertex_list=[]
         prim_vertex_list=[]
         vertex_set=[]
@@ -114,8 +115,8 @@ class CircuitGraph(nx.DiGraph):
                 piname[string] = primary
                 continue
             elif not primary.port_type == 'output':
-                print "Error :found an primary port neither input nor output "
-                print "       %s %s" % (primary.name,primary.port_type) 
+                logger.error( "Error :found an primary port neither input nor output ")
+                logger.error( "       %s %s" % (primary.name, primary.port_type) ) 
                 raise CircuitGraphError
             poname[string] = primary
 
@@ -126,19 +127,19 @@ class CircuitGraph(nx.DiGraph):
         if self.assign_list :
             self.__assign_handle(pi_dict, po_dict, cnt_dict, piname, poname)
         else:
-            print "Info: No assignment in graph constructing."
+            logger.info( "No assignment in graph constructing." )
         self.__edges_cnt(pi_dict, po_dict, cnt_dict)
 
     def __cnt_dict(self, pi_dict, po_dict, cnt_dict, piname, poname):
         u'''从prim的每一个端口连接中获取连接信息
         '''
-        print "Process: searching edges from prim_vertex_list..."
+        logger.debug( "Process: searching edges from prim_vertex_list...")
         for eachPrim in self.prim_vertex_list:
             for eachPort in eachPrim.port_list:
                 #assert每一个端口里面的wire都是单比特信号
                 if not eachPort.port_width == 1:
-                    print "Error: >1 bitwidth signal found in %s %s"\
-                        % (eachPrim.name, eachPort.port_name)
+                    logger.error( " >1 bitwidth signal found in %s %s"\
+                        % (eachPrim.name, eachPort.port_name) )
                     raise CircuitGraphError
                 # a bit wire is the format : .string = .name[.bit_loc]
                 wire = eachPort.port_assign.string    # 全名 = 名称[n]
@@ -148,8 +149,8 @@ class CircuitGraph(nx.DiGraph):
                     if not pi_dict.has_key(wire):
                         pi_dict[wire] = {'source':piname[wire],'sink':[]}
                     if not eachPort.port_type in ['input','clock']:
-                        print "Error: PI %s connect to Prim's Non-input Port: %s %s"\
-                            % (wire, eachPrim.name, eachPort.port_name)
+                        logger.error( "PI %s connect to Prim's Non-input Port: %s %s"\
+                            % (wire, eachPrim.name, eachPort.port_name) )
                         raise CircuitGraphError
                     pi_dict[wire]['sink'].append( (eachPrim, eachPort) )
                     continue
@@ -170,9 +171,9 @@ class CircuitGraph(nx.DiGraph):
                             po_dict[wire] = {'source':(eachPrim, eachPort),'sink':poname[wire]}
                         else: #有别的输出端口已经连接到这个属于po的wire上，直接报错
                             #if po_dict[wire]['source']: #如果这个PO的bit位信号，已经有source了
-                            print "wire: PO %s has more than 1 source. 1st source is %s %s.2nd source is %s %s"\
+                            logger.error( "wire: PO %s has more than 1 source. 1st source is %s %s.2nd source is %s %s"\
                                 % (wire, po_dict[wire]['source'][0].name,po_dict[wire]['source'][1].port_name,\
-                                   eachPrim.cellref, eachPrim.name)
+                                   eachPrim.cellref, eachPrim.name) )
                             raise CircuitGraphError
                     #po_dict[wire]['source'] = (eachPrim, eachPort)
                     continue
@@ -190,9 +191,9 @@ class CircuitGraph(nx.DiGraph):
                     cnt_dict[wire] = {'source':(),'sink':[] }
                 if eachPort.port_type == 'output':
                     if cnt_dict[wire]['source']: #如果这个信号已经有一个source了
-                        print "wire: %s has more than 1 source.1st source is %s %s .2nd source is %s %s"\
+                        logger.error( "wire: %s has more than 1 source.1st source is %s %s .2nd source is %s %s"\
                             % (wire, cnt_dict[wire]['source'][0].name, cnt_dict[wire]['source'][1].port_name,\
-                               eachPrim.cellref, eachPrim.name) 
+                               eachPrim.cellref, eachPrim.name) )
                         raise CircuitGraphError
                     cnt_dict[wire]['source'] = (eachPrim, eachPort)
                     continue
@@ -200,8 +201,8 @@ class CircuitGraph(nx.DiGraph):
                     cnt_dict[wire]['sink'].append( (eachPrim, eachPort) )
                     continue
                 # 如果运行到这里了，说明当前这个wire什么也没有连接到
-                print "Error: wire cnt to neither input nor output port. %s %s %s"\
-                    % (eachPrim.name ,eachPort.name, eachPort.port_type) 
+                logger.error( "wire cnt to neither input nor output port. %s %s %s"\
+                    % (eachPrim.name ,eachPort.name, eachPort.port_type) )
                 raise CircuitGraphError
         return None
 
@@ -210,7 +211,7 @@ class CircuitGraph(nx.DiGraph):
             处理的原则是寻找target wire 的source，让其等于driver wire 的source
             顺便让driver wire的sink 附加上 target的sink。（！千万不能等于） 在电路中如果存在一个多扇出的状况的话。
         '''
-        print "Process: handing assignment for connection..."
+        logger.debug( "Process: handing assignment for connection...")
         # step1.首先检查assign语句的合法性。规则见注释
         #       其次合并冗余的赋值，使每一个target真正对应于某一个driver.
         assign_dict = {}
@@ -277,7 +278,7 @@ class CircuitGraph(nx.DiGraph):
                 elif cnt_dict.has_key(driver):
                     po_dict[target]['source'] = cnt_dict[driver]['source']
                 else:
-                    print "Error: assignment \" %s \" is illegal.Left wire is not effectively drived" % assign
+                    logger.error( "assignment \" %s \" is illegal.Left wire is not effectively drived" % assign )
                 if cnt_dict.has_key(target):
                     # 如果某一个prim的输入连接到这个terget上了，那么要判断tergte的source类型来决定
                     # 这个连接是属于pi_dict管理的范畴还是cnt_dict涵盖的范畴，两个不能兼容
@@ -303,11 +304,11 @@ class CircuitGraph(nx.DiGraph):
                     cnt_dict[target]['source'] = cnt_dict[driver]['source']
                     cnt_dict[driver]['sink'] += cnt_dict[target]['sink']
                 else:
-                    print "Error: assignment \" %s \" is illegal" % assign 
+                    logger.error( "assignment \" %s \" is illegal" % assign )
                 continue
             # 如果这个terget即不是po也不存在prim wire里面。那么说明这个target可能只是为了进行assign的传递。
             else:
-                print "Waring:assignment \" %s \" maybe illegal check it." % assign
+                logger.warning( "assignment \" %s \" maybe illegal check it." % assign )
 
     def __edges_cnt(self,  pi_dict, po_dict, cnt_dict):
         u'''@brief:
@@ -324,7 +325,7 @@ class CircuitGraph(nx.DiGraph):
             sinks = SourceSinkDict['sink']
             if not source:
                 if self.include_pipo : 
-                    print "Warning: no source of signal %s " % eachWire
+                    logger.warning( "no source of signal %s " % eachWire )
                 # raise CircuitGraphError
                 continue
             if len(sinks) < 1 :
@@ -344,10 +345,10 @@ class CircuitGraph(nx.DiGraph):
         # 如果不包含PIPO，那么现在就退出函数，不将与PIPO相连接的边加入到图中
         if not self.include_pipo:
             self.edge_set = self.prim_edge_list
-            print "Note: get all edges succsfully, WARING : NO PIPO EDGES IN GRAPH"
+            logger.info( "Note: get all edges succsfully, WARING : NO PIPO EDGES IN GRAPH" )
             return None
         # ------------------------------------------------------------------------
-        print "Process: searching PIPO edges from m_list..."
+        logger.debug( "Process: searching PIPO edges from m_list...")
         for eachWire,piConnect in pi_dict.iteritems():
             source = piConnect['source']  # cc.port instance
             sinks = piConnect['sink']
@@ -367,7 +368,7 @@ class CircuitGraph(nx.DiGraph):
             self.po_edge_list.append(po_edge)
         # 将所有的Edge合并到self.edge_set属性当中
         self.edge_set = self.pi_edge_list + self.po_edge_list + self.prim_edge_list
-        print "Note : get all the edges succsfully"
+        logger.debug( "Note : get all the edges succsfully")
         return None
 
     def add_medge(self, source, sink, port_pair, connection):
@@ -397,7 +398,7 @@ class CircuitGraph(nx.DiGraph):
             如果是一个端口，input端口的入度为0，output端口的出度为0
         '''
         if not self.include_pipo:
-            print "Warining: cannot check consistency for no pipo graph"
+            logger.warning( "cannot check consistency for no pipo graph")
             return None
         for node in self.nodes_iter():
             if isinstance(node, cc.circut_module):
@@ -411,7 +412,7 @@ class CircuitGraph(nx.DiGraph):
                         (node.cellref, node.name, len(inports), len(realinports), self.in_degree(node))
                         raise AssertionError, errmsg
                     else:
-                        print "Info: node:%s %s has pre with multi connection" % (node.cellref, node.name)
+                        logger.info( "node:%s %s has pre with multi connection" % (node.cellref, node.name) )
             elif isinstance(node, cc.port):
                 if node.port_type == "output":
                     if  self.in_degree( node) != 1 or self.out_degree( node ) != 0 :
@@ -501,7 +502,7 @@ class CircuitGraph(nx.DiGraph):
             nx.write_gexf(new_graph, filename)
         except Exception, e:
             traceback.print_exc()
-            print "Waring: can not write gexf file correctly", e
+            logger.warning( "can not write gexf file correctly: %s", e)
 
     def to_dot_file(self, filename):
         u'''把图写入到dot文件中，不对原图做什么改变
@@ -529,7 +530,7 @@ class CircuitGraph(nx.DiGraph):
             nx.write_dot(new_graph, filename)
         except Exception, e:
             traceback.print_exc()
-            print "Warning: Cannot write dot file", e
+            logger.warning( "Cannot write dot file %s" % e)
 
 #------------------------------------------------------------------------------
         
@@ -539,7 +540,7 @@ def get_graph(fname = None):
        @brief: 从文件名获得一个图
     '''
     if not fname: fname = raw_input("plz enter file name:")
-    info = vm_parse( fname)
+    info = vm_parse( fname )
     netlist    = Netlist(info)
     #nr.check(netlist, check_reset = False)
     g1 = CircuitGraph(netlist)
@@ -557,11 +558,11 @@ def save_graphs(fname, path):
 
     #如果网表中模块数量小于等于20个，则逐个打印模块的信息，方便手动检查
     if len(netlist.m_list) <= 20:
-        print "\n".join( [str(eachPrim) for eachPrim in netlist.m_list] )
+        logger.info( "\n".join( [str(eachPrim) for eachPrim in netlist.m_list] ) )
         verbose_info =True
     else:
         verbose_info = False
-        print "Info: The m_list is too long >20. ignore..."
+        logger.info( "The m_list is too long >20. ignore..." )
     
     #生成保存图的路径
     if not os.path.exists( path):
