@@ -127,7 +127,7 @@ class CircuitGraph(nx.DiGraph):
         if self.assign_list :
             self.__assign_handle(pi_dict, po_dict, cnt_dict, piname, poname)
         else:
-            logger.info( "No assignment in graph constructing." )
+            logger.debug( "No assignment in graph constructing." )
         self.__edges_cnt(pi_dict, po_dict, cnt_dict)
 
     def __cnt_dict(self, pi_dict, po_dict, cnt_dict, piname, poname):
@@ -540,6 +540,7 @@ def get_graph(fname = None):
        @brief: 从文件名获得一个图
     '''
     if not fname: fname = raw_input("plz enter file name:")
+    assert( os.path.exists( fname ) )
     info = vm_parse( fname )
     netlist    = Netlist(info)
     #nr.check(netlist, check_reset = False)

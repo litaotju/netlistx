@@ -13,6 +13,7 @@ import netlistx.circuit as cc
 import netlist_lexer
 import yacc
 
+from netlistx.log import logger
 tokens=netlist_lexer.tokens
 
 ###############################################################################
@@ -248,7 +249,7 @@ def vm_parse(input_file):
     try:
         fobj=open(input_file,'r')
     except IOError,e:
-        print "Error: file open error:",e
+        logger.error("file open error:",e )
         raise SystemExit
     else:
         all_lines=fobj.read()
@@ -279,7 +280,7 @@ def vm_parse(input_file):
         #解析完完全打印出来
         #------------------------------------
         parser.restart()
-        print "Job: parse the vm file %s finished."% input_file
+        logger.debug("Job: parse the vm file %s finished."% input_file )
         return p
     
 ###############################################################################
