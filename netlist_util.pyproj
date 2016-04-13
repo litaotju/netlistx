@@ -29,6 +29,9 @@
     <Compile Include="cell_construct\construct_scan_lib.py" />
     <Compile Include="cell_construct\faultfdlib.py" />
     <Compile Include="circuit.py" />
+    <Compile Include="cliapp.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="exception.py" />
     <Compile Include="file_util.py">
       <SubType>Code</SubType>
