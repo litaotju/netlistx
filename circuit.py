@@ -4,14 +4,16 @@ import re
 
 class port:
     '--this is a class of port in verilog--'
+
     def __init__(self,port_name,port_type,port_assign,port_width=1):
-        self.port_name  =port_name
-        self.port_type  =port_type   #input or output
+        self.port_name  = port_name
+        self.port_type  = port_type   #input or output
         assert isinstance(port_assign,(signal,joint_signal)),\
             ("Error: add non-signal obj to port:%s"%self.port_name)
-        self.port_assign=port_assign #assign_signal
-        self.port_width =port_assign.width #每一个signal类型的变量会自动的计算出宽度
-        self.name=self.port_name
+        self.port_assign = port_assign #assign_signal
+        self.port_width = port_assign.width #每一个signal类型的变量会自动的计算出宽度
+        self.name = self.port_name
+
     def edit_port_assign(self,new_assign):
         assert isinstance(new_assign,(signal,joint_signal)),\
             ("Error: non-signal obj assgin to port %s"%self.port_name)
@@ -55,6 +57,7 @@ class port:
             (self.port_type, self.port_name, self.port_assign.string, self.port_width)
 
 class circut_module:
+
     def __init__(self,name='default',m_type='default',cellref='--top--',been_searched=False):
         self.name     =name
         self.m_type   =m_type
@@ -123,6 +126,7 @@ class circut_module:
             for eachParam in self.param_list:
                 eachParam.__print__()
         return True
+
     def __print__(self):
         self.print_module()
     
@@ -148,39 +152,39 @@ class circut_module:
 
 
 class signal:
-    def __init__(self,s_type='wire',name=None,vector=None):
+
+    def __init__(self, s_type='wire', name=None, vector=None):
         '''@param: s_type = ['wire', 'input','output','inout']
                    name = id_string,
                     vector = [\d+:\d+]
         '''
-        self.s_type=s_type
-        self.name  =name
-        self.vector=vector #None,or string 类型的[nm1:num2]或者[num]
-        self.width =1
-        self.lsb=0
-        self.msb=0
-        self.bit_loc=0
-
-        if vector==None:
-            self.string=name
+        self.s_type = s_type
+        self.name  = name
+        self.vector = vector #None,or string 类型的[nm1:num2]或者[num]
+        self.width = 1
+        self.lsb = 0
+        self.msb = 0
+        self.bit_loc = 0
+        if vector == None:
+            self.string = name
         else:
-            self.string=name+vector
+            self.string = name + vector
             self.__get_width()
 
     def __get_width(self):
-        vector_match=re.match('\[(\d+):(\d+)\]',self.vector)
-        bit_match=re.match('\[(\d+)\]',self.vector)
+        vector_match = re.match('\[(\d+):(\d+)\]',self.vector)
+        bit_match = re.match('\[(\d+)\]',self.vector)
         if vector_match is not None:
-            l=int(vector_match.groups()[0])
-            r=int(vector_match.groups()[1])
+            l = int(vector_match.groups()[0])
+            r = int(vector_match.groups()[1])
             #assert l>=r
             if l >= r:
                 self.width = l - r + 1
             else:
                 self.width = r - l + 1
             ##featured 7.2,将信号的高位与低位两个数字存下来,之后在判断Prim端口是否向连接,有作用
-            self.lsb=l
-            self.msb=r
+            self.lsb = l
+            self.msb = r
         else:
             assert (bit_match is not None)
             self.bit_loc=int(bit_match.groups()[0])
@@ -262,12 +266,11 @@ class defparam:
         
 class assign:
     '--this is a class of assign statement--'
-    def __init__(self,kwd="assign",left_signal=None,right_signal=None):
-        self.kwd=kwd
-        assert isinstance(left_signal, signal) and \
-                isinstance(right_signal, signal)
-        self.left_signal =left_signal
-        self.right_signal=right_signal
+    def __init__(self, kwd="assign", left_signal=None, right_signal=None):
+        self.kwd = kwd
+        assert isinstance(left_signal, signal) and isinstance(right_signal, signal)
+        self.left_signal = left_signal
+        self.right_signal = right_signal
         self.name = left_signal.string
           
     def __print__(self):
@@ -293,6 +296,7 @@ class assign:
 
 isDff  = lambda obj: isinstance( obj, circut_module) and obj.m_type == "FD"
 isComb = lambda obj: isinstance( obj, circut_module ) and obj.m_type != "FD"
+isPort = lambda obj: isinstance( obj, port)
 
 ###featured 7.3--------------------------------------------------------------
 ###
