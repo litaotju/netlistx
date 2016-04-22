@@ -116,6 +116,10 @@
     <Compile Include="scan\partialOptLinear.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="scan\partial_esgraph.py" />
+    <Compile Include="scan\util.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="scan\__init__.py">
       <SubType>Code</SubType>
     </Compile>
