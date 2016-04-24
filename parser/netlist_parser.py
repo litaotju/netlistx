@@ -97,6 +97,7 @@ def p_signal_decl(p):
         p[0]=cc.signal(name=p[3],vector=p[2])
     else:
         p[0]=cc.signal(name=p[2],vector=None)
+
 #---------------------------------------------------------------------
 #----primitive区
 #---------------------------------------------------------------------   
@@ -110,6 +111,7 @@ def p_primitive_list(p):
     else:
         p[0]=[]
         p[0].append(p[1])
+
 def p_primitive(p):
     '''primitive      : IDENTIFIER IDENTIFIER     '(' primitive_port_list ')' ';'
                       | IDENTIFIER IDENTIFIER BIT '(' primitive_port_list ')' ';' 
@@ -132,6 +134,7 @@ def p_primitive(p):
         p[0]=cc.circut_module(name=p[2]+p[3],cellref=p[1])
         p[0].add_port_list(p[5])
         p[0].add_param_list(p[8])
+
 def p_primitive_port_list(p):
     '''primitive_port_list : primitive_port_list primitive_port
                            | primitive_port
@@ -142,15 +145,17 @@ def p_primitive_port_list(p):
     else:
         p[0]=[]
         p[0].append(p[1])
+
 def p_primitive_port(p):
     '''primitive_port : '.' IDENTIFIER '('     signal_element ')' 
                       | '.' IDENTIFIER '(' '{' joint_signal_list '}' ')'
     '''
     if len(p)==6:#signal_element
-        p[0]=cc.port(port_name=p[2],port_type='un_known',port_assign=p[4])
+        p[0]=cc.port(p[2], cc.port.PORT_TYPE_UNKOWN, p[4])
     else:#joint_signal_list
-        p[0]=cc.port(p[2],'un_known',p[5])
+        p[0]=cc.port(p[2], cc.port.PORT_TYPE_UNKOWN, p[5])
     #the port_type of unkown you just handle it in the mark_the_circuit func
+
 def p_joint_signal(p):
     '''joint_signal_list  : joint_signal_list signal_element
                           | signal_element
@@ -161,6 +166,7 @@ def p_joint_signal(p):
     else:
         p[0]=cc.joint_signal()
         p[0].joint_one_more(p[1])
+
 def p_signal_element(p):
     '''signal_element : IDENTIFIER BIT
                       | IDENTIFIER VECTOR
@@ -177,6 +183,7 @@ def p_signal_element(p):
             p[0] = cc.signal( name = iden ,vector = vec)
         else:
             p[0]=cc.signal(name=p[1])
+
 def p_defparam_list(p):
     '''defparam_list  : defparam_list defparam_stm
                       | defparam_stm
@@ -187,6 +194,7 @@ def p_defparam_list(p):
     else:
         p[0]=[]
         p[0].append(p[1])
+
 def p_defparam_(p):
     '''defparam_stm   : DEFPARAM IDENTIFIER                 '=' HEX_NUMBER ';'
                       | DEFPARAM IDENTIFIER        '.' INIT '=' HEX_NUMBER ';'
@@ -206,6 +214,7 @@ def p_defparam_(p):
         p[0]=cc.defparam(p[2]+p[3],p[5],p[7])
     else:#string_con
         p[0]=cc.defparam(p[2]+p[3],p[5],p[7]+p[8]+p[9])
+
 #---------------------------------------------------------------------
 #----assign区
 #--------------------------------------------------------------------- 

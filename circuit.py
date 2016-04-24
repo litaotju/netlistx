@@ -2,25 +2,37 @@
 
 import re
 
-class port:
-    '--this is a class of port in verilog--'
+class port(object):
+    u'''
+        代表verilog 网表中的 port的类
+    '''
+    PORT_TYPE_CLOCK = 'clock'
+    PORT_TYPE_INPUT = 'input'
+    PORT_TYPE_INOUT = 'inout'
+    PORT_TYPE_OUTPUT = 'output'
+    PORT_TYPE_UNKOWN = 'unkown'
+    ALLOWED_TYPES = (PORT_TYPE_CLOCK, PORT_TYPE_INPUT, PORT_TYPE_INOUT,
+                     PORT_TYPE_OUTPUT, PORT_TYPE_UNKOWN)
 
-    def __init__(self,port_name,port_type,port_assign,port_width=1):
-        self.port_name  = port_name
-        self.port_type  = port_type   #input or output
-        assert isinstance(port_assign,(signal,joint_signal)),\
-            ("Error: add non-signal obj to port:%s"%self.port_name)
-        self.port_assign = port_assign #assign_signal
+    def __init__(self, port_name, port_type, port_assign, port_width=1):
+        u'''
+            @brief:
+            @params:
+                port_name, any str
+                port_type, one of the port.ALLOWED_TYPES
+                port_assign, an instance of signal or joint_sigal
+                port_width, an int, default is 1
+        '''
+        self.port_name = port_name
+        self.port_type = port_type
+        self.port_assign = port_assign
         self.port_width = port_assign.width #每一个signal类型的变量会自动的计算出宽度
-        self.name = self.port_name
 
     def edit_port_assign(self,new_assign):
-        assert isinstance(new_assign,(signal,joint_signal)),\
-            ("Error: non-signal obj assgin to port %s"%self.port_name)
-        self.port_assign=new_assign
+        self.port_assign = new_assign
 
     def split(self):
-        '''将一个多bit的端口自动的分解为单bit的端口，用于图的建模，便于将PIPO分解
+        u'''将一个多bit的端口自动的分解为单bit的端口，用于图的建模，便于将PIPO分解
            @return：一个队列，含有拆分后的一个或多个port类对象
         '''
         if self.port_assign.vector == None:
@@ -31,30 +43,57 @@ class port:
         for i in loop:
             subassign = signal(self.port_type, self.name, "[%d]"% i)
             subport = port(self.name, self.port_type, subassign )
-            ports.append( subport )
+            ports.append(subport)
         return ports
 
-    def __print__(self,is_top_port=False,pipo_decl=False):
-        '''不同的端口有不同的打印方式,顶层模块()内的打印,pipo声明处的打印,以及primitive()的打印
+    def __print__(self, is_top_port=False, pipo_decl=False):
+        u'''不同的端口有不同的打印方式,顶层模块()内的打印,pipo声明处的打印,以及primitive()的打印
         '''
         if is_top_port:
             print self.port_name,
         elif pipo_decl:
-            if self.port_assign.vector==None:
-                print self.port_type+" "+self.port_name+";"
+            if self.port_assign.vector == None:
+                print self.port_type + " " + self.port_name + ";"
             else:
-                print self.port_type+" "+self.port_assign.vector+" "+self.port_name+";"
+                print self.port_type + " " + self.port_assign.vector + " " + self.port_name + ";"
         else :
-            assert isinstance(self.port_assign,(signal,joint_signal))
             print "    .%s("% self.port_name,
             self.port_assign.__print__()
             print ")",
 
     def __str__(self):
-        '''只供调试使用，在最终输出的Verilog网表中不应该使用这样的语句来打印端口
+        u'''只供调试使用，在最终输出的Verilog网表中不应该使用这样的语句来打印端口
         '''
         return "%s %s %s %s\n" %\
             (self.port_type, self.port_name, self.port_assign.string, self.port_width)
+
+    @property
+    def port_type(self):
+        if self.__port_type == port.PORT_TYPE_UNKOWN:
+            print "Warning: the port %s 's port_type is port.PORT_TYPE_UNKOWN" % self.port_name
+        return self.__port_type
+
+    @port_type.setter
+    def port_type(self, value):
+        if value not in port.ALLOWED_TYPES:
+            raise ValueError, 'port_type must be in %s, but here is %s' \
+                % ( port.ALLOWED_TYPES, value)
+        self.__port_type = value
+
+    @property
+    def port_assign(self):
+        return self.__port_assign
+
+    @port_assign.setter
+    def port_assign(self, value):
+        assert isinstance(value, (signal,joint_signal)), \
+            ("Error: add non-signal obj to port:%s" % self.port_name)
+        self.__port_assign = value
+
+    @property
+    def name(self):
+        u"name只有只读属性"
+        return self.port_name
 
 class circut_module:
 

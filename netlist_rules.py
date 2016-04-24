@@ -1,5 +1,6 @@
 # -*- coding:utf-8 -*-
 
+from netlistx import circuit as cc
 from netlistx.exception import *
 from netlistx.netlist import Netlist
 
@@ -47,7 +48,7 @@ def _clk_check(nt, clks):
     clkflag = False
     single_inports = []
     for port in nt.ports:
-        if port.port_type == "input":
+        if port.port_type == cc.port.PORT_TYPE_INPUT:
             single_inports += port.split()
     for port in single_inports:
         if port.port_assign.string == clkname:
@@ -61,7 +62,7 @@ def _clk_check(nt, clks):
 def _reset_check(nt, resets):
     single_inports = []
     for port in nt.ports:
-        if port.port_type == "input":
+        if port.port_type == cc.port.PORT_TYPE_INPUT:
             single_inports += port.split()
     strings = [port.port_assign.string for port in single_inports]
     internal_resets = []

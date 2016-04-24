@@ -9,6 +9,8 @@ import os
 import re
 import copy
 
+from netlistx.circuit import port
+
 def mark_the_circut(primtives, allow_dsp=False, allow_unkown=True ):
     'mark all the module with a type'
     cellref_list=[]
@@ -28,11 +30,11 @@ def mark_the_circut(primtives, allow_dsp=False, allow_unkown=True ):
             prim.m_type='FD'
             for eachPort in prim.port_list:
                 if eachPort.port_name in ('D', 'CE','R','S','CLR','PRE'):
-                    eachPort.port_type='input'
-                elif eachPort.port_name=='Q':
-                    eachPort.port_type='output'
-                elif eachPort.port_name=='C':
-                    eachPort.port_type='clock'
+                    eachPort.port_type = port.PORT_TYPE_INPUT
+                elif eachPort.port_name == 'Q':
+                    eachPort.port_type = port.PORT_TYPE_OUTPUT
+                elif eachPort.port_name == 'C':
+                    eachPort.port_type = port.PORT_TYPE_CLOCK
                 else:
                     raise AssertionError, "FD has no defined thie port: %s"% eachPort.port_name
         # LUT------------------------------------------------------------------
@@ -41,19 +43,19 @@ def mark_the_circut(primtives, allow_dsp=False, allow_unkown=True ):
             assert prim.cellref in LUT_TYPE,\
                 "%s ,%s not in predefined LUT_TYPE"%(prim.cellref,prim.name)
             for eachPort in prim.port_list:
-                if eachPort.port_name[0]=='I':
-                    eachPort.port_type='input'
+                if eachPort.port_name[0] == 'I':
+                    eachPort.port_type =  port.PORT_TYPE_INPUT
                 else:
                     assert eachPort.port_name in ['O','LO','O5','O6'],\
                         prim.cellref+"  "+prim.name+"  "+eachPort.port_name
-                    eachPort.port_type='output'
+                    eachPort.port_type = port.PORT_TYPE_OUTPUT
 
         # MUX and XOR----------------------------------------------------------
         elif prim.cellref in OTHER_COMBIN:
             prim.m_type=prim.cellref
             for eachPort in prim.port_list[:-1]:
-                eachPort.port_type='input'
-            prim.port_list[-1].port_type='output'
+                eachPort.port_type = port.PORT_TYPE_INPUT
+            prim.port_list[-1].port_type = port.PORT_TYPE_OUTPUT
             
         #BUF------------------------------------------------------------------
         elif re.match('\w*BUF\w*',prim.cellref) is not None:
@@ -62,15 +64,15 @@ def mark_the_circut(primtives, allow_dsp=False, allow_unkown=True ):
                 assert eachPort.port_name in ['I','O'],\
                     "BUF:%s has a port neither I or O" %prim.name
                 if eachPort.port_name=='I':
-                    eachPort.port_type='input'
+                    eachPort.port_type = port.PORT_TYPE_INPUT
                 elif eachPort.port_name=='O':
-                    eachPort.port_type='output'
+                    eachPort.port_type = port.PORT_TYPE_OUTPUT
         #GND VCC---------------------------------------------------------------
         elif (prim.cellref=='GND' or prim.cellref=='VCC'):
             prim.m_type=prim.cellref
             assert len(prim.port_list)==1, "GND VCC:%s has more than 1 port."  % prim.name 
             for eachPort in prim.port_list:
-                eachPort.port_type='output'
+                eachPort.port_type = port.PORT_TYPE_OUTPUT
 
         #DSP48E---------------------------------------------------------------
         elif re.match('DSP48|DSP48E\w*',prim.cellref) is not None:
@@ -296,7 +298,7 @@ def rules_check(m_list):
     if len(clock_signal) == 1 : # 时钟个数为0时 ， 不用检查时钟了
         clock_flag = False    
         for eachPi in m_list[0].port_list:
-            if eachPi.port_type == 'input' and eachPi.port_width == 1:
+            if eachPi.port_type == port.PORT_TYPE_INPUT and eachPi.port_width == 1:
                 if clock_signal[0] == eachPi.name:
                     clock_flag = True
                 single_bit_pi.append(eachPi.name)

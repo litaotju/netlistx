@@ -111,10 +111,10 @@ class CircuitGraph(nx.DiGraph):
         poname = {} #PO  instances dict keyed by name
         for primary in self.pipo_vertex_list:
             string = primary.port_assign.string
-            if primary.port_type == 'input':
+            if primary.port_type == cc.port.PORT_TYPE_INPUT:
                 piname[string] = primary
                 continue
-            elif not primary.port_type == 'output':
+            elif not primary.port_type == cc.port.PORT_TYPE_OUTPUT:
                 logger.error( "Error :found an primary port neither input nor output ")
                 logger.error( "       %s %s" % (primary.name, primary.port_type) ) 
                 raise CircuitGraphError
@@ -148,7 +148,7 @@ class CircuitGraph(nx.DiGraph):
                 if  piname.has_key(wire):
                     if not pi_dict.has_key(wire):
                         pi_dict[wire] = {'source':piname[wire],'sink':[]}
-                    if not eachPort.port_type in ['input','clock']:
+                    if not eachPort.port_type in [cc.port.PORT_TYPE_INPUT, cc.port.PORT_TYPE_CLOCK]:
                         logger.error( "PI %s connect to Prim's Non-input Port: %s %s"\
                             % (wire, eachPrim.name, eachPort.port_name) )
                         raise CircuitGraphError
@@ -160,13 +160,13 @@ class CircuitGraph(nx.DiGraph):
                     # 无论如何将PO中的信号全部加入到cnt_dict的信息中，之后将没有prim sink的那些信号进行过滤
                     if not cnt_dict.has_key(wire):
                         cnt_dict[wire] = { 'source':(),'sink':[] }
-                    if eachPort.port_type == 'output':
+                    if eachPort.port_type == cc.port.PORT_TYPE_OUTPUT:
                         assert not cnt_dict[wire]['source'], "%s has more than one source"
                         cnt_dict[wire]['source'] = (eachPrim, eachPort)
                     else:
                         cnt_dict[wire]['sink'].append( (eachPrim, eachPort) )
                     # 将这个信号的连接信息加入到po_dict中
-                    if eachPort.port_type == "output":
+                    if eachPort.port_type == cc.port.PORT_TYPE_OUTPUT:
                         if not po_dict.has_key(wire):
                             po_dict[wire] = {'source':(eachPrim, eachPort),'sink':poname[wire]}
                         else: #有别的输出端口已经连接到这个属于po的wire上，直接报错
@@ -183,13 +183,13 @@ class CircuitGraph(nx.DiGraph):
                 #    clock = eachPort.port_assign.string
                 #    assert piname.has_key(clock), "Clock:%s has no connect to PI" % clock
                 #    continue
-                if eachPort.port_type == "clock":
+                if eachPort.port_type == cc.port.PORT_TYPE_CLOCK:
                     continue
 
                 # 如果这个信号的名字既没包含在PI也没包含在PO,那只能是Prim之间的连接了
                 if not cnt_dict.has_key(wire):
                     cnt_dict[wire] = {'source':(),'sink':[] }
-                if eachPort.port_type == 'output':
+                if eachPort.port_type == cc.port.PORT_TYPE_OUTPUT:
                     if cnt_dict[wire]['source']: #如果这个信号已经有一个source了
                         logger.error( "wire: %s has more than 1 source.1st source is %s %s .2nd source is %s %s"\
                             % (wire, cnt_dict[wire]['source'][0].name, cnt_dict[wire]['source'][1].port_name,\
@@ -197,7 +197,7 @@ class CircuitGraph(nx.DiGraph):
                         raise CircuitGraphError
                     cnt_dict[wire]['source'] = (eachPrim, eachPort)
                     continue
-                if eachPort.port_type == 'input':
+                if eachPort.port_type == cc.port.PORT_TYPE_INPUT:
                     cnt_dict[wire]['sink'].append( (eachPrim, eachPort) )
                     continue
                 # 如果运行到这里了，说明当前这个wire什么也没有连接到
@@ -402,7 +402,8 @@ class CircuitGraph(nx.DiGraph):
             return None
         for node in self.nodes_iter():
             if isinstance(node, cc.circut_module):
-                inports = [port for port in node.port_list if port.port_type in ('clock', 'input')]
+                inports = [port for port in node.port_list \
+                                if port.port_type in (cc.port.PORT_TYPE_CLOCK, cc.port.PORT_TYPE_INPUT)]
                 if not self.in_degree( node) == len( inports):
                     realinports = []
                     for pre in self.predecessors_iter(node):
@@ -414,12 +415,12 @@ class CircuitGraph(nx.DiGraph):
                     else:
                         logger.info( "node:%s %s has pre with multi connection" % (node.cellref, node.name) )
             elif isinstance(node, cc.port):
-                if node.port_type == "output":
+                if node.port_type == cc.port.PORT_TYPE_OUTPUT:
                     if  self.in_degree( node) != 1 or self.out_degree( node ) != 0 :
                         errmsg = "Port: %s %s indegree %d, outdegree %d" %\
                          (node.port_type, node.port_name, self.in_degree(node) , self.out_degree( node) )
                         raise AssertionError, errmsg
-                elif  node.port_type == 'input':
+                elif  node.port_type == cc.port.PORT_TYPE_INPUT:
                     if self.in_degree( node ) != 0 :
                         errmsg = "Port: %s %s indegree %d, outdegree %d" %\
                          (node.port_type, node.port_name, self.in_degree(node) , self.out_degree( node) )
