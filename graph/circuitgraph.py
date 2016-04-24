@@ -436,7 +436,7 @@ class CircuitGraph(nx.DiGraph):
         for node in self.nodes_iter():
             gcopy.add_node( node )
         return gcopy
-    #------------------------------------------------------------------------------
+
     def info(self, verbose = False) :
         print "\n------------------------------------------------------"
         print "module %s   CircuitGraph info: " % self.m_list[0].name
@@ -450,12 +450,12 @@ class CircuitGraph(nx.DiGraph):
                 print "    %s %s" % (node_type[eachNode], name[eachNode])
 
             print "Info :%d edges in graph. Edge Set Are:"% self.number_of_edges()
-            connection = nx.get_edge_attributes(self, 'connection')
-            port_pair = nx.get_edge_attributes(self, 'port_pair')
+            connection = nx.get_edge_attributes(self, CircuitGraph.EDGE_ATTR_CONNECTIONS)
+            port_pair = nx.get_edge_attributes(self, CircuitGraph.EDGE_ATTR_PORT_PAIRS)
             for eachEdge in self.edges_iter():
                 print "    (%s -> %s):(wire %s, port:%s->%s)" % \
-                (eachEdge[0].name,eachEdge[1].name,connection[eachEdge]\
-                ,port_pair[eachEdge][0].name,port_pair[eachEdge][1].name)
+                (eachEdge[0].name, eachEdge[1].name, connection[eachEdge]\
+                ,port_pair[eachEdge][0][0].name, port_pair[eachEdge][0][1].name )
         print "------------------------------------------------------"
     
     def paint(self):
