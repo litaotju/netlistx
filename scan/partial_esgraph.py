@@ -3,14 +3,16 @@ u'''直接运行本模块，输入一个路径，对该路径下的所有vm文�
    和部分扫描优化问题。
 '''
 import os
-import socket
 import sys
+import json
 
-from netlistx.file_util import StdOutRedirect, vm_files2
+import networkx as nx
+
+from netlistx.log import logger
+from netlistx.file_util import vm_files2
 from netlistx.graph.circuitgraph import get_graph
 from netlistx.graph.esgraph import ESGraph
-from netlistx.scan.util import get_namegraph, upath_cycle, read_solution
-
+from netlistx.scan.util import get_namegraph, upath_cycle, gen_m_script, run_matlab, read_solution
 
 def get_scan_fds(esgrh, opath):
     u'''
@@ -22,22 +24,79 @@ def get_scan_fds(esgrh, opath):
             scan_fds [], a list of scan fds in esgrh
     '''
     assert isinstance(esgrh, ESGraph)
-    script_file = os.path.join(opath, esgrh.name + ".m")
-    solution_file = esgrh.name + "_ESGraph_ScanFDs.txt"
+    script_file = os.path.join(opath, esgrh.name + ".m")  #输出的matlab脚本文件名，如果需要的话
+    solution_file = esgrh.name + "_ESGraph_ScanFDs.txt"   #matlab输出的解的文件名
     port = 12345 #Socket port for matlab
 
     namegraph = get_namegraph(esgrh)          #namegraph = nx.DiGraph()
+
     selfloop_nodes = [node for node in namegraph.nodes_iter() if namegraph.has_edge(node, node)]
+    
+    ##FOR_DEBUG
+    ##保存不平衡路径和环的信息到json对象
+    try:
+        os.makedirs(os.path.join(opath, 'with-selfloop'))
+        os.makedirs(os.path.join(opath, 'without-selfloop'))
+    except WindowsError, e:
+        print e
+        pass
+    nx.write_dot(namegraph, os.path.join(opath, 'with-selfloop',esgrh.name + ".dot"))
+    
     namegraph.remove_nodes_from(selfloop_nodes)
 
+    nx.write_dot(namegraph, os.path.join(opath, 'without-selfloop', esgrh.name + ".dot"))
+    
     unpaths, cycles = upath_cycle(namegraph)  #unpaths = [], cycles = []
+
+    upath_json = open(os.path.join(opath, esgrh.name + "_upath.json"), 'w')
+    cycle_json = open(os.path.join(opath, esgrh.name + "_cycle.json"), 'w')
+    json.dump({("%s->%s" % (key[0], key[1])): value for key,value in unpaths.iteritems()}, 
+              upath_json, 
+              indent=4,
+              separators=(",",":"))
+    json.dump(cycles, cycle_json, indent=4)
+    upath_json.close()
+    cycle_json.close()
+
+    ##FOR_DEBUG
+    ##计算 理论上约束的个数
+    number_of_constraints = 0
+    fobj = open(os.path.join(opath, esgrh.name + "_upath.txt"), 'w')
+    for (s, t), paths in unpaths.iteritems():
+        number_of_cons_this = 0   #本对 (s,t) 所需要的约束条件数目
+        number_of_eachLength = {} #本对 (s,t) 每一个长度的path的 数目
+        for p in paths:
+            if len(p) not in number_of_eachLength:
+                number_of_eachLength[len(p)] = 1
+            else:
+                number_of_eachLength[len(p)] += 1
+        fobj.write("%s->%s, upaths:%d, groups:[" % (s, t, len(paths)))
+        fobj.write(" ,".join([str(value) for value in number_of_eachLength.values()]))
+        fobj.write("]")
+
+        # list of tuple(length, number_of_path_in_this_length_group)
+        number_of_eachLength = list(number_of_eachLength.iteritems()) 
+        groups = len(number_of_eachLength)
+        for i in range(groups-1):
+            for j in range(i+1, groups):
+                number_of_cons_this += number_of_eachLength[i][1] * number_of_eachLength[j][1]
+        fobj.write(", constraints :%d\n" % number_of_cons_this)
+        number_of_constraints += number_of_cons_this
+
+    ##FOR_DEBUG
+    esgrh.save_info_item2csv(os.path.join(opath, "esgrh_records.csv"))
+    fobj.write("ESGraph:%s has %d UNPs, %d cycles, %d self-loops" % \
+                    (esgrh.name, len(unpaths), len(cycles), len(selfloop_nodes)))
+    fobj.write("ESGraph:%s has %d unpath constraints" % (esgrh.name, number_of_constraints))
+    fobj.close()
 
     # {name: x%d}
     node2x = {node: "x(%d)"%index for index, node in enumerate(namegraph.nodes())}
-    has_script = gen_m_script(cycles, unpaths, node2x, solution_file, port, script_file)
-    
-    # scan_fds = []
-    if has_script:
+    constraints = gen_constraints(cycles, unpaths, node2x)
+
+    scan_fds = []
+    if constraints:
+        gen_m_script(constraints, node2x, solution_file, port, script_file)
         #run_matlab(script_file, port)
         #scan_fds = read_solution(os.path.join(opath, solution_file), node2x) + selfloop_nodes
         scan_fds = []
@@ -45,18 +104,16 @@ def get_scan_fds(esgrh, opath):
         scan_fds = selfloop_nodes
     return scan_fds
 
-def gen_m_script(cycles, unpaths, node2x, solution_file, port, script_file):
+def gen_constraints(cycles, unpaths, node2x):
     u'''
-        @brief: 生成matlab脚本
+        @brief:
+            输入环和不平衡路径，输出约束列表，每一个约束都是一个已 ;... 结尾的不等式 字符串
         @params:
             cycles: a list of simple cycles 
             unpaths: a dict {(source, target):[list of all unblanced paths between source->target]}
             node2x: a dict {node: x(%d)}
-            solution_file: a filename, tell the matlab to export the solution to this file_util
-            port: a port number, tell the matlab to listen on this port for finishing signal
-            script_file: a filename, print all the matlab statement to this file_util
-        @return：
-            True or False, indicates the script_file was generated or not
+        @return:
+            [] list of contraints
     '''
     #获取环的约束
     cycle_constaints = []
@@ -85,67 +142,18 @@ def gen_m_script(cycles, unpaths, node2x, solution_file, port, script_file):
         products = []
         #print "%% (%s, %s)" % (source, target)
         for i in range(0, len(length_list)-1):
-            for j in range(1, len(length_list)):
+            for j in range(i+1, len(length_list)):
                 for path_in_group_i in length_list[i]:
                     for path_in_group_j in length_list[j]:
                         products.append(set(path_in_group_i).union(set(path_in_group_j)))
         for product in products:
             unpath_constraints.append("+".join(product) +\
                                       "<= %d;..." % (len(product)-1))
-    #如果两个约束都是空的，直接返回false
-    if not cycle_constaints and not unpath_constraints:
-        return False
-    # 输出matlab脚本    
-    with StdOutRedirect(script_file):
-        print "x = binvar(1, %d);" % len(node2x)
-        print ''' ops = sdpsettings('solver','bnb','bnb.solver','fmincon','bnb.method',...
-                      'breadth','bnb.gaptol',1e-8,'verbose',1,'bnb.maxiter',1000,'allownonconvex',0);
-        '''
-        print "obj = x;"
-        print "constraints = [",
-        if cycle_constaints:
-            print os.linesep.join(cycle_constaints)
-        if unpath_constraints:
-            print os.linesep.join(unpath_constraints)
-        print "];"
-        print "solvesdp(constraints, obj, ops);"
-        print "fid = fopen('%s','w');" % solution_file
-        print "for i = 1:%d" % len(node2x)
-        print "    fprintf(fid, 'x(%d)  %d\\n', i, double(x(i)));"
-        print "end"
-        print "t = tcpip('localhost', %d, 'NetworkRole', 'client');" % port
-        print "fopen(t)"
-        print "fwrite(t, 'valid')"
-        print "if (fread(t) == 105 )"
-        print "exit();"
-        print "end"
-    return True
+    logger.critical("ESGraph generated %d matlab upath constraints" % len(unpath_constraints))
+    return cycle_constaints + unpath_constraints
 
-def run_matlab(script_file, port):
-    u'''@brief: 启动matlab运行script_file, 并且利用socket通信获知matlab何时结束
-        @params:
-            script_file: an existing filename to be run by matlab
-            port: a port number to listen on
-        @return:
-            None
-    '''
-    # 启动Socket服务器
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
-    server_socket.bind(('', port))
-    server_socket.listen(1)
-    opath = os.path.split(script_file)[0]
-    basename = os.path.splitext(os.path.split(script_file)[1])[0]
-    os.system("matlab -nodesktop -sd  %s -r %s" % (opath, basename))
-    connection, addr = server_socket.accept()
-    if connection.recv(100) == "valid":
-        print "Matlab excuted OK!"
-        # send an i to close Matlab
-        connection.send("i")
-    connection.close()
-    server_socket.close()
-    return
-
-if __name__ == "__main__":
+def main():
+    "main function"
     PATH = raw_input("plz enter vm files path:")
     if not os.path.exists(PATH):
         print "Error: %s doesn't exists" % PATH
@@ -157,3 +165,6 @@ if __name__ == "__main__":
         graph = get_graph(eachVm)
         esgrh = ESGraph(graph)
         get_scan_fds(esgrh, OPATH)
+
+if __name__ == "__main__":
+    main()

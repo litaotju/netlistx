@@ -29,7 +29,8 @@ class ESGraph(nx.DiGraph):
         self.__check_comb_loops = False #是否检查组合逻辑环。默认不检查
         if self.__check_comb_loops:
             self.assert_no_comb_cycles()
-        
+        self.__remove_clk_reset()
+
         start = time.clock()
         for edge in self.edges_iter():
             self[edge[0]][edge[1]][ESGraph.EDGE_ATTR_ISNEW_ADDED] = False
@@ -51,7 +52,6 @@ class ESGraph(nx.DiGraph):
 
             #待加入的新边集合
             edges = []
-
             edges = [ (pre, succ ) for pre in pres for succ in succs ]
             for edge in edges:
                 #如果发现将要加入组合逻辑自环，记录下错误，并跳过。不加入这个自环的边
@@ -62,7 +62,6 @@ class ESGraph(nx.DiGraph):
                                  (self[node][succ][ESGraph.EDGE_ATTR_ISNEW_ADDED], self[pre][node][ESGraph.EDGE_ATTR_ISNEW_ADDED]) 
                                  )
                     logger.error("But no self loop added, this edge is ignoreed")
-                #否则，加入边。
                 else:
                     self.add_edge(edge[0], edge[1], {ESGraph.EDGE_ATTR_ISNEW_ADDED: True} )
             
@@ -88,10 +87,8 @@ class ESGraph(nx.DiGraph):
             #        else:
             #            edges.append( (pre, succ) )
             self.remove_node(node )
-        #检查组合逻辑环
         if self.__check_comb_loops:
             self.assert_no_comb_cycles()
-        #打印消耗的时间
         logger.debug("ESGraph init consumed time %d" % ( time.clock() - start ) ) 
         return
 
@@ -158,4 +155,23 @@ class ESGraph(nx.DiGraph):
                 logger.error( "Assertion Error: has pure combinational cycle")
                 logger.error( (" "*4).join( [node.name for node in cycle] )  )
                 raise AssertionError
+        return
+
+    def __remove_clk_reset(self):
+        u'''去掉self中所有的 连接到D触发器的 R，CLR，S, PRE，C端口的边
+        '''
+        def isResetEdge(edge):
+            dest_ports =set([port[1].name for port in self[edge[0]][edge[1]][CircuitGraph.EDGE_ATTR_PORT_PAIRS]])
+            if cc.isDff(edge[1]) and set(['R','CLR','S', 'PRE']).intersection(dest_ports):
+                return True
+            return False
+
+        def isClockEdge(edge):
+            dest_ports =set([port[1].name for port in self[edge[0]][edge[1]][CircuitGraph.EDGE_ATTR_PORT_PAIRS]])
+            if cc.isDff(edge[1]) and 'C' in dest_ports:
+                return True
+            return False        
+        should_remove = lambda edge: isResetEdge(edge) or isClockEdge(edge)
+        edges = filter(should_remove, self.edges())
+        self.remove_edges_from(edges)
         return

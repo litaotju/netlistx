@@ -1,18 +1,21 @@
 # -*-coding:utf-8 -*- #
-import re
 import os
-import sys
-import copy
-import time
 import socket
 
 import networkx as nx
 
 import netlistx.circuit as cc
 from netlistx.log import logger
+from netlistx.file_util import StdOutRedirect
 from netlistx.prototype.unbpath import unbalance_paths
 
-def get_namegraph( graph ):
+__all__ = [ 'get_namegraph', 
+           'upath_cycle', 
+           'gen_m_script', 
+           'run_matlab', 
+           'read_solution']
+
+def get_namegraph(graph):
     u'''
         @brief:
             复制原图的拓扑结构，生成一个字符串为节点的图，每一个节点的字符串对应着原图的节点名
@@ -31,7 +34,7 @@ def get_namegraph( graph ):
 
     namegraph = nx.DiGraph()
     namegraph.add_nodes_from(tmp.iterkeys())
-    namegraph.add_edges_from(((edge[0].name, edge[1].name) for edge in graph.edges()))
+    namegraph.add_edges_from(((get_name(edge[0]), get_name(edge[1])) for edge in graph.edges()))
     logger.debug("get name graph successfully")
     return namegraph
 
@@ -61,11 +64,75 @@ def read_solution(solutionfile, entity2x):
             list, 每一个 变量x%d==0 对应的的实体组成的队列
     '''
     ret = []
-    x2entity = { x: entity for entity, x in entity2x.iteritems() }
-    with open(solutionfile,'r') as solution:
+    x2entity = {x: entity for entity, x in entity2x.iteritems()}
+    with open(solutionfile, 'r') as solution:
         for line in solution:
             if line.startswith("//"): continue
-            (x, val) = tuple( line.strip().split() ) 
+            (x, val) = tuple(line.strip().split()) 
             if int(val) == 0:
-                ret.append( x2entity[x] )
+                ret.append(x2entity[x])
     return ret
+
+CHAR_STOP_MATLAB = 'i'
+def gen_m_script(contraints, entity2x, solution_file, port, script_file):
+    u'''
+        @brief: 生成matlab脚本, 保存到solution_file文件夹
+        @params:
+            entity2x: a dict {node: x(%d)}
+            solution_file: a filename, tell the matlab to export the solution to this file_util
+            port: a port number, tell the matlab to listen on this port for finishing signal
+            script_file: a filename, print all the matlab statement to this file_util
+        @return：
+            True or False, indicates the script_file was generated or not
+    '''
+    #如果两个约束都是空的，直接返回false
+    if not contraints:
+        msg = 'The constraints is empty or none'
+        raise Exception, msg
+
+    # 输出matlab脚本    
+    with StdOutRedirect(script_file):
+        print "x = binvar(1, %d);" % len(entity2x)
+        print ''' ops = sdpsettings('solver','bnb','bnb.solver','fmincon','bnb.method',...
+                      'breadth','bnb.gaptol',1e-8,'verbose',1,'bnb.maxiter',1000,'allownonconvex',0);
+        '''
+        print "obj = x;"
+        print "constraints = [",
+        print '\n'.join(contraints)
+        print "];"
+        print "solvesdp(constraints, obj, ops);"
+        print "fid = fopen('%s','w');" % solution_file
+        print "for i = 1:%d" % len(entity2x)
+        print "    fprintf(fid, 'x(%d)  %d\\n', i, double(x(i)));"
+        print "end"
+        print "t = tcpip('localhost', %d, 'NetworkRole', 'client');" % port
+        print "fopen(t)"
+        print "fwrite(t, 'valid')"
+        print "if (fread(t) == %d )" % ord(CHAR_STOP_MATLAB)
+        print "exit();"
+        print "end"
+    return True
+
+def run_matlab(script_file, port):
+    u'''@brief: 启动matlab运行script_file, 并且利用socket通信获知matlab何时结束
+        @params:
+            script_file: an existing filename to be run by matlab
+            port: a port number to listen on
+        @return:
+            None
+    '''
+    # 启动Socket服务器
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
+    server_socket.bind(('', port))
+    server_socket.listen(1)
+    opath = os.path.split(script_file)[0]
+    basename = os.path.splitext(os.path.split(script_file)[1])[0]
+    os.system("matlab -nodesktop -sd  %s -r %s" % (opath, basename))
+    connection = server_socket.accept()[0]
+    if connection.recv(100) == "valid":
+        print "Matlab excuted OK!"
+        # send an i to close Matlab
+        connection.send(CHAR_STOP_MATLAB)
+    connection.close()
+    server_socket.close()
+    return
