@@ -139,6 +139,7 @@ class CliApp(object):
                 self.call[cmd] = func
         else:
             self.call[cmd] = func
+        return self
 
     def run(self):
         while True:
