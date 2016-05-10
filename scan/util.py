@@ -1,6 +1,7 @@
 # -*-coding:utf-8 -*- #
 import os
 import socket
+import subprocess
 
 import networkx as nx
 
@@ -127,7 +128,7 @@ def run_matlab(script_file, port):
     server_socket.listen(1)
     opath = os.path.split(script_file)[0]
     basename = os.path.splitext(os.path.split(script_file)[1])[0]
-    os.system("matlab -nodesktop -sd  %s -r %s" % (opath, basename))
+    subprocess.Popen("matlab -nodesktop -sd  %s -r %s" % (opath, basename))
     connection = server_socket.accept()[0]
     if connection.recv(100) == "valid":
         print "Matlab excuted OK!"
