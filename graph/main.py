@@ -18,23 +18,12 @@ class GraphMainApp(CliApp):
 
     def __init__(self):
         CliApp.__init__(self, "GraphApp")
-        self.opath = ""
         self.addFunction("cloud", self.cloudgraph )
         self.addFunction("graph", self.circuitgraph)
         self.addFunction('oldcr', self.crgraph )
         self.addFunction("esgrh", self.esgraph )
-        
-    def __setOpath( self, outpath ):
-        u'''设置当前的输出路径
-        '''
-        if not os.path.isabs( outpath):
-            self.opath = os.path.join( self.path, outpath )
-        else:
-            self.opath = outpath
-        if not os.path.exists( self.opath ):
-            os.mkdir( self.opath )
-        return self.opath
-    
+        self.__setOpath = self.setOpath
+
     def runProcess(self, process):
         u'''@breif:根据模式，对一个目录或者一个单独的文件运行一个 process, process
             @param:
