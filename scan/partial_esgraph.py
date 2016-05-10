@@ -40,54 +40,36 @@ def get_scan_fds(esgrh, opath):
     except WindowsError, e:
         print e
         pass
-    nx.write_dot(namegraph, os.path.join(opath, 'with-selfloop',esgrh.name + ".dot"))
-    
+    try:
+        nx.write_dot(namegraph, os.path.join(opath, 'with-selfloop',esgrh.name + ".dot"))
+    except UnicodeDecodeError, e:
+        print e
+        pass
+
     namegraph.remove_nodes_from(selfloop_nodes)
 
-    nx.write_dot(namegraph, os.path.join(opath, 'without-selfloop', esgrh.name + ".dot"))
-    
+    try:
+        nx.write_dot(namegraph, os.path.join(opath, 'without-selfloop', esgrh.name + ".dot"))
+    except UnicodeDecodeError, e:
+        print e
+        pass
+        
     unpaths, cycles = upath_cycle(namegraph)  #unpaths = [], cycles = []
 
-    upath_json = open(os.path.join(opath, esgrh.name + "_upath.json"), 'w')
-    cycle_json = open(os.path.join(opath, esgrh.name + "_cycle.json"), 'w')
-    json.dump({("%s->%s" % (key[0], key[1])): value for key,value in unpaths.iteritems()}, 
-              upath_json, 
-              indent=4,
-              separators=(",",":"))
-    json.dump(cycles, cycle_json, indent=4)
-    upath_json.close()
-    cycle_json.close()
+    #upath_json = open(os.path.join(opath, esgrh.name + "_upath.json"), 'w')
+    #cycle_json = open(os.path.join(opath, esgrh.name + "_cycle.json"), 'w')
+    #json.dump({("%s->%s" % (key[0], key[1])): value for key,value in unpaths.iteritems()}, 
+    #          upath_json, 
+    #          indent=4,
+    #          separators=(",",":"))
+    #json.dump(cycles, cycle_json, indent=4)
+    #upath_json.close()
+    #cycle_json.close()
 
-    ##FOR_DEBUG
-    ##计算 理论上约束的个数
-    number_of_constraints = 0
     fobj = open(os.path.join(opath, esgrh.name + "_upath.txt"), 'w')
-    for (s, t), paths in unpaths.iteritems():
-        number_of_cons_this = 0   #本对 (s,t) 所需要的约束条件数目
-        number_of_eachLength = {} #本对 (s,t) 每一个长度的path的 数目
-        for p in paths:
-            if len(p) not in number_of_eachLength:
-                number_of_eachLength[len(p)] = 1
-            else:
-                number_of_eachLength[len(p)] += 1
-        fobj.write("%s->%s, upaths:%d, groups:[" % (s, t, len(paths)))
-        fobj.write(" ,".join([str(value) for value in number_of_eachLength.values()]))
-        fobj.write("]")
-
-        # list of tuple(length, number_of_path_in_this_length_group)
-        number_of_eachLength = list(number_of_eachLength.iteritems()) 
-        groups = len(number_of_eachLength)
-        for i in range(groups-1):
-            for j in range(i+1, groups):
-                number_of_cons_this += number_of_eachLength[i][1] * number_of_eachLength[j][1]
-        fobj.write(", constraints :%d\n" % number_of_cons_this)
-        number_of_constraints += number_of_cons_this
-
-    ##FOR_DEBUG
     esgrh.save_info_item2csv(os.path.join(opath, "esgrh_records.csv"))
     fobj.write("ESGraph:%s has %d UNPs, %d cycles, %d self-loops" % \
                     (esgrh.name, len(unpaths), len(cycles), len(selfloop_nodes)))
-    fobj.write("ESGraph:%s has %d unpath constraints" % (esgrh.name, number_of_constraints))
     fobj.close()
 
     # {name: x%d}
@@ -97,9 +79,8 @@ def get_scan_fds(esgrh, opath):
     scan_fds = []
     if constraints:
         gen_m_script(constraints, node2x, solution_file, port, script_file)
-        #run_matlab(script_file, port)
-        #scan_fds = read_solution(os.path.join(opath, solution_file), node2x) + selfloop_nodes
-        scan_fds = []
+        run_matlab(script_file, port)
+        scan_fds = read_solution(os.path.join(opath, solution_file), node2x) + selfloop_nodes
     else:
         scan_fds = selfloop_nodes
     return scan_fds
@@ -122,49 +103,31 @@ def gen_constraints(cycles, unpaths, node2x):
             continue
         variables = [node2x[node] for node in cycle]
         cycle_constaints.append("+".join(variables) + "<= %d;..." % (len(variables)-1))
-
-    ##TODO:完善不平衡路径约束
+    
+    #获取不平衡路径约束
     unpath_constraints = []
-    ##获取不平衡路径的约束
     for (source, target), paths_between in unpaths.iteritems():
-        # length: [paths]
-        length_dict = {}
-        # 把路径按照长度来归类.同一个长度的不平衡路径全部乘起来，称之为Ki
-        for upath in paths_between:
-            length = len(upath) 
-            string = tuple([node2x[node] for node in upath])
-            if length not in length_dict:
-                length_dict[length] = [string]
-            else:
-                length_dict[length].append(string)
-        #[paths][paths][paths]
-        length_list = length_dict.values()
-        products = []
-        #print "%% (%s, %s)" % (source, target)
-        for i in range(0, len(length_list)-1):
-            for j in range(i+1, len(length_list)):
-                for path_in_group_i in length_list[i]:
-                    for path_in_group_j in length_list[j]:
-                        products.append(set(path_in_group_i).union(set(path_in_group_j)))
-        for product in products:
-            unpath_constraints.append("+".join(product) +\
-                                      "<= %d;..." % (len(product)-1))
+        e = "%s+%s <= 1;..." %(node2x[source], node2x[target])
+        unpath_constraints.append(e)
+
     logger.critical("ESGraph generated %d matlab upath constraints" % len(unpath_constraints))
     return cycle_constaints + unpath_constraints
 
-def main():
-    "main function"
-    PATH = raw_input("plz enter vm files path:")
-    if not os.path.exists(PATH):
-        print "Error: %s doesn't exists" % PATH
-        sys.exit(-1)
-    OPATH = os.path.join(PATH, "ESMatlab")
-    if not os.path.exists(OPATH):
-        os.mkdir(OPATH)
-    for eachVm in vm_files2(PATH):
-        graph = get_graph(eachVm)
+import netlistx.cliapp as cliapp
+class MainApp(cliapp.CliApp):
+
+    def __init__(self, name = "partial_esgraph"):
+        super(MainApp, self).__init__(name)
+
+    def _process(self, vm):
+        OPATH = os.path.join(self.path, "ESMatlab")
+        self.setOpath(OPATH)
+        graph = get_graph(vm)
         esgrh = ESGraph(graph)
-        get_scan_fds(esgrh, OPATH)
+        scan_fds = get_scan_fds(esgrh, self.opath)
+        fobj = open( os.path.join(OPATH, esgrh.name + "_SCAN_FDs.txt"), 'w')
+        fobj.write("\n".join(scan_fds))
+        fobj.close()
 
 if __name__ == "__main__":
-    main()
+    MainApp().run()
