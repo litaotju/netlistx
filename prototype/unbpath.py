@@ -23,6 +23,7 @@ def unbalance_paths(G):
             print "Snode, Tnodes: %s %s" % ( str(s), str(upath[s]) )
         for t in upath[s]:
             assert not upath2.has_key( (s,t) )
+            # TODO: s5378 memerror ni nx.all_simple_paths
             unbalance_path_st = list( nx.all_simple_paths(G, s, t) )
             if len(unbalance_path_st) >= 2:
                 upath2[ (s,t) ] = unbalance_path_st

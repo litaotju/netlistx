@@ -35,7 +35,7 @@ def get_namegraph(graph):
 
     namegraph = nx.DiGraph()
     namegraph.add_nodes_from(tmp.iterkeys())
-    namegraph.add_edges_from(((get_name(edge[0]), get_name(edge[1])) for edge in graph.edges()))
+    namegraph.add_edges_from(((get_name(edge[0]), get_name(edge[1])) for edge in graph.edges_iter()))
     logger.debug("get name graph successfully")
     return namegraph
 
@@ -75,11 +75,13 @@ def read_solution(solutionfile, entity2x):
     return ret
 
 CHAR_STOP_MATLAB = 'i'
-def gen_m_script(contraints, entity2x, solution_file, port, script_file):
+def gen_m_script(obj, contraints, binvar_length, solution_file, port, script_file):
     u'''
         @brief: 生成matlab脚本, 保存到solution_file文件夹
         @params:
-            entity2x: a dict {node: x(%d)}
+            obj: objective function, it's an expression about x
+            contraints: a list of constraint(str)
+            binvar_length: the number of binnary decision viriables
             solution_file: a filename, tell the matlab to export the solution to this file_util
             port: a port number, tell the matlab to listen on this port for finishing signal
             script_file: a filename, print all the matlab statement to this file_util
@@ -93,17 +95,17 @@ def gen_m_script(contraints, entity2x, solution_file, port, script_file):
 
     # 输出matlab脚本    
     with StdOutRedirect(script_file):
-        print "x = binvar(1, %d);" % len(entity2x)
+        print "x = binvar(1, %d);" % binvar_length
         print ''' ops = sdpsettings('solver','bnb','bnb.solver','fmincon','bnb.method',...
                       'breadth','bnb.gaptol',1e-8,'verbose',1,'bnb.maxiter',1000,'allownonconvex',0);
         '''
-        print "obj = x;"
+        print "obj = %s;" % obj
         print "constraints = [",
         print '\n'.join(contraints)
         print "];"
         print "solvesdp(constraints, obj, ops);"
         print "fid = fopen('%s','w');" % solution_file
-        print "for i = 1:%d" % len(entity2x)
+        print "for i = 1:%d" % binvar_length
         print "    fprintf(fid, 'x(%d)  %d\\n', i, double(x(i)));"
         print "end"
         print "t = tcpip('localhost', %d, 'NetworkRole', 'client');" % port

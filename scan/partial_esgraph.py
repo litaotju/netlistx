@@ -25,7 +25,7 @@ def get_scan_fds(esgrh, opath):
     '''
     assert isinstance(esgrh, ESGraph)
     script_file = os.path.join(opath, esgrh.name + ".m")  #输出的matlab脚本文件名，如果需要的话
-    solution_file = esgrh.name + "_ESGraph_ScanFDs.txt"   #matlab输出的解的文件名
+    solution_file = esgrh.name + "_ESGraph_MatSolution.txt"   #matlab输出的解的文件名
     port = 12345 #Socket port for matlab
 
     namegraph = get_namegraph(esgrh)          #namegraph = nx.DiGraph()
@@ -34,23 +34,23 @@ def get_scan_fds(esgrh, opath):
     
     ##FOR_DEBUG
     ##保存不平衡路径和环的信息到json对象
+    with_selfloop = os.path.join(opath, 'with-selfloop')
+    without_selfloop = os.path.join(opath, 'without-selfloop')
+    if not os.path.exists(with_selfloop):
+        os.makedirs(with_selfloop)
+    if not os.path.exists(without_selfloop):
+        os.makedirs(without_selfloop)
     try:
-        os.makedirs(os.path.join(opath, 'with-selfloop'))
-        os.makedirs(os.path.join(opath, 'without-selfloop'))
-    except WindowsError, e:
-        print e
-        pass
-    try:
-        nx.write_dot(namegraph, os.path.join(opath, 'with-selfloop',esgrh.name + ".dot"))
-    except UnicodeDecodeError, e:
+        nx.write_dot(namegraph, os.path.join(with_selfloop, esgrh.name + ".dot"))
+    except Exception, e:
         print e
         pass
 
     namegraph.remove_nodes_from(selfloop_nodes)
 
     try:
-        nx.write_dot(namegraph, os.path.join(opath, 'without-selfloop', esgrh.name + ".dot"))
-    except UnicodeDecodeError, e:
+        nx.write_dot(namegraph, os.path.join(without_selfloop, esgrh.name + ".dot"))
+    except Exception, e:
         print e
         pass
         
@@ -73,12 +73,17 @@ def get_scan_fds(esgrh, opath):
     fobj.close()
 
     # {name: x%d}
-    node2x = {node: "x(%d)"%index for index, node in enumerate(namegraph.nodes())}
+    node2x = {node: "x(%d)" % (index+1) for index, node in enumerate(namegraph.nodes())}
+    #node2x持久化，方便将运行matlab和读取solution分开
+    node2x_json = open(os.path.join(opath, esgrh.name + "_node2x.json"), 'w')
+    json.dump(node2x, node2x_json, indent = 4)
+    node2x_json.close()
+
     constraints = gen_constraints(cycles, unpaths, node2x)
 
     scan_fds = []
     if constraints:
-        gen_m_script(constraints, node2x, solution_file, port, script_file)
+        gen_m_script("-sum(x)", constraints, len(node2x), solution_file, port, script_file)
         run_matlab(script_file, port)
         scan_fds = read_solution(os.path.join(opath, solution_file), node2x) + selfloop_nodes
     else:
