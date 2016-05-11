@@ -20,6 +20,7 @@ class ESGraph(nx.DiGraph):
                 circuitgraph: an instance of CircuitGraph class
         '''
         nx.DiGraph.__init__( self )  
+        logger.debug("Job: getting ESGraph...")
         circuitgraph.topo_copy( self )
         self.name = circuitgraph.name
         comb_nodes = [node for node in self.nodes() if cc.isComb(node) ]
@@ -89,7 +90,7 @@ class ESGraph(nx.DiGraph):
             self.remove_node(node )
         if self.__check_comb_loops:
             self.assert_no_comb_cycles()
-        logger.debug("ESGraph init consumed time %d" % ( time.clock() - start ) ) 
+        logger.debug("Job: ESGraph get. OK! Consumed time %d\n" % ( time.clock() - start ) ) 
         return
 
     def info(self):

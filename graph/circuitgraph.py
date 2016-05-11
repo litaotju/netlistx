@@ -345,7 +345,7 @@ class CircuitGraph(nx.DiGraph):
         # 如果不包含PIPO，那么现在就退出函数，不将与PIPO相连接的边加入到图中
         if not self.include_pipo:
             self.edge_set = self.prim_edge_list
-            logger.info( "Note: get all edges succsfully, WARING : NO PIPO EDGES IN GRAPH" )
+            logger.info( "Process: get all edges succsfully, WARING : NO PIPO EDGES IN GRAPH" )
             return None
         # ------------------------------------------------------------------------
         logger.debug( "Process: searching PIPO edges from m_list...")
@@ -368,7 +368,7 @@ class CircuitGraph(nx.DiGraph):
             self.po_edge_list.append(po_edge)
         # 将所有的Edge合并到self.edge_set属性当中
         self.edge_set = self.pi_edge_list + self.po_edge_list + self.prim_edge_list
-        logger.debug( "Note : get all the edges succsfully")
+        logger.debug( "Process : get all the edges succsfully")
         return None
 
     def add_medge(self, source, sink, port_pair, connection):

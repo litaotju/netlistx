@@ -263,6 +263,7 @@ def vm_parse(input_file):
     else:
         all_lines=fobj.read()
         fobj.close()
+        logger.debug("Job: parsing file: %s" % input_file)
         p=parser.parse(all_lines)
         #--------------------------------
         #打印部分
@@ -289,7 +290,7 @@ def vm_parse(input_file):
         #解析完完全打印出来
         #------------------------------------
         parser.restart()
-        logger.debug("Job: parse the vm file %s finished."% input_file )
+        logger.debug("Job: parser finished.\n")
         return p
     
 ###############################################################################
