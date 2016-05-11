@@ -337,6 +337,24 @@ isDff  = lambda obj: isinstance( obj, circut_module) and obj.m_type == "FD"
 isComb = lambda obj: isinstance( obj, circut_module ) and obj.m_type != "FD"
 isPort = lambda obj: isinstance( obj, port)
 
+class Port(port):
+    pass
+
+class CircuitModule(circut_module):
+    pass
+
+class Signal(signal):
+    pass
+
+class JointSignal(joint_signal):
+    pass
+
+class Defparam(defparam):
+    pass
+
+class Assign(assign):
+    pass
+
 ###featured 7.3--------------------------------------------------------------
 ###
 #class vertex:
