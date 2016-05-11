@@ -34,6 +34,7 @@ def get_namegraph(graph):
         tmp[unique_name] = node
 
     namegraph = nx.DiGraph()
+    namegraph.original_node = tmp
     namegraph.add_nodes_from(tmp.iterkeys())
     namegraph.add_edges_from(((get_name(edge[0]), get_name(edge[1])) for edge in graph.edges_iter()))
     logger.debug("get name graph successfully")
