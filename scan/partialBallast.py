@@ -12,6 +12,7 @@ from netlistx.file_util    import vm_files
 from netlistx.graph.cloudgraph      import CloudRegGraph
 from netlistx.graph.circuitgraph    import get_graph
 from netlistx.prototype.fas         import comb_fas
+from netlistx.scan.scanapp import ScanApp
 
 __all__ = [ "balance", "ballast" ]
 
@@ -154,26 +155,6 @@ def ballast( crgraph):
         scanfds += crgraph.arcs[realedge]
     return scanfds
 
-def main():
-    srcpath = raw_input("plz enter path:")
-    for eachVm in vm_files( srcpath ):
-        inputfile = os.path.join( srcpath, eachVm)
-        g = get_graph( inputfile )
-        g.info()
-        cr = CloudRegGraph( g )
-        cr.info()
-        # 每一个统计5次
-        for j in range(0, 10):
-            scanfds = ballast( cr )
-        
-            with open( os.path.join(srcpath, cr.name[:-11] + "_balScanFDs.txt" ), 'w') as out:
-                for fd in scanfds:
-                    out.write("%s %s\n " % (fd.cellref, fd.name) )
-                out.write( "FD NUMBER: %d" % len(cr.constfds + cr.fds) )
-                out.write( "SCAN_FD number: %d" % len( scanfds) )
-            print "FD number:", len(cr.constfds + cr.fds)
-            print "SCAN_FD number: ", len(scanfds)
-
 def testA():
     '''在这个例子里balance是最优的
     '''
@@ -183,8 +164,8 @@ def testA():
     a.add_edge(1, 4, weight = 1)
     a.add_edge(3, 2, weight = 2)
     a.add_edge(4, 2, weight = 1)
-
     r = balance(a)
+    print(r)
 
 def testB():
     '''本例论证了ballast方法的非最优性
@@ -196,11 +177,23 @@ def testB():
     a.add_edge(3, 2, weight = 2)
     a.add_edge(4, 2, weight = 2)
     r = balance(a)
+    print(r)
 
-    print r
+
+class BallastApp(ScanApp):
+    u'''可直接运行此App，获得Ballast方法的扫描触发器
+    '''
+    def __init__(self, name="Ballast"):
+        super(BallastApp, self).__init__(name)
+
+    def _get_scan_fds(self, vm):
+        g = get_graph(vm)
+        g.info()
+        cr = CloudRegGraph(g)
+        cr.info()
+        self.fds = filter(cc.isDff, g.nodes_iter())
+        self.scan_fds = ballast(cr)
 
 if __name__ == "__main__":
-    main()
-    #testB()
-
+    BallastApp().run()
 

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-u'''直接运行本模块，输入一个路径，对该路径下的所有vm文件，提取其增广S图，然后生成matlab脚本。
-   和部分扫描优化问题。
+u'''本模块实现了一个使用增广S图的优化方法来进行部分扫描触发器的方法。
+以及实现了ESScanApp类,作为命令行应用程序。
 '''
 import os
 import sys
@@ -8,11 +8,15 @@ import json
 
 import networkx as nx
 
+import netlistx.circuit as cc
 from netlistx.log import logger
 from netlistx.file_util import vm_files2
 from netlistx.graph.circuitgraph import get_graph
 from netlistx.graph.esgraph import ESGraph
 from netlistx.scan.util import get_namegraph, upath_cycle, gen_m_script, run_matlab, read_solution
+from netlistx.scan.scanapp import ScanApp
+
+__all__ = ["ESScanApp"]
 
 def get_scan_fds(esgrh, opath):
     u'''
@@ -44,7 +48,6 @@ def get_scan_fds(esgrh, opath):
         nx.write_dot(namegraph, os.path.join(with_selfloop, esgrh.name + ".dot"))
     except Exception, e:
         print e
-        pass
 
     namegraph.remove_nodes_from(selfloop_nodes)
 
@@ -52,7 +55,6 @@ def get_scan_fds(esgrh, opath):
         nx.write_dot(namegraph, os.path.join(without_selfloop, esgrh.name + ".dot"))
     except Exception, e:
         print e
-        pass
         
     unpaths, cycles = upath_cycle(namegraph)  #unpaths = [], cycles = []
 
@@ -76,7 +78,7 @@ def get_scan_fds(esgrh, opath):
     node2x = {node: "x(%d)" % (index+1) for index, node in enumerate(namegraph.nodes())}
     #node2x持久化，方便将运行matlab和读取solution分开
     node2x_json = open(os.path.join(opath, esgrh.name + "_node2x.json"), 'w')
-    json.dump(node2x, node2x_json, indent = 4)
+    json.dump(node2x, node2x_json, indent=4)
     node2x_json.close()
 
     constraints = gen_constraints(cycles, unpaths, node2x)
@@ -88,6 +90,9 @@ def get_scan_fds(esgrh, opath):
         scan_fds = read_solution(os.path.join(opath, solution_file), node2x) + selfloop_nodes
     else:
         scan_fds = selfloop_nodes
+    ##TODO: 如果解里面有端口呢？
+    scan_fds = [namegraph.original_node[name] for name in scan_fds]
+    scan_fds = filter(cc.isDff, scan_fds)
     return scan_fds
 
 def gen_constraints(cycles, unpaths, node2x):
@@ -118,21 +123,17 @@ def gen_constraints(cycles, unpaths, node2x):
     logger.critical("ESGraph generated %d matlab upath constraints" % len(unpath_constraints))
     return cycle_constaints + unpath_constraints
 
-import netlistx.cliapp as cliapp
-class MainApp(cliapp.CliApp):
 
-    def __init__(self, name = "partial_esgraph"):
-        super(MainApp, self).__init__(name)
+class ESScanApp(ScanApp):
 
-    def _process(self, vm):
-        OPATH = os.path.join(self.path, "ESMatlab")
-        self.setOpath(OPATH)
+    def __init__(self, name="ESScan"):
+        super(ESScanApp, self).__init__(name)
+
+    def _get_scan_fds(self, vm):        
         graph = get_graph(vm)
         esgrh = ESGraph(graph)
-        scan_fds = get_scan_fds(esgrh, self.opath)
-        fobj = open( os.path.join(OPATH, esgrh.name + "_SCAN_FDs.txt"), 'w')
-        fobj.write("\n".join(scan_fds))
-        fobj.close()
+        self.fds = filter(cc.isDff, graph.nodes_iter())
+        self.scan_fds = get_scan_fds(esgrh, self.opath)
 
 if __name__ == "__main__":
-    MainApp().run()
+    ESScanApp().run()

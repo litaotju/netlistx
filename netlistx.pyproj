@@ -118,6 +118,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="scan\partial_esgraph.py" />
+    <Compile Include="scan\scanapp.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="scan\util.py">
       <SubType>Code</SubType>
     </Compile>
