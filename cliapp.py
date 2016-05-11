@@ -4,6 +4,7 @@ u'''一个基本的命令行应用类
 import os
 import sys
 
+from file_util import vm_files2
 __all__ = ["CliApp"]
 
 class CliApp(object):
@@ -50,7 +51,7 @@ class CliApp(object):
     def _sequence(self):
         u'''产生序列供batch函数使用
         '''
-        return vmfiles2(self.path)
+        return vm_files2(self.path)
     
     def _process(self, singlefile):
         u'''任务，如何处理一个singlefile'''
