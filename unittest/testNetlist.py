@@ -16,6 +16,7 @@ class testNetlist(unittest.TestCase):
         self.normal = path + "\\normal.vm"
         self.redecl = path + "\\redecl.vm"
         self.path = path
+
     def testRecl(self,):
         vminfo = vm_parse(self.redecl)
         self.assertRaises(RedeclarationError, Netlist, vminfo)
@@ -73,9 +74,9 @@ class testNetlist(unittest.TestCase):
     def testTop(self):
         vminfo  = vm_parse(self.normal)
         n1 = Netlist(vminfo)
-        top =  n1.top()
-        self.assertIsInstance(top, circut_module )
-        self.assertEqual( len( top.port_list) ,6)
+        top =  n1.get_top()
+        self.assertIsInstance(top, circut_module)
+        self.assertEqual(len(top.port_list) ,6)
 
         port5 = top.port_list[5]
         self.assertIsInstance( port5, port)
@@ -85,8 +86,6 @@ class testNetlist(unittest.TestCase):
         vminfo  = vm_parse(self.normal)
         n1 = Netlist(vminfo)
         n1.write(self.path)
-       
-        self.assertEqual(n1.write("HJDJSAHKAJDh"), False)
 
 if __name__ == "__main__":
     unittest.main()

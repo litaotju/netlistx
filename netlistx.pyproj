@@ -52,6 +52,7 @@
     <Compile Include="graph\test\testBallast.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="graph\test\testCrgraph.py" />
     <Compile Include="itrans\sgraph.py">
       <SubType>Code</SubType>
     </Compile>
@@ -121,6 +122,9 @@
     <Compile Include="scan\scanapp.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="scan\test\testPartialBallast.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="scan\util.py">
       <SubType>Code</SubType>
     </Compile>
@@ -128,14 +132,10 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="scan\testbenchGenerate.py" />
-    <Compile Include="unittest\testCrgraph.py">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="unittest\testDrc.py">
+    <Compile Include="unittest\testNetlistRules.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="unittest\testNetlist.py" />
-    <Compile Include="unittest\testPartialBallast.py" />
     <Compile Include="__init__.py">
       <SubType>Code</SubType>
     </Compile>
@@ -149,6 +149,7 @@
     <Folder Include="scan\" />
     <Folder Include="parser\" />
     <Folder Include="prototype\" />
+    <Folder Include="scan\test\" />
     <Folder Include="unittest\" />
   </ItemGroup>
   <ItemGroup>

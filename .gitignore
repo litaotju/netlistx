@@ -2,6 +2,7 @@
 *.png
 *.jpg
 *.gexf
+*.dot
 *.vm
 /*.vm
 /*.v

@@ -2,7 +2,7 @@
 import os
 
 from netlistx import vm_parse
-from netlistx.exception import CircuitGraphError
+from netlistx.exception import *
 from netlistx.netlist import Netlist
 from netlistx.netlist_rules import check
 from netlistx.netlist_util import mark_the_circut
@@ -23,7 +23,8 @@ class Test_testDrc(unittest.TestCase):
         vminfo = vm_parse(self.path + "\\b011.v")
         mark_the_circut( vminfo['m_list'])
         nt = Netlist(vminfo )
-        self.assertRaises(CircuitGraphError, check(nt) )
+        with self.assertRaises(CrgraphError):
+            check(nt)
 
     def test_Noclk(self):
         vminfo = vm_parse(self.path + "\\b01noclk.v")

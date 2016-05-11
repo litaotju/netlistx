@@ -14,7 +14,7 @@ from netlistx.graph.circuitgraph    import get_graph
 from netlistx.prototype.fas         import comb_fas
 from netlistx.scan.scanapp import ScanApp
 
-__all__ = [ "balance", "ballast" ]
+__all__ = [ "balance", "ballast", "BallastApp" ]
 
 def balance( graph):
     assert nx.is_directed_acyclic_graph(graph),\
@@ -154,31 +154,6 @@ def ballast( crgraph):
         realedge = invmap[edge[0]], invmap[edge[1]]
         scanfds += crgraph.arcs[realedge]
     return scanfds
-
-def testA():
-    '''在这个例子里balance是最优的
-    '''
-    a = nx.DiGraph()
-    a.add_edge(1, 2, weight = 100)
-    a.add_edge(1, 3, weight = 2)
-    a.add_edge(1, 4, weight = 1)
-    a.add_edge(3, 2, weight = 2)
-    a.add_edge(4, 2, weight = 1)
-    r = balance(a)
-    print(r)
-
-def testB():
-    '''本例论证了ballast方法的非最优性
-    '''
-    a = nx.DiGraph()
-    a.add_edge(1, 2, weight = 3)
-    a.add_edge(1, 3, weight = 2)
-    a.add_edge(1, 4, weight = 2)
-    a.add_edge(3, 2, weight = 2)
-    a.add_edge(4, 2, weight = 2)
-    r = balance(a)
-    print(r)
-
 
 class BallastApp(ScanApp):
     u'''可直接运行此App，获得Ballast方法的扫描触发器
