@@ -10,12 +10,6 @@ from netlistx.log import logger
 from netlistx.file_util import StdOutRedirect
 from netlistx.prototype.unbpath import unbalance_paths
 
-__all__ = [ 'get_namegraph', 
-           'upath_cycle', 
-           'gen_m_script', 
-           'run_matlab', 
-           'read_solution']
-
 def get_namegraph(graph):
     u'''
         @brief:
@@ -134,9 +128,39 @@ def run_matlab(script_file, port):
     subprocess.Popen("matlab -nodesktop -sd  %s -r %s" % (opath, basename))
     connection = server_socket.accept()[0]
     if connection.recv(100) == "valid":
-        print "Matlab excuted OK!"
+        logger.debug("Matlab excuted OK!")
         # send an i to close Matlab
         connection.send(CHAR_STOP_MATLAB)
     connection.close()
     server_socket.close()
     return
+
+def isbalanced( graph ):
+    roots = [node for node in graph.nodes_iter() if graph.in_degree()[node]==0]
+    if len(roots) < 1:
+        return False
+    # 广度优先搜索,访问根节点，访问根节点的下一层节点， 为每一个点定Level
+    # 访问一层节点的下一层节点，直到将所有的节点访问完，跳出。
+    for root in roots:
+        bfs_queue = [root]
+        level = {root:0 }                  #记录每一个点的LEVEL的字典，初始只记录当前root
+        been_levelized = []                #已经被定级的节点
+        current_level = 0                  #当前的层
+        while(bfs_queue):
+		    # 传进来的bfs_queque的层是已知的，
+		    # 记录下它们的所有后继结点，并为他们定层次为n+1,同时放到待访问序列里面
+            current_level +=1
+            next_level_que = []
+            for eachNode in bfs_queue:
+                for eachSucc in graph.successors(eachNode):
+                    if not eachSucc in next_level_que:
+                        next_level_que.append(eachSucc)
+                        if not level.has_key(eachSucc):
+                            level[eachSucc] = current_level
+                        elif level[eachSucc] ==current_level:
+                            continue
+                        else:
+                            return False
+            been_levelized += bfs_queue
+            bfs_queue = next_level_que
+    return True
