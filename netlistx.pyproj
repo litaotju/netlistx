@@ -37,7 +37,6 @@
     <Compile Include="file_util.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="graph\ballast.py" />
     <Compile Include="graph\circuitgraph.py" />
     <Compile Include="graph\cloudgraph.py">
       <SubType>Code</SubType>
@@ -52,7 +51,6 @@
     <Compile Include="graph\test\testBallast.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="graph\test\testCrgraph.py" />
     <Compile Include="itrans\sgraph.py">
       <SubType>Code</SubType>
     </Compile>
@@ -132,6 +130,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="scan\testbenchGenerate.py" />
+    <Compile Include="unittest\testCrgraph.py" />
     <Compile Include="unittest\testNetlistRules.py">
       <SubType>Code</SubType>
     </Compile>
