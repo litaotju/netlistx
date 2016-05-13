@@ -51,6 +51,9 @@
     <Compile Include="graph\test\testBallast.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="graph\util.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="itrans\sgraph.py">
       <SubType>Code</SubType>
     </Compile>

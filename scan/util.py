@@ -136,6 +136,12 @@ def run_matlab(script_file, port):
     return
 
 def isbalanced( graph ):
+    u'''@brief:给一个图，判断图是否为平衡结构
+        @params:
+               graph, a networkx.DiGraph
+        @return:
+               true if the graph is balanced structure else false
+    '''
     roots = [node for node in graph.nodes_iter() if graph.in_degree()[node]==0]
     if len(roots) < 1:
         return False
