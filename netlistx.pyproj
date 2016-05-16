@@ -25,10 +25,11 @@
     <Content Include="itrans\Readme.md" />
     <Content Include="README.md" />
     <Content Include="requirements.txt" />
+    <Content Include="scan\test\test.bat" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="cell_construct\construct_scan_lib.py" />
-    <Compile Include="cell_construct\faultfdlib.py" />
+    <Compile Include="cells\construct_scan_lib.py" />
+    <Compile Include="cells\faultfdlib.py" />
     <Compile Include="circuit.py" />
     <Compile Include="cliapp.py">
       <SubType>Code</SubType>
@@ -123,9 +124,8 @@
     <Compile Include="scan\scanapp.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="scan\test\testPartialBallast.py">
-      <SubType>Code</SubType>
-    </Compile>
+    <Compile Include="scan\test\testPartialBallast.py" />
+    <Compile Include="scan\test\test_partial_esgraph.py" />
     <Compile Include="scan\util.py">
       <SubType>Code</SubType>
     </Compile>
@@ -143,7 +143,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="cell_construct" />
+    <Folder Include="cells\" />
     <Folder Include="graph\" />
     <Folder Include="graph\test\" />
     <Folder Include="itrans\" />
