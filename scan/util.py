@@ -19,7 +19,22 @@ def get_namegraph(graph):
         return:
             返回和同等拓扑结构的图. 新图的节点是原图的节点的名称,为字符串类型变量.
     '''
-    get_name = lambda node : node.name if not cc.isPort(node) else node.port_assign.string
+    def get_name(node):
+        u'''@brief:
+                return the name of a node, replace \ with a / incase the Unicode error or write_dot
+            @params:
+                node, circuit.Port obj or circuit.Module obj
+            @return:
+                name, a str, Port.assgin.string or Module.name, and replace / with \
+        '''
+        name = ''
+        if cc.isPort(node):
+            name = node.port_assign.string
+        else:
+            #isinstance(node, cc.circuit_module)
+            name = node.name
+        name = name.replace('\\', '/')
+        return name
     tmp = {}
     for node in graph.nodes_iter():
         unique_name = get_name(node)
@@ -60,13 +75,19 @@ def read_solution(solutionfile, entity2x):
             list, 每一个 变量x%d==0 对应的的实体组成的队列
     '''
     ret = []
-    x2entity = {x: entity for entity, x in entity2x.iteritems()}
+    #x2entity = {x: entity for entity, x in entity2x.iteritems()}
+    x2entities = {}
+    for x, entity in entity2x.iteritems():
+        if not x2entities.has_key[x]:
+            x2entities.has_key[x] = []
+        x2entities[x].append(entity)
+
     with open(solutionfile, 'r') as solution:
         for line in solution:
             if line.startswith("//"): continue
             (x, val) = tuple(line.strip().split()) 
             if int(val) == 0:
-                ret.append(x2entity[x])
+                ret += x2entities[x]
     return ret
 
 CHAR_STOP_MATLAB = 'i'
