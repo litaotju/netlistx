@@ -77,7 +77,7 @@ def read_solution(solutionfile, entity2x):
     ret = []
     #x2entity = {x: entity for entity, x in entity2x.iteritems()}
     x2entities = {}
-    for x, entity in entity2x.iteritems():
+    for entity,x in entity2x.iteritems():
         if not x2entities.has_key(x):
             x2entities[x] = []
         x2entities[x].append(entity)
