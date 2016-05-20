@@ -1,12 +1,33 @@
 # -*- coding:utf-8 -*- #
-# from Queue import Queue
-'''
+u'''
 对于完全图来说，整个算法所需要的消耗的时间好像太长了，以及算法所发现的不平衡边，太多了。N = 4的完全图中，有36条不平衡路径。
-Changelog: 
 '''
 import networkx as nx
 
 def unbalance_paths(G):
+    '''
+    @param: G, a nx.DiGraph obj
+    @return：{}  upath2, all unbalance unbpath, 
+    '''
+    upath2 = []
+    def is_unp(s,t):
+        if s is t or G.out_degree(s) <= 1:
+            return None
+        paths = list(nx.all_simple_paths(G,s,t))
+        if len(paths) == 1:
+            return None
+        for path in paths[1:]:
+            if len(path)!=len(path[0]):
+                return ((s,t),paths)
+    for s in G.nodes_iter():
+        for t in G.nodes_iter():
+            upath2.append(is_unp(s,t))
+    upath2 = filter(lambda x: x!= None, upath2)
+    upath2 = {x[0]:x[1] for x in upath2}
+    return upath2
+
+
+def unbalance_paths_deprecate(G):
     '''
     @param: G, a nx.DiGraph obj
     @return：{}  upath2, all unbalance unbpath, 
@@ -80,7 +101,6 @@ def find_upath(G, s):
                     continue
         bfs_list = next_list 
     return reconvergent_nodes
-#----------------------------------------------------------------------------------
 
 def __stat_complete():
     '''统计节点数目为1-10的完全图中的不平衡路径的个数
