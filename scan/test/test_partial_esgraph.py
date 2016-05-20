@@ -90,6 +90,25 @@ class Test_upaths_constraints(unittest.TestCase):
             "e+d+g+f+z<= 4;...",
             ])
     
+    def test_MoreMoreComplex(self):
+        upaths = copy.deepcopy(self.upaths)
+        upaths.update({
+            ('e','f'):[
+                ['e','f'],
+                ['e','g','f'],
+                ['e','h','f'],
+                ['e','m','n','f'],
+                ['e','x','y','f'],
+                ['e','d','z','f']
+                ]
+            })
+        node2x = copy.deepcopy(self.node2x)
+        constraints = upaths_contraints_moremore_complex(upaths, node2x)
+        self.assertTrue( node2x['h']=='g')
+        self.assertTrue( node2x['y']=='n')
+        self.assertTrue( node2x['x']=='m')
+        self.assertTrue(len(constraints) == 7)
+
     def test_merge_group(self):
         node2x = {
             'a':'x1',
