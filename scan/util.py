@@ -78,8 +78,8 @@ def read_solution(solutionfile, entity2x):
     #x2entity = {x: entity for entity, x in entity2x.iteritems()}
     x2entities = {}
     for x, entity in entity2x.iteritems():
-        if not x2entities.has_key[x]:
-            x2entities.has_key[x] = []
+        if not x2entities.has_key(x):
+            x2entities[x] = []
         x2entities[x].append(entity)
 
     with open(solutionfile, 'r') as solution:
@@ -87,7 +87,11 @@ def read_solution(solutionfile, entity2x):
             if line.startswith("//"): continue
             (x, val) = tuple(line.strip().split()) 
             if int(val) == 0:
-                ret += x2entities[x]
+                try:
+                    ret += x2entities[x]
+                except KeyError:
+                    #如果采取合并分组的方式，有的x可能没有对应的FD
+                    pass
     return ret
 
 CHAR_STOP_MATLAB = 'i'
@@ -115,7 +119,7 @@ def gen_m_script(obj, contraints, binvar_length, solution_file, port, script_fil
         print ''' ops = sdpsettings('solver','bnb','bnb.solver','fmincon','bnb.method',...
                       'breadth','bnb.gaptol',1e-8,'verbose',1,'bnb.maxiter',1000,'allownonconvex',0);
         '''
-        print "obj = %s;" % obj
+        print "%s" % obj
         print "constraints = [",
         print '\n'.join(contraints)
         print "];"
