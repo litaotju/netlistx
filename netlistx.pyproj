@@ -129,6 +129,9 @@
     </Compile>
     <Compile Include="scan\test\testPartialBallast.py" />
     <Compile Include="scan\test\test_partial_esgraph.py" />
+    <Compile Include="scan\unpaths_constraints.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="scan\util.py">
       <SubType>Code</SubType>
     </Compile>

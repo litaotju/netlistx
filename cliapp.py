@@ -153,6 +153,7 @@ class CliApp(object):
         #保持path的绝对路径属性
         if not os.path.isabs(path): 
             path = os.path.join(self.path, path)
+            path = os.path.abspath(path)
         #存在则更新，不存在打印当前路径
         if os.path.exists(path):
             self.path = path

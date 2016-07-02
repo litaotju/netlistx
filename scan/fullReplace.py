@@ -8,7 +8,10 @@ import re
 import netlistx.netlist_util as nu
 from netlistx.scan.config import SCAN_LIB
 
-def full_replace_scan_chain(fname,verbose=True,input_file_dir=os.getcwd(),output_file_dir=os.getcwd()+"\\out\\"):
+def full_replace_scan_chain(fname,
+                            verbose=True,
+                            input_file_dir=os.getcwd(),
+                            output_file_dir=os.getcwd()+"\\out\\"):
     input_file = os.path.join(input_file_dir, fname)
     name_base = os.path.splitext(fname)[0]
     output_file = os.path.join(output_file_dir,fname)

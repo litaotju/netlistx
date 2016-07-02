@@ -335,6 +335,7 @@ class assign:
 
 isDff  = lambda obj: isinstance( obj, circut_module) and obj.m_type == "FD"
 isComb = lambda obj: isinstance( obj, circut_module ) and obj.m_type != "FD"
+isLUT = lambda obj: isinstance(obj, circut_module) and obj.m_type=="LUT"
 isPort = lambda obj: isinstance( obj, port)
 
 class Port(port):
