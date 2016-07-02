@@ -7,7 +7,7 @@ import networkx as nx
 import netlistx.circuit as cc
 
 from netlistx.graph.cloudgraph import CloudRegGraph
-from netlistx.graph.circuitgraph import get_graph
+from netlistx.graph.circuitgraph import CircuitGraph
 from netlistx.prototype.fas import comb_fas
 from netlistx.scan.scanapp import ScanApp
 
@@ -136,8 +136,8 @@ class BallastApp(ScanApp):
     def __init__(self, name="Ballast"):
         super(BallastApp, self).__init__(name)
 
-    def _get_scan_fds(self, vm):
-        g = get_graph(vm)
+    def _get_scan_fds(self):
+        g = CircuitGraph(self.netlist)
         g.info()
         cr = CloudRegGraph(g)
         cr.info()
