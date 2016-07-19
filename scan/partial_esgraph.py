@@ -54,6 +54,7 @@ def get_scan_fds(esgrh, opath):
 
     if IS_ITER:
         # 使用类似 BFS的方法来找UNP
+        unpaths = unbalance_paths_deprecate(namegraph)
         logger.debug("unpaths get okay")
         cycles = list(nx.simple_cycles(namegraph))
         logger.debug("cycles get okay")
@@ -104,13 +105,16 @@ def get_scan_fds(esgrh, opath):
     # 生成目标函数
     obj = ""
     ## UNP之间的Paths没有合并的情况时
+    if LEVEL not in [MERGE_GROUP, PARTIAL_MERGE_GROUP]:
         weight = {}
         MAX_NODE = len(node2x) + 1000
         for entity, x in node2x.iteritems():
             # 触发器节点的权重设置为1
+            if cc.isDff(namegraph.original_node[entity]):
                 weight[x] = 1
             else:
                 #设置端口的权重极大，使得尽可能选择触发器
+                assert cc.isPort(namegraph.original_node[entity])
                 weight[x] = MAX_NODE
         weights = []
         for i in range(0, len(node2x)):
@@ -133,8 +137,10 @@ def get_scan_fds(esgrh, opath):
             else:
                 weight.append(1)
         obj = "W = %s;\n" % weight
+        obj += "obj = -x*W';\n"
     
     # 产生Matlab脚本
+    gen_m_script(obj, constraints, len(node2x), solution_file, port, script_file)
     
     # 运行脚本，读取结果
     if LEVEL == 1:
@@ -260,6 +266,8 @@ class ESScanAppIter(ScanApp):
     def __init__(self, name="ESScanIter"):
         global IS_ITER
         IS_ITER = True
+        super(ESScanAppIter, self).__init__(name) 
+        self.addFunction("portion", self.set_portion)
 
     def _get_scan_fds(self):
         graph = CircuitGraph(self.netlist)
@@ -280,6 +288,7 @@ class ESScanAppIter(ScanApp):
             opath = os.path.join(self.opath, "iter%d" % iter_cnt)
             scan_fds = get_scan_fds(esgrh, opath)
             #每一轮的结果必然不为0，如果为0.说明图已经被平衡了
+            assert len(scan_fds) != 0
             iter_cnt += 1
             self.scan_fds += scan_fds
             esgrh.remove_nodes_from(scan_fds)
@@ -287,6 +296,7 @@ class ESScanAppIter(ScanApp):
     def set_portion(self):
         u'设置 大扇出D触发器的转换为SFF的比例'
         portion = float(raw_input("plz set PORTION"))
+        if portion >= 0 and portion <= 1:
             self.PORTION_MOST_FANOUT_AS_SFF = portion
         else:
             print "Ileagal Value, portion must >=0 and <=1"
@@ -297,13 +307,14 @@ def get_level():
     level = int(raw_input("set level:"))
     if level < 1 or level > 5:
         level = 1
+    global LEVEL
+    LEVEL = level
+
 if __name__ == "__main__":
-    app = ESScanApp()
-    def get_level():
-        level = int(raw_input("set level:"))
-        if level < 1 or level > 5:
-            level = 1
-        LEVEL = level
+    import sys
+    app_ctxt = {'normal': ESScanApp,
+                'iter': ESScanAppIter,
+                'cut': ESScanAppCut}
     app = None
     try:
         app = app_ctxt[sys.argv[1]]()
