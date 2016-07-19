@@ -1,8 +1,6 @@
 # -*- coding:utf-8 -*- #
-u'''
-对于完全图来说，整个算法所需要的消耗的时间好像太长了，以及算法所发现的不平衡边，太多了。N = 4的完全图中，有36条不平衡路径。
-'''
 import networkx as nx
+import netlistx.circuit as cc
 
 def unbalance_paths(G):
     '''
@@ -13,14 +11,23 @@ def unbalance_paths(G):
     def is_unp(s,t):
         if s is t or G.out_degree(s) <= 1:
             return None
-        paths = list(nx.all_simple_paths(G,s,t))
-        if len(paths) == 1:
-            return None
-        for path in paths[1:]:
-            if len(path)!=len(path[0]):
-                return ((s,t),paths)
+        firstPath = None
+        for path in nx.all_simple_paths(G,s,t):
+            #第一条路径
+            if firstPath is None:
+                firstPath = path
+            #如果有一条路径和第一条路径不相等，那么就说明是UNP,返回一个元组
+            elif len(path) != len(firstPath):
+                return ((s, t), [path])
+                #return ((s,t), list(nx.all_simple_paths(G,s,t)))
+        #循环之后没有退出，说明每一条都和第一条相等，则返回None，说明不是UNP
+        return None
     for s in G.nodes_iter():
+        if cc.isPort(s) and s.port_type == cc.Port.PORT_TYPE_OUTPUT:
+            continue
         for t in G.nodes_iter():
+            if cc.isPort(s) and s.port_type == cc.Port.PORT_TYPE_OUTPUT:
+                continue
             upath2.append(is_unp(s,t))
     upath2 = filter(lambda x: x!= None, upath2)
     upath2 = {x[0]:x[1] for x in upath2}
@@ -36,23 +43,11 @@ def unbalance_paths_deprecate(G):
     # 该程序不能找到所有的环，只能找到所有的不平衡路径。原因是，在搜索的时候，只搜索了所有
     # 出度大于1的节点，可以进行改进。将第一步没有搜索的点，全部搜索一遍，从而找出图中的环
     upath = {}
-    upath2 = {}
     nodes = [node for node in G.nodes() if G.out_degree(node)>1]
     for s in nodes:
         upath[s] = find_upath(G, s)
-        if __name__ == "__main__":
-            print "Snode, Tnodes: %s %s" % ( str(s), str(upath[s]) )
-        for t in upath[s]:
-            assert not upath2.has_key( (s,t) )
-            # TODO: s5378 memerror ni nx.all_simple_paths
-            unbalance_path_st = list( nx.all_simple_paths(G, s, t) )
-            if len(unbalance_path_st) >= 2:
-                upath2[ (s,t) ] = unbalance_path_st
-            else:
-                #print "Error Only one path s:%s->t:%s, %s" %(s, t, unbalance_path_st )
-                #raise AssertionError
-                continue
-    return upath2
+    upath = {(s,t):[] for s in upath.keys() for t in upath[s]}
+    return upath
     
 def find_upath(G, s):
     '''@param: G, an DiGraph obj
@@ -149,5 +144,3 @@ if __name__ == "__main__":
                 continue
             else:
                 print "%s %s " % (str(key), str(path))
-
-

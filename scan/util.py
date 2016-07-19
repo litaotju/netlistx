@@ -59,9 +59,7 @@ def upath_cycle(namegraph):
     '''       
     upaths = unbalance_paths(namegraph)
     logger.debug("get unblance path succesefully")
-    cycles = []
-    for cycle in nx.simple_cycles(namegraph):
-        cycles.append(cycle)
+    cycles = list(nx.simple_cycles(namegraph))
     logger.debug("get cycles succesefully")
     return upaths, cycles
 
