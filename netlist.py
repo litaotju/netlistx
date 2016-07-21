@@ -100,11 +100,8 @@ class Netlist(object):
                 raise一个 RedeclarationError的异常。默认的索引是name属性。
         '''
         assert hasattr(element, hashable_attr)
-        #取元素的 name作为索引
         key = getattr(element, hashable_attr)
-        #序列容器
         seq_container  = getattr(self, itype)
-        #字典容器
         dict_container = getattr(self, "_"+itype )
         has_one = self.search_callable[itype]( key )
         if has_one is not None:
@@ -204,17 +201,6 @@ class Netlist(object):
                 return None
         else:
             return assign
-
-    def insert_port(self, port):
-        u'''@brief:向网表的顶层模块插入端口
-            @param: port, a cc.Port class
-            @return: 插入成功返回的Port
-        '''
-        if not isinstance(port, cc.Port):
-            errmsg = "Error: the inserted port should be an instance of cc.Port"
-            raise AssertionError(errmsg)
-        self.__insert_type('ports', port)
-        return port
 
     # 输出组的方法
     def write(self, path):
