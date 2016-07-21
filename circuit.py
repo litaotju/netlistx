@@ -187,7 +187,7 @@ class circut_module:
         return "%s %s (\n%s\n);\n%s" % (self.cellref , self.name , portlist , paramlist)
 
     def input_count(self):
-        return len([p for p in self.port_list if p.port_type =="input" ])
+        return len([p for p in self.port_list if p.port_type == Port.PORT_TYPE_INPUT])
 
 
 class signal:

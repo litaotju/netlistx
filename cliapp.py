@@ -58,12 +58,14 @@ class CliApp(object):
         print("Unimplemented")
 
     def batch(self):
+        u"对当前目录下的所有文件进行批处理"
         if not self.path:
             print("No current path, firstly use cd?")
         else:
             map(self._process, self._sequence())
     
     def single(self):
+        u"处理readvm读进来的当前vm文件"
         if not self.current_file:
             print("No current_file, first use readvm?")
         else:
