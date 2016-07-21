@@ -195,7 +195,7 @@ class signal:
     def __init__(self, s_type='wire', name=None, vector=None):
         '''@param: s_type = ['wire', 'input','output','inout']
                    name = id_string,
-                    vector = [\d+:\d+]
+                    vector = [\d+:\d+] or [\d+]
         '''
         self.s_type = s_type
         self.name  = name
