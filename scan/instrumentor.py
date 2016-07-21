@@ -115,10 +115,10 @@ class Instrumentor(object):
         assert input_num == int(lut.cellref[3])
         assert lut.param_list is not None and len(lut.param_list) == 1
 
-        scan_in = cc.port("I" + str(input_num), 'input',
-                          cc.signal(name="scan_in" + str(index)))
-        scan_en = cc.port('I' + str(input_num + 1), 'input',
-                          cc.signal(name="scan_en"))
+        scan_in = cc.port("I{}".format(input_num), cc.Port.PORT_TYPE_INPUT,
+                          cc.signal(name=self.SCAN_IN_SIGNAL, vector="[{}]".format(index)))
+        scan_en = cc.port("I{}".format(input_num+1), cc.Port.PORT_TYPE_INPUT,
+                          cc.signal(name=self.SCAN_EN_PORT))
         lut.port_list.insert(-1, scan_in)
         lut.port_list.insert(-1, scan_en)
 
@@ -178,8 +178,8 @@ class FusionInstrumentor(Instrumentor):
         for fd, lut in self.fusion_pairs:
             # 修改LUT
             self._fusion_lut_with_mux(lut, cnt)
-            fd_q_port_wire = filter(lambda x: x.port_name == "Q", fd.port_list)[0]
-            scan_out_wire = cc.Signal(name=self.SCAN_OUT_PORT, vector="[{}]".format(cnt))
+            fd_q_port_wire = filter(lambda x: x.port_name == "Q", fd.port_list)[0].port_assign
+            scan_out_wire = cc.Signal(name=self.SCAN_OUT_SIGNAL, vector="[{}]".format(cnt))
             # 将 scan_out[i]连接到 fd的Q端口上
             self.netlist.insert_assign(scan_out_wire, fd_q_port_wire)
             cnt += 1

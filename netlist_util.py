@@ -14,7 +14,7 @@ from netlistx.circuit import port
 def mark_the_circut(primtives, allow_dsp=False, allow_unkown=True ):
     'mark all the module with a type'
     cellref_list=[]
-    FD_TYPE=('FDCE','FDPE','FDRE','FDSE','FDC','FDP','FDR','FDS','FDE', 'FD')
+    FD_TYPE=('FDCE','FDPE','FDRE','FDSE', "FDRS","FDRSE",'FDC','FDP','FDR','FDS','FDE', 'FD')
     LUT_TYPE=('LUT1','LUT2','LUT3','LUT4','LUT5','LUT6',
               'LUT1_L','LUT2_L','LUT3_L','LUT4_L','LUT5_L','LUT6_L',
               'LUT6_2')
