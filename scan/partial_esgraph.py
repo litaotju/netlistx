@@ -12,12 +12,12 @@ import netlistx.circuit as cc
 from netlistx.log import logger
 from netlistx.file_util import StdOutRedirect
 from netlistx.graph.util import WriteDotBeforeAfter
-from netlistx.graph.circuitgraph import CircuitGraph
+from netlistx.graph.circuitgraph import CircuitGraph, fusionable_pair
 from netlistx.graph.esgraph import ESGraph
 from netlistx.scan.util import (get_namegraph, upath_cycle, gen_m_script, 
                                         run_matlab, read_solution, isbalanced)
 from netlistx.prototype.unbpath import unbalance_paths_deprecate
-from netlistx.scan.scanapp import ScanApp
+from netlistx.scan.scanapp import ScanApp as ScanAppBase
 
 #如果是迭代的求解，那么使用BFS类似的方法寻找UNP
 IS_ITER = False
@@ -208,6 +208,43 @@ funcs_to_generate_unp_const = {
     PARTIAL_MERGE_GROUP: upaths_contraints_moremore_complex  #看Path是否和其他Path有交集
     }
 
+
+
+class ScanApp(ScanAppBase):
+    DEFAULT_K = 6
+
+    def __init__(self, name):
+        super(ScanApp, self).__init__(name)
+        self.graph = None
+        self.esgrh = None
+        self.K_LUT = self.DEFAULT_K
+        self.addFunction("setK", self.set_K)
+        self.addFunction("setLEVEL", self.set_LEVEL)
+
+    def prepare_graph(self):
+        self.graph = CircuitGraph(self.netlist)
+        self.esgrh = ESGraph(self.graph)
+        self.esgrh.save_info_item2csv(os.path.join(self.opath, "esgrh_records.csv"))
+        self.fds = filter(cc.isDff, self.graph.nodes_iter())
+
+    def set_K(self):
+        u"设置FPGA的LUT数目"
+        K = int(raw_input("plz enter the K:"))
+        if K <= 0 or K > 6:
+            print "Error: the K should must >= 0 and <= 6"
+        else:
+            self.K_LUT = K
+
+    def set_LEVEL(self):
+        u'''从stdin获取LEVEL，设置约束ESScan中UNP约束的级别。 默认为1（只取UNP的开始和结尾点）
+        '''
+        level = int(raw_input("set level:"))
+        if level < 1 or level > 5:
+            level = 1
+        global LEVEL
+        LEVEL = level
+
+
 class ESScanApp(ScanApp):
     '''正常方法遍历方法得到UNP，然后生成Matlab求解问题
     '''
@@ -215,14 +252,10 @@ class ESScanApp(ScanApp):
         super(ESScanApp, self).__init__(name)
 
     def _get_scan_fds(self):
-        graph = CircuitGraph(self.netlist)
-        esgrh = ESGraph(graph)
-        esgrh.save_info_item2csv(os.path.join(self.opath, "esgrh_records.csv"))
-        self.fds = filter(cc.isDff, graph.nodes_iter())
-
-        self.scan_fds = get_scan_fds(esgrh, self.opath)
-        esgrh.remove_nodes_from(self.scan_fds)
-        assert(isbalanced(esgrh))
+        self.prepare_graph()
+        self.scan_fds = get_scan_fds(self.esgrh, self.opath)
+        self.esgrh.remove_nodes_from(self.scan_fds)
+        assert(isbalanced(self.esgrh))
 
 class ESScanAppCut(ScanApp):
     '''使用Cut图的方法，将大的图减小，然后分别求解
@@ -232,35 +265,33 @@ class ESScanAppCut(ScanApp):
 
     def _get_scan_fds(self):
         raise NotImplementedError
-        graph = CircuitGraph(self.netlist)
-        esgrh = ESGraph(graph)
-        esgrh.save_info_item2csv(os.path.join(self.opath, "esgrh_records.csv"))
-        self.fds = filter(cc.isDff, graph.nodes_iter())
-
+        self.prepare_graph()
         ##找出 一个pi到一个po之间的最小的点割
-        ports = filter(cc.isPort, graph.nodes_iter())
+        ports = filter(cc.isPort, self.graph.nodes_iter())
         pi = filter(lambda x: x.port_type == cc.Port.PORT_TYPE_INPUT, ports)[0]
         po = filter(lambda x: x.port_type == cc.Port.PORT_TYPE_OUTPUT, ports)[0]
-        cut = nx.minimum_node_cut(esgrh, pi, po)
+        cut = nx.minimum_node_cut(self.esgrh, pi, po)
         self.scan_fds = filter(cc.isDff, cut)
 
         #移除点割，获得子图
-        esgrh.remove_nodes_from(cut)
+        self.esgrh.remove_nodes_from(cut)
 
         #对每一个连通字图获取扫描触发器
-        glist = nx.weakly_connected_component_subgraphs(esgrh, copy=False)
+        glist = nx.weakly_connected_component_subgraphs(self.esgrh, copy=False)
         for index, subgraph in enumerate(glist):
-            subgraph.name = "{}_sub_{}".format(esgrh.name, index)
+            subgraph.name = "{}_sub_{}".format(self.esgrh.name, index)
             scan_fds = get_scan_fds(subgraph, self.opath)
-            esgrh.remove_nodes_from(scan_fds)
+            self.esgrh.remove_nodes_from(scan_fds)
 
-        assert(isbalanced(esgrh))
+        assert(isbalanced(self.esgrh))
     
 class ESScanAppIter(ScanApp):
     ''' 本APP适用于图比较复杂的情况，找UNP和找CYCLE都比较费时间。所以分两步求解
         1. 先移除图中部分的D触发器作为SFF。移除的比例由 PORTION_MOST_FANOUT_AS_SFF来决定
         2. 使用迭代的方法，逐次找UNP
     '''
+    #大扇出触发器作为SFF的比例，默认为20%
+    #即：取前 PORTION_MOST_FANOUT_AS_SFF 当作扫描触发器,先将这部分触发器从图中移除
     PORTION_MOST_FANOUT_AS_SFF = 0.2
 
     def __init__(self, name="ESScanIter"):
@@ -270,15 +301,11 @@ class ESScanAppIter(ScanApp):
         self.addFunction("portion", self.set_portion)
 
     def _get_scan_fds(self):
-        graph = CircuitGraph(self.netlist)
-        esgrh = ESGraph(graph)
-        esgrh.save_info_item2csv(os.path.join(self.opath, "esgrh_records.csv"))
-        self.fds = filter(cc.isDff, graph.nodes_iter())
-       
+        self.prepare_graph()
+        esgrh, graph = self.esgrh, self.graph    
+
         #从大到小排列触发器的出度
         self.fds.sort(key=esgrh.out_degree, reverse=True)
-        
-        #取前 PORTION_MOST_FANOUT_AS_SFF 当作扫描触发器,先将这部分触发器从图中移除
         self.scan_fds = self.fds[ : int(len(self.fds)*self.PORTION_MOST_FANOUT_AS_SFF)]
         esgrh.remove_nodes_from(self.scan_fds)
 
@@ -301,20 +328,44 @@ class ESScanAppIter(ScanApp):
         else:
             print "Ileagal Value, portion must >=0 and <=1"
 
-def get_level():
-    u'''从stdin获取level，默认为1
+
+class ESScanAppFusionFirst(ScanApp):
+    u'''1. 先将能够逻辑混合的所有触发器，都直接选出来作为扫描触发器。并将这部分触发器从图中移除
+        2. 对剩下的ESGRH图，进行部分扫描
     '''
-    level = int(raw_input("set level:"))
-    if level < 1 or level > 5:
-        level = 1
-    global LEVEL
-    LEVEL = level
+
+    def __init__(self, name="ESScanFusionFirst"):
+        super(ESScanAppFusionFirst, self).__init__(name)
+
+    def _get_scan_fds(self):
+        self.prepare_graph()
+        
+        #可以使用LUT混合的方法的D触发器
+        zero_cost_fds = [ fd for (fd, lut) in fusionable_pair(self.graph, self.K_LUT)]
+        self.esgrh.remove_nodes_from(zero_cost_fds)
+        
+        #部分扫描的D触发器
+        partial_scan_fds = get_scan_fds(self.esgrh, self.opath)
+        self.esgrh.remove_nodes_from(partial_scan_fds)
+        
+        #全部的扫描D触发器
+        self.scan_fds = zero_cost_fds + partial_scan_fds
+
+    def after_get_scan_fds(self):
+        netlist_output_path = os.path.join(self.opath, "netlist")
+        if not os.path.exists(netlist_output_path):
+            os.makedirs(netlist_output_path)
+        self.netlist.write(netlist_output_path)
+        return super(ESScanAppFusionFirst, self).after_get_scan_fds()
 
 if __name__ == "__main__":
     import sys
     app_ctxt = {'normal': ESScanApp,
                 'iter': ESScanAppIter,
-                'cut': ESScanAppCut}
+                'cut': ESScanAppCut,
+                "fusion": ESScanAppFusionFirst}
+
+    defaultAppClass = ESScanAppFusionFirst
     app = None
     try:
         app = app_ctxt[sys.argv[1]]()
@@ -322,7 +373,5 @@ if __name__ == "__main__":
         print "Usage: partial_esgraph [<normal> <iter> <cut>]"
         exit()
     except IndexError: #没有参数时
-        app = ESScanAppIter()
-
-    app.addFunction("level", get_level)
+        app = defaultAppClass()
     app.run()
