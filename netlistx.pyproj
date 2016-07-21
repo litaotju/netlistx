@@ -22,6 +22,12 @@
     <PtvsTargetsFile>$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets</PtvsTargetsFile>
   </PropertyGroup>
   <ItemGroup>
+    <Content Include="graph\draw\force\d3.min.js" />
+    <Content Include="graph\draw\force\force.css" />
+    <Content Include="graph\draw\force\force.html" />
+    <Content Include="graph\draw\force\force.js" />
+    <Content Include="graph\draw\force\force.json" />
+    <Content Include="graph\draw\force\README" />
     <Content Include="itrans\Readme.md" />
     <Content Include="README.md" />
     <Content Include="requirements.txt" />
@@ -43,13 +49,16 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="graph\crgraph.py" />
+    <Compile Include="graph\draw\force.py" />
+    <Compile Include="graph\draw\__init__.py" />
     <Compile Include="graph\main.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="graph\esgraph.py">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="graph\test\testBallast.py">
+    <Compile Include="graph\test\testDraw.py" />
+    <Compile Include="graph\test\testFusionablePair.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="graph\util.py">
@@ -77,6 +86,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="scan\fullUsingLut.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="scan\instrumentor.py">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="scan\partialBallast.py">
@@ -128,6 +140,9 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="scan\test\testPartialBallast.py" />
+    <Compile Include="scan\test\test_instrumentor.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="scan\test\test_partial_esgraph.py" />
     <Compile Include="scan\unpaths_constraints.py">
       <SubType>Code</SubType>
@@ -151,6 +166,8 @@
   <ItemGroup>
     <Folder Include="cells\" />
     <Folder Include="graph\" />
+    <Folder Include="graph\draw\" />
+    <Folder Include="graph\draw\force\" />
     <Folder Include="graph\test\" />
     <Folder Include="itrans\" />
     <Folder Include="prototype\test\" />
