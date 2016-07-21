@@ -18,6 +18,7 @@ from netlistx.scan.util import (get_namegraph, upath_cycle, gen_m_script,
                                         run_matlab, read_solution, isbalanced)
 from netlistx.prototype.unbpath import unbalance_paths_deprecate
 from netlistx.scan.scanapp import ScanApp as ScanAppBase
+from netlistx.scan.instrumentor import FullReplaceInstrumentor
 
 #如果是迭代的求解，那么使用BFS类似的方法寻找UNP
 IS_ITER = False
@@ -244,6 +245,13 @@ class ScanApp(ScanAppBase):
         global LEVEL
         LEVEL = level
 
+    #def after_get_scan_fds(self):
+    #    instrumentor = FullReplaceInstrumentor(self.netlist, self.scan_fds)
+    #    instrumentor.insert_scan()
+    #    opath = os.path.join(self.opath, "netlist_inserted")
+    #    if not os.path.exists(opath):
+    #        os.makedirs(opath)
+    #    self.netlist.write(opath)
 
 class ESScanApp(ScanApp):
     '''正常方法遍历方法得到UNP，然后生成Matlab求解问题
@@ -365,12 +373,12 @@ if __name__ == "__main__":
                 'cut': ESScanAppCut,
                 "fusion": ESScanAppFusionFirst}
 
-    defaultAppClass = ESScanAppFusionFirst
+    defaultAppClass = ESScanApp
     app = None
     try:
         app = app_ctxt[sys.argv[1]]()
     except KeyError: #参数不在 'normal' 'iter' 'cut'中时
-        print "Usage: partial_esgraph [<normal> <iter> <cut>]"
+        print "Usage: partial_esgraph [<normal> <iter> <cut> <fusion>]"
         exit()
     except IndexError: #没有参数时
         app = defaultAppClass()
