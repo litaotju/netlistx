@@ -106,6 +106,7 @@ class ScanApp(CliApp):
 
     def after_get_scan_fds(self):
         u'''This is a hook for subclass to do something after _get_scan_fds'''
+        pass
 
     def parse_netlist(self, vm):
         u'''解析网表

@@ -609,3 +609,32 @@ def fanout_stat(graph):
     for key ,val in fd_degree_stat.iteritems():
         print "%d      %d" % (key, val)
     return fd_degree_stat, com_degree_stat
+
+
+def fusionable_pair(g, K):
+    '''@brief: 从g中获取， 连接到D触发器数据输入端口的且输入数目 <= K-2的 [(FD, LUT),...]对儿
+       @param: g,        a  CircuitGraph obj
+       @return: fusionable_pair, a [], each element is a 2-tuple (fd, fusionable_lut)
+    '''
+    # 使用字典表明每一个LUT只被利用了一次，因为字典的键是唯一的
+    fds = filter(cc.isDff, g.nodes_iter())
+    useful_luts = {}
+    other_dff_ports = set( ["CE", "R", "CLR", "S", "PRE" ] )
+    for fd in fds:
+        assert g.predecessors(fd)
+        for entity in g.predecessors_iter(fd):
+            if cc.isLUT(entity):
+                port_pairs = g[entity][fd][CircuitGraph.EDGE_ATTR_PORT_PAIRS]
+                fd_ports = set( pair[1].port_name for pair in port_pairs  )
+                if len(fd_ports) > 1:
+                    logger.info("MultiConnect LUT-FD: %s %s, %d" % (entity.name, fd.name, len(fd_ports)))
+                    continue
+                if ( ("D" in fd_ports) and entity.input_count() <= K-2 ) \
+                        or ( other_dff_ports.intersection(fd_ports) and entity.input_count() <= K-1) :
+                    if not useful_luts.has_key(entity):
+                        useful_luts[entity] = fd
+                    ## 一个LUT已经被别的触发器利用了，就不能再被利用作为逻辑混合的东西
+                    #else:
+                    #    useful_luts[entity] += 1
+    fusionable_pair = [(fd, lut) for lut, fd in useful_luts.iteritems()]
+    return fusionable_pair
