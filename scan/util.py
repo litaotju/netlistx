@@ -9,7 +9,7 @@ import netlistx.circuit as cc
 from netlistx.log import logger
 from netlistx.file_util import StdOutRedirect
 from netlistx.prototype.unbpath import unbalance_paths
-
+from netlistx.scan.cycles import simple_cycles
 def get_namegraph(graph):
     u'''
         @brief:
@@ -56,11 +56,12 @@ def upath_cycle(namegraph):
             namegraph, a nx.DiGraph obj
         @ return: 
             (upaths, cycles) : 图中所有的不平衡路径和环
-    '''       
+    ''' 
+    cycles = simple_cycles(namegraph)
+    cycles = list(cycles)
+    logger.debug("get cycles succesefully. %d cycles found" % len(cycles))
     upaths = unbalance_paths(namegraph)
-    logger.debug("get unblance path succesefully")
-    cycles = list(nx.simple_cycles(namegraph))
-    logger.debug("get cycles succesefully")
+    logger.debug("get unblance path succesefully. %d unps found" % len(upaths))
     return upaths, cycles
 
 def read_solution(solutionfile, entity2x):
