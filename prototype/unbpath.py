@@ -2,6 +2,48 @@
 import networkx as nx
 import netlistx.circuit as cc
 
+def all_simple_paths(G, source, target, cutoff=None):
+    """Generate all simple paths in the graph G from source to target.
+    all_shortest_paths, shortest_path
+    """
+    if source not in G:
+        raise nx.NetworkXError('source node %s not in graph'%source)
+    if target not in G:
+        raise nx.NetworkXError('target node %s not in graph'%target)
+    if cutoff is None:
+        cutoff = len(G)-1
+    return _all_simple_paths_graph(G, source, target, cutoff=cutoff)
+
+## What is the complexity of this algorithm
+
+
+#TODO: 确定深度
+def _all_simple_paths_graph(G, source, target, cutoff=None):
+    if cutoff < 1:
+        return
+    visited = [source]
+    stack = [iter(G[source])]
+    depth = 0
+    while stack:
+        depth += 1
+        children = stack[-1]
+        child = next(children, None)
+        if child is None:
+            stack.pop()
+            visited.pop()
+        elif len(visited) < cutoff:
+            if child == target:
+                yield visited + [target]
+            elif child not in visited:
+                visited.append(child)
+                stack.append(iter(G[child]))
+        else: #len(visited) == cutoff:
+            if child == target or target in children:
+                yield visited + [target]
+            stack.pop()
+            visited.pop()
+    #print "depth, ", depth
+
 def unbalance_paths(G):
     '''
     @param: G, a nx.DiGraph obj
@@ -12,7 +54,7 @@ def unbalance_paths(G):
         if s is t or G.out_degree(s) <= 1:
             return None
         firstPath = None
-        for path in nx.all_simple_paths(G,s,t):
+        for path in all_simple_paths(G,s,t):
             #第一条路径
             if firstPath is None:
                 firstPath = path
