@@ -144,7 +144,7 @@ class Instrumentor(object):
         raise NotImplementedError
 
 class FullReplaceInstrumentor(Instrumentor):
-    """全扫描插入扫描链的方法"""
+    """全替换插入扫描链的方法"""
 
     def __init__(self, netlist, scan_fds):
         sff_numbers = len(scan_fds)

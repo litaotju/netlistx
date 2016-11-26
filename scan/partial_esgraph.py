@@ -18,7 +18,7 @@ from netlistx.scan.util import (get_namegraph, upath_cycle, gen_m_script,
                                         run_matlab, read_solution, isbalanced)
 from netlistx.prototype.unbpath import unbalance_paths_deprecate
 from netlistx.scan.scanapp import ScanApp as ScanAppBase
-from netlistx.scan.instrumentor import FullReplaceInstrumentor
+from netlistx.scan.instrumentor import FullReplaceInstrumentor, FusionInstrumentor
 
 #如果是迭代的求解，那么使用BFS类似的方法寻找UNP
 IS_ITER = False
@@ -37,7 +37,8 @@ LEVEL = 1
 
 def get_scan_fds(esgrh, opath):
     u'''
-        @brief：输入一个ESGraph对象 esgrh，和一个路径，在该路径下生成此esgrh的优化问题matlab脚本并求解。
+        @brief：输入一个ESGraph对象 esgrh，和一个路径，
+                在该路径下生成此esgrh的优化问题matlab脚本并求解。
         @params:
             esgrh: an ESGraph obj
             opath: an existing path to store the inter temp file
@@ -56,9 +57,9 @@ def get_scan_fds(esgrh, opath):
     if IS_ITER:
         # 使用类似 BFS的方法来找UNP
         unpaths = unbalance_paths_deprecate(namegraph)
-        logger.debug("unpaths get okay")
+        logger.debug("unpaths get okay. %d unps found" % len(unpaths))
         cycles = list(nx.simple_cycles(namegraph))
-        logger.debug("cycles get okay")
+        logger.debug("cycles get okay. %d cycles found" % len(cycles))
     else:
         unpaths, cycles = upath_cycle(namegraph)  # unpaths = [], cycles = []
 
@@ -212,7 +213,13 @@ funcs_to_generate_unp_const = {
 
 
 class ScanApp(ScanAppBase):
+
     DEFAULT_K = 6
+
+    # 插入扫描后的输出子路径
+    INSERT_PATH = "netlist_inserted"
+    # 插入扫描后的输出子路径
+    BEFORE_INSERT_PATH = "netlist"
 
     def __init__(self, name):
         super(ScanApp, self).__init__(name)
@@ -221,6 +228,7 @@ class ScanApp(ScanAppBase):
         self.K_LUT = self.DEFAULT_K
         self.addFunction("setK", self.set_K)
         self.addFunction("setLEVEL", self.set_LEVEL)
+        self.instrumentor = None
 
     def prepare_graph(self):
         self.graph = CircuitGraph(self.netlist)
@@ -245,13 +253,24 @@ class ScanApp(ScanAppBase):
         global LEVEL
         LEVEL = level
 
-    #def after_get_scan_fds(self):
-    #    instrumentor = FullReplaceInstrumentor(self.netlist, self.scan_fds)
-    #    instrumentor.insert_scan()
-    #    opath = os.path.join(self.opath, "netlist_inserted")
-    #    if not os.path.exists(opath):
-    #        os.makedirs(opath)
-    #    self.netlist.write(opath)
+    def after_get_scan_fds(self):
+        # 保存插入前的网表
+        opath = os.path.join(self.opath,self.BEFORE_INSERT_PATH)
+        if not os.path.exists(opath):
+            os.makedirs(opath)
+        self.netlist.write(opath)
+
+        # 如果子类没有指定指定instumentor，则指定默认的instrumentor
+        # 否则使用子类指定的instrumentor 进行扫描插入
+        if self.instrumentor is None:
+            self.instrumentor = FullReplaceInstrumentor(self.netlist, self.scan_fds)
+        
+        self.instrumentor.insert_scan()
+        # 保存插入后的网表
+        opath = os.path.join(self.opath, self.INSERT_PATH)
+        if not os.path.exists(opath):
+            os.makedirs(opath)
+        self.netlist.write(opath)
 
 class ESScanApp(ScanApp):
     '''正常方法遍历方法得到UNP，然后生成Matlab求解问题
@@ -303,14 +322,14 @@ class ESScanAppIter(ScanApp):
     PORTION_MOST_FANOUT_AS_SFF = 0.2
 
     def __init__(self, name="ESScanIter"):
-        global IS_ITER
-        IS_ITER = True
+        #global IS_ITER
+        #IS_ITER = True
         super(ESScanAppIter, self).__init__(name) 
         self.addFunction("portion", self.set_portion)
 
     def _get_scan_fds(self):
         self.prepare_graph()
-        esgrh, graph = self.esgrh, self.graph    
+        esgrh, graph = self.esgrh, self.graph   
 
         #从大到小排列触发器的出度
         self.fds.sort(key=esgrh.out_degree, reverse=True)
@@ -349,7 +368,8 @@ class ESScanAppFusionFirst(ScanApp):
         self.prepare_graph()
         
         #可以使用LUT混合的方法的D触发器
-        zero_cost_fds = [ fd for (fd, lut) in fusionable_pair(self.graph, self.K_LUT)]
+        pairs = fusionable_pair(self.graph, self.K_LUT)
+        zero_cost_fds = [ fd for (fd, lut) in pairs]
         self.esgrh.remove_nodes_from(zero_cost_fds)
         
         #部分扫描的D触发器
@@ -358,13 +378,10 @@ class ESScanAppFusionFirst(ScanApp):
         
         #全部的扫描D触发器
         self.scan_fds = zero_cost_fds + partial_scan_fds
-
-    def after_get_scan_fds(self):
-        netlist_output_path = os.path.join(self.opath, "netlist")
-        if not os.path.exists(netlist_output_path):
-            os.makedirs(netlist_output_path)
-        self.netlist.write(netlist_output_path)
-        return super(ESScanAppFusionFirst, self).after_get_scan_fds()
+        
+        #指定instrumentor
+        self.instrumentor = FusionInstrumentor(self.netlist,
+                                 partial_scan_fds, pairs, self.K_LUT)
 
 if __name__ == "__main__":
     import sys
@@ -373,7 +390,7 @@ if __name__ == "__main__":
                 'cut': ESScanAppCut,
                 "fusion": ESScanAppFusionFirst}
 
-    defaultAppClass = ESScanApp
+    defaultAppClass = ESScanAppFusionFirst
     app = None
     try:
         app = app_ctxt[sys.argv[1]]()
