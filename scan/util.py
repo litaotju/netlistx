@@ -149,7 +149,11 @@ def run_matlab(script_file, port):
     server_socket.listen(1)
     opath = os.path.split(script_file)[0]
     basename = os.path.splitext(os.path.split(script_file)[1])[0]
-    subprocess.Popen("matlab -nodesktop -sd  %s -r %s" % (opath, basename))
+    # os.system for mac and subprocess.Popen for windows
+    if os.name == "posix":
+        os.system("matlab -nodesktop -sd  %s -r %s" % (opath, basename))
+    else:
+        subprocess.Popen("matlab -nodesktop -sd  %s -r %s" % (opath, basename))
     connection = server_socket.accept()[0]
     if connection.recv(100) == "valid":
         logger.debug("Matlab excuted OK!")
