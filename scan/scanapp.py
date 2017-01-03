@@ -40,12 +40,13 @@ class ScanApp(CliApp):
 
         #从网表获得触发器，保存到self.scan_fds中
         self._get_scan_fds()
-       
-        #获取触发器之后的其他动作，默认是什么都不做。作为hook留给子类
-        self.after_get_scan_fds()
 
         #保存同一个APP的所有信息到csv文件
         self.save_info_item2csv()
+
+        #获取触发器之后的其他动作，默认是什么都不做。作为hook留给子类
+        self.after_get_scan_fds()
+
         self.write_scan_fds()
 
     def _get_scan_fds(self):
@@ -65,7 +66,7 @@ class ScanApp(CliApp):
         
         #扫描后总的LUT = 原来的LUT+扫描带来的消耗
         number_of_luts_after_scan = number_of_luts + sum((fd.input_count() for fd in self.scan_fds))
-        
+
         # 需要记录的数据内容， 每一个元素为一个三元组， （项名称，格式化字符串，数据）。可以按需要更改
         self.stats_items += [
             ('circuit', "%s", self.circuit_name),
