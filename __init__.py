@@ -12,7 +12,7 @@ from netlistx.parser.netlist_parser import vm_parse
 import circuit
 from circuit import *
 
-from netlistx.graph import *
+#from netlistx.graph import *
 from netlistx.graph.crgraph import CloudRegGraph
 from netlistx.graph.circuitgraph import CircuitGraph
 

@@ -14,10 +14,7 @@ def all_simple_paths(G, source, target, cutoff=None):
         cutoff = len(G)-1
     return _all_simple_paths_graph(G, source, target, cutoff=cutoff)
 
-## What is the complexity of this algorithm
 
-
-#TODO: 确定深度
 def _all_simple_paths_graph(G, source, target, cutoff=None):
     if cutoff < 1:
         return
@@ -42,7 +39,7 @@ def _all_simple_paths_graph(G, source, target, cutoff=None):
                 yield visited + [target]
             stack.pop()
             visited.pop()
-    #print "depth, ", depth
+
 
 def unbalance_paths(G):
     '''
@@ -54,7 +51,7 @@ def unbalance_paths(G):
         if s is t or G.out_degree(s) <= 1:
             return None
         firstPath = None
-        for path in all_simple_paths(G,s,t):
+        for path in nx.all_simple_paths(G,s,t):
             #第一条路径
             if firstPath is None:
                 firstPath = path
@@ -64,13 +61,18 @@ def unbalance_paths(G):
                 #return ((s,t), list(nx.all_simple_paths(G,s,t)))
         #循环之后没有退出，说明每一条都和第一条相等，则返回None，说明不是UNP
         return None
+    unp_cnt = 0
     for s in G.nodes_iter():
         if cc.isPort(s) and s.port_type == cc.Port.PORT_TYPE_OUTPUT:
             continue
         for t in G.nodes_iter():
             if cc.isPort(s) and s.port_type == cc.Port.PORT_TYPE_OUTPUT:
                 continue
-            upath2.append(is_unp(s,t))
+            unp = is_unp(s,t)
+            if unp is not None:
+                unp_cnt += 1
+                print "UNP cnt: %d" % unp_cnt
+            upath2.append(unp)
     upath2 = filter(lambda x: x!= None, upath2)
     upath2 = {x[0]:x[1] for x in upath2}
     return upath2

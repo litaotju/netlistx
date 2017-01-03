@@ -85,6 +85,9 @@
     <Compile Include="scan\config.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="scan\cycles.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="scan\fullUsingLut.py">
       <SubType>Code</SubType>
     </Compile>
