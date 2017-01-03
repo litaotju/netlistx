@@ -3,6 +3,11 @@
 import os
 import networkx as nx
 
+if nx.__version__ >= 1.11:
+    from networkx.drawing.nx_pydot import write_dot as write_dot
+else:
+    import networkx.write_dot as write_dot
+
 class WriteDotBeforeAfter(object):
     u'''write dot before and after action
     '''
@@ -27,7 +32,7 @@ class WriteDotBeforeAfter(object):
         u'''进入context保存图的信息到dot
         '''
         try:
-            nx.write_dot(self.graph, os.path.join(
+            write_dot(self.graph, os.path.join(
                 self.before, self.graph.name + ".dot"))
         except Exception, e:
             print e
@@ -36,7 +41,7 @@ class WriteDotBeforeAfter(object):
         u'''退出context保存图的信息到dot
         '''
         try:
-            nx.write_dot(self.graph, os.path.join(
+            write_dot(self.graph, os.path.join(
                 self.after, self.graph.name + ".dot"))
         except Exception, e:
             print e
