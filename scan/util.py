@@ -127,12 +127,18 @@ def gen_m_script(obj, contraints, binvar_length, solution_file, port, script_fil
         print "for i = 1:%d" % binvar_length
         print "    fprintf(fid, 'x(%d)  %d\\n', i, double(x(i)));"
         print "end"
-        print "t = tcpip('localhost', %d, 'NetworkRole', 'client');" % port
-        print "fopen(t)"
-        print "fwrite(t, 'valid')"
-        print "if (fread(t) == %d )" % ord(CHAR_STOP_MATLAB)
-        print "exit();"
-        print "end"
+        # The mac matlab can not use tcp/ip correctly 
+        # so just exit here
+        if os.name == "posix":
+            print "exit();"
+        else:
+            print "t = tcpip('localhost', %d, 'NetworkRole', 'client');" % port
+            print "fopen(t)"
+            print "fwrite(t, 'valid')"
+            print "if (fread(t) == %d )" % ord(CHAR_STOP_MATLAB)
+            print "fclose(t)"
+            print "exit();"
+            print "end"
     return True
 
 def run_matlab(script_file, port):
@@ -149,17 +155,24 @@ def run_matlab(script_file, port):
     server_socket.listen(1)
     opath = os.path.split(script_file)[0]
     basename = os.path.splitext(os.path.split(script_file)[1])[0]
-    # os.system for mac and subprocess.Popen for windows
     if os.name == "posix":
-        os.system("matlab -nodesktop -sd  %s -r %s" % (opath, basename))
+        cwd = os.getcwd()
+        os.chdir(opath)
+        # mac system with Mat2014b does not support -sd and
+        # subprocess.Popen must explictly with a shell=True
+        p = subprocess.Popen("matlab -nodesktop -nodisplay -nosplash -r %s" % basename,
+                            shell=True, stderr=subprocess.PIPE)
+        if p.wait() != 0:
+            logger.error("Matlab didn't exists corretly")
+        os.chdir(cwd)
     else:
         subprocess.Popen("matlab -nodesktop -sd  %s -r %s" % (opath, basename))
-    connection = server_socket.accept()[0]
-    if connection.recv(100) == "valid":
-        logger.debug("Matlab excuted OK!")
-        # send an i to close Matlab
-        connection.send(CHAR_STOP_MATLAB)
-    connection.close()
+        connection = server_socket.accept()[0]
+        if connection.recv(100) == "valid":
+            logger.debug("Matlab excuted OK!")
+            # send an i to close Matlab
+            connection.send(CHAR_STOP_MATLAB)
+            connection.close()
     server_socket.close()
     return
 
@@ -181,7 +194,7 @@ def isbalanced( graph ):
         been_levelized = []                #已经被定级的节点
         current_level = 0                  #当前的层
         while(bfs_queue):
-		    # 传进来的bfs_queque的层是已知的，
+            # 传进来的bfs_queque的层是已知的，
 		    # 记录下它们的所有后继结点，并为他们定层次为n+1,同时放到待访问序列里面
             current_level +=1
             next_level_que = []
