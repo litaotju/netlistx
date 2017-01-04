@@ -87,7 +87,11 @@ class CliApp(object):
         leaf_path = os.path.split(os.path.abspath(self.path))[-1] #当前路径的最后一级
         prompt = "[%s %s @ %s]>:"% (self.name, self.mode, leaf_path)
         args = raw_input(prompt).split()
-        self._parseArgs(args)
+        # If input an empty command, try getCmd again
+        if len(args) == 0:
+            self.getCmd()
+        else:
+            self._parseArgs(args)
 
     def readScript(self):
         u'''读取脚本，并按照行执行,格式: script script_file
