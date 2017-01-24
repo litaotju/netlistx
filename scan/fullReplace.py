@@ -80,7 +80,7 @@ if __name__=='__main__':
     pwd = ""
     while(not os.path.exists(pwd)):
         pwd = raw_input("plz enter vm files path:")
-    outpath = os.path.join(pwd,"full_replace_scanned")
+    outpath = os.path.join(pwd,"FULL_REPLACE")
     if not os.path.exists(outpath):
         os.mkdir(outpath)
     vms = [ name for name in os.listdir(pwd) if os.path.splitext(name)[1] in (".v" ,".vm")]
