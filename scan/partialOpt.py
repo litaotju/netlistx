@@ -245,7 +245,7 @@ def get_scan_fds(cr, path):
     cr.remove_edges_from( selfloops)
     
     time_all = time_matlab + (time.clock() - start)
-    fobj = open("test\\timeStats_opt.txt", 'a')
+    fobj = open(os.path.join("test","timeStats_opt.txt"), 'a')
     fobj.write("%s, %.4f\n" % (cr.name[:-11], time_all) )
     fobj.close()
     

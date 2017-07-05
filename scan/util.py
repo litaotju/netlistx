@@ -2,6 +2,7 @@
 import os
 import socket
 import subprocess
+import time
 
 import networkx as nx
 
@@ -122,7 +123,11 @@ def gen_m_script(obj, contraints, binvar_length, solution_file, port, script_fil
         print "constraints = [",
         print '\n'.join(contraints)
         print "];"
+        print "tic"
         print "solvesdp(constraints, obj, ops);"
+        print "cost_time = toc"
+        print "fid0 = fopen('%s.run_time','w');" % solution_file
+        print "fprintf(fid0, '%d\\n', cost_time);"
         print "fid = fopen('%s','w');" % solution_file
         print "for i = 1:%d" % binvar_length
         print "    fprintf(fid, 'x(%d)  %d\\n', i, double(x(i)));"
@@ -211,3 +216,25 @@ def isbalanced( graph ):
             been_levelized += bfs_queue
             bfs_queue = next_level_que
     return True
+
+class RecordRuntime(object):
+    '''输出重定向到文件
+    '''
+    def __init__(self, filename, circuit, mode='a'):
+        if not os.path.exists(filename):
+            with open(filename, 'w') as fobj:
+                fobj.write("circuit, runtime (unit:s)\n")
+        if mode is None or mode not in ['w', 'a']:
+            self.out = open(filename, 'a')
+        else:
+            self.out = open(filename, mode)
+        self.circuit = circuit
+        self.start_time = 0
+
+    def __enter__(self):
+        self.start_time = time.clock()
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        runtime = time.clock() - self.start_time
+        self.out.write("%s, %s\n" % (self.circuit, runtime))
+        self.out.close()

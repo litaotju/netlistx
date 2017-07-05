@@ -260,7 +260,7 @@ def get_scan_fds(cr, path):
     time_all = time_matlab + (time.clock() - start)
     
     #写入时间统计文件.
-    fobj = open("test\\timeStats_opt.txt", 'a')
+    fobj = open(os.path.join("test","timeStats_opt.txt"), 'a')
     fobj.write("%s, %.4f\n" % (cr.name[:-11], time_all) )
     fobj.close()
     
