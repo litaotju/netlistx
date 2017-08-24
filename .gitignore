@@ -9,7 +9,6 @@ graph/test
 unittest/*test/
 unittest/htmlcov
 unittest/netlist
-cells/FD_SRC
 #################
 ## Eclipse
 #################

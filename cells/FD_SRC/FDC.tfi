@@ -1,0 +1,12 @@
+
+
+
+// Instantiate the module
+FDC instance_name (
+    .Q(Q), 
+    .C(C), 
+    .CLR(CLR), 
+    .D(D)
+    );
+
+

@@ -1,0 +1,12 @@
+
+
+
+// Instantiate the module
+FDS instance_name (
+    .Q(Q), 
+    .C(C), 
+    .D(D), 
+    .S(S)
+    );
+
+

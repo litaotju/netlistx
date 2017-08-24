@@ -1,0 +1,12 @@
+
+
+
+// Instantiate the module
+FDP_1 instance_name (
+    .Q(Q), 
+    .C(C), 
+    .D(D), 
+    .PRE(PRE)
+    );
+
+

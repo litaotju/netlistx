@@ -1,0 +1,13 @@
+
+
+
+// Instantiate the module
+FDPE instance_name (
+    .Q(Q), 
+    .C(C), 
+    .CE(CE), 
+    .D(D), 
+    .PRE(PRE)
+    );
+
+

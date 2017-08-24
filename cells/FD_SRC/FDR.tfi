@@ -1,0 +1,12 @@
+
+
+
+// Instantiate the module
+FDR instance_name (
+    .Q(Q), 
+    .C(C), 
+    .D(D), 
+    .R(R)
+    );
+
+

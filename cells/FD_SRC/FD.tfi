@@ -1,0 +1,11 @@
+
+
+
+// Instantiate the module
+FD instance_name (
+    .Q(Q), 
+    .C(C), 
+    .D(D)
+    );
+
+

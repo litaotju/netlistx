@@ -1,0 +1,13 @@
+
+
+
+// Instantiate the module
+FDCE_1 instance_name (
+    .Q(Q), 
+    .C(C), 
+    .CE(CE), 
+    .CLR(CLR), 
+    .D(D)
+    );
+
+

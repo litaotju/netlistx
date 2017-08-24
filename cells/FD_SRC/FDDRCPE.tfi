@@ -1,0 +1,16 @@
+
+
+
+// Instantiate the module
+FDDRCPE instance_name (
+    .Q(Q), 
+    .C0(C0), 
+    .C1(C1), 
+    .CE(CE), 
+    .CLR(CLR), 
+    .D0(D0), 
+    .D1(D1), 
+    .PRE(PRE)
+    );
+
+

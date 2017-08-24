@@ -1,0 +1,13 @@
+
+
+
+// Instantiate the module
+FDSE instance_name (
+    .Q(Q), 
+    .C(C), 
+    .CE(CE), 
+    .D(D), 
+    .S(S)
+    );
+
+

@@ -1,0 +1,13 @@
+
+
+
+// Instantiate the module
+FDRS instance_name (
+    .Q(Q), 
+    .C(C), 
+    .D(D), 
+    .R(R), 
+    .S(S)
+    );
+
+

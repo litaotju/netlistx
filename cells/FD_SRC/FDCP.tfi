@@ -1,0 +1,13 @@
+
+
+
+// Instantiate the module
+FDCP instance_name (
+    .Q(Q), 
+    .C(C), 
+    .CLR(CLR), 
+    .D(D), 
+    .PRE(PRE)
+    );
+
+

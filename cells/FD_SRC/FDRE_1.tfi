@@ -1,0 +1,13 @@
+
+
+
+// Instantiate the module
+FDRE_1 instance_name (
+    .Q(Q), 
+    .C(C), 
+    .CE(CE), 
+    .D(D), 
+    .R(R)
+    );
+
+
