@@ -3,9 +3,7 @@
 *.jpg
 *.gexf
 *.dot
-*.vm
-/*.vm
-/*.v
+graph/test
 /test
 /itrans/iscas*
 unittest/*test/

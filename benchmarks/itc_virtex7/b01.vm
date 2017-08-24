@@ -1,0 +1,138 @@
+//
+// Written by Synplify
+// Product Version "H-2013.03"
+// Program "Synplify Premier", Mapper "maprc, Build 1495R"
+// Wed Jul 15 15:58:12 2015
+//
+// Source file index table:
+// Object locations will have the form <file>:<line>
+// file 0 "noname"
+// file 1 "\c:\synopsys\fpga_h201303\lib\vhd\std.vhd "
+// file 2 "\c:\synopsys\fpga_h201303\lib\vhd\snps_haps_pkg.vhd "
+// file 3 "\c:\synopsys\fpga_h201303\lib\vhd\std1164.vhd "
+// file 4 "\c:\synopsys\fpga_h201303\lib\vhd\numeric.vhd "
+// file 5 "\c:\synopsys\fpga_h201303\lib\vhd\umr_capim.vhd "
+// file 6 "\c:\synopsys\fpga_h201303\lib\vhd\arith.vhd "
+// file 7 "\c:\synopsys\fpga_h201303\lib\vhd\unsigned.vhd "
+// file 8 "\e:\ise_workspace\synopsys_flatten_virtex7\benchmark_vhdl\b01.vhd "
+// file 9 "\e:\ise_workspace\synopsys_flatten_virtex7\design_constraints.sdc "
+// file 10 "\e:/ise_workspace/synopsys_flatten_virtex7/design_constraints.sdc "
+
+`timescale 100 ps/100 ps
+module b01 (
+  line1,
+  line2,
+  reset,
+  outp,
+  overflw,
+  clock
+)
+;
+input line1 ;
+input line2 ;
+input reset ;
+output outp ;
+output overflw ;
+input clock ;
+wire line1 ;
+wire line2 ;
+wire reset ;
+wire outp ;
+wire overflw ;
+wire clock ;
+wire [2:0] stato;
+wire [2:0] stato_16_1_iv_i;
+wire VCC_x ;
+wire GND_x ;
+wire stato45 ;
+wire outp_4 ;
+wire N_73_i ;
+wire GND ;
+wire VCC ;
+// @8:28
+  LUT5_L \stato_16_1_iv_i_cZ[2]  (
+	.I0(line1),
+	.I1(line2),
+	.I2(stato[0]),
+	.I3(stato[1]),
+	.I4(stato[2]),
+	.LO(stato_16_1_iv_i[2])
+);
+defparam \stato_16_1_iv_i_cZ[2] .INIT=32'h00FE8F88;
+// @8:28
+  LUT5_L \stato_16_1_iv_i_cZ[0]  (
+	.I0(line1),
+	.I1(line2),
+	.I2(stato[0]),
+	.I3(stato[1]),
+	.I4(stato[2]),
+	.LO(stato_16_1_iv_i[0])
+);
+defparam \stato_16_1_iv_i_cZ[0] .INIT=32'hE8EE7887;
+// @8:28
+  LUT5_L \stato_RNO[1]  (
+	.I0(line1),
+	.I1(line2),
+	.I2(stato[0]),
+	.I3(stato[1]),
+	.I4(stato[2]),
+	.LO(N_73_i)
+);
+defparam \stato_RNO[1] .INIT=32'hE8F10F70;
+// @8:33
+  LUT5_L outp_4_cZ (
+	.I0(line1),
+	.I1(line2),
+	.I2(stato[0]),
+	.I3(stato[1]),
+	.I4(stato[2]),
+	.LO(outp_4)
+);
+defparam outp_4_cZ.INIT=32'h96996666;
+// @8:42
+  LUT3_L stato45_cZ (
+	.I0(stato[0]),
+	.I1(stato[1]),
+	.I2(stato[2]),
+	.LO(stato45)
+);
+defparam stato45_cZ.INIT=8'h08;
+// @8:28
+  FDC outp_Z (
+	.Q(outp),
+	.D(outp_4),
+	.C(clock),
+	.CLR(reset)
+);
+// @8:28
+  FDC overflw_Z (
+	.Q(overflw),
+	.D(stato45),
+	.C(clock),
+	.CLR(reset)
+);
+// @8:28
+  FDC \stato_Z[1]  (
+	.Q(stato[1]),
+	.D(N_73_i),
+	.C(clock),
+	.CLR(reset)
+);
+// @8:28
+  FDC \stato_Z[0]  (
+	.Q(stato[0]),
+	.D(stato_16_1_iv_i[0]),
+	.C(clock),
+	.CLR(reset)
+);
+// @8:28
+  FDC \stato_Z[2]  (
+	.Q(stato[2]),
+	.D(stato_16_1_iv_i[2]),
+	.C(clock),
+	.CLR(reset)
+);
+  assign GND = 1'b0;
+  assign VCC = 1'b1;
+endmodule /* b01 */
+

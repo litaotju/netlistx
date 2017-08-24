@@ -1,0 +1,756 @@
+//
+// Written by Synplify
+// Product Version "H-2013.03"
+// Program "Synplify Premier", Mapper "maprc, Build 1495R"
+// Wed Jul 15 16:01:38 2015
+//
+// Source file index table:
+// Object locations will have the form <file>:<line>
+// file 0 "noname"
+// file 1 "\c:\synopsys\fpga_h201303\lib\vhd\std.vhd "
+// file 2 "\c:\synopsys\fpga_h201303\lib\vhd\snps_haps_pkg.vhd "
+// file 3 "\c:\synopsys\fpga_h201303\lib\vhd\std1164.vhd "
+// file 4 "\c:\synopsys\fpga_h201303\lib\vhd\numeric.vhd "
+// file 5 "\c:\synopsys\fpga_h201303\lib\vhd\umr_capim.vhd "
+// file 6 "\c:\synopsys\fpga_h201303\lib\vhd\arith.vhd "
+// file 7 "\c:\synopsys\fpga_h201303\lib\vhd\unsigned.vhd "
+// file 8 "\e:\ise_workspace\synopsys_flatten_virtex7\benchmark_vhdl\b01.vhd "
+// file 9 "\e:\ise_workspace\synopsys_flatten_virtex7\benchmark_vhdl\b02.vhd "
+// file 10 "\e:\ise_workspace\synopsys_flatten_virtex7\benchmark_vhdl\b03.vhd "
+// file 11 "\e:\ise_workspace\synopsys_flatten_virtex7\design_constraints.sdc "
+// file 12 "\e:/ise_workspace/synopsys_flatten_virtex7/design_constraints.sdc "
+
+`timescale 100 ps/100 ps
+module b03 (
+  clock,
+  reset,
+  request1,
+  request2,
+  request3,
+  request4,
+  grant_o
+)
+;
+input clock ;
+input reset ;
+input request1 ;
+input request2 ;
+input request3 ;
+input request4 ;
+output [3:0] grant_o ;
+wire clock ;
+wire reset ;
+wire request1 ;
+wire request2 ;
+wire request3 ;
+wire request4 ;
+wire [1:0] stato;
+wire [2:0] coda0;
+wire [2:0] coda1_8;
+wire [2:0] coda2;
+wire [2:0] coda2_9;
+wire [2:0] coda3;
+wire [2:0] coda1;
+wire [3:0] grant;
+wire [2:0] coda3_8;
+wire [0:0] stato_i;
+wire [2:0] coda0e_0;
+wire [3:0] grante_0;
+wire fu1 ;
+wire fu2 ;
+wire fu3 ;
+wire fu4 ;
+wire ru1 ;
+wire VCC_x ;
+wire GND_x ;
+wire ru2 ;
+wire ru18 ;
+wire ru3 ;
+wire ru4 ;
+wire un1_coda0_0_sqmuxa_2 ;
+wire N_113 ;
+wire un1_fu1 ;
+wire un1_coda0_0_sqmuxa_1 ;
+wire un1_ru17_i ;
+wire N_140_i ;
+wire un1_ru17_2_i ;
+wire N_109_i ;
+wire un1_coda0_0_sqmuxa_0 ;
+wire ru2e_0 ;
+wire ru1e_0 ;
+wire ru3e_0 ;
+wire ru4e_0 ;
+wire g4 ;
+wire g0_0_0 ;
+wire N_278 ;
+wire N_279 ;
+wire N_280 ;
+wire N_281 ;
+wire N_282 ;
+wire N_283 ;
+wire N_284 ;
+wire N_285 ;
+wire N_286 ;
+wire N_287 ;
+wire N_288 ;
+wire N_289 ;
+wire N_290 ;
+wire N_291 ;
+wire N_292 ;
+wire N_293 ;
+wire N_294 ;
+wire N_295 ;
+wire N_296 ;
+wire GND ;
+wire VCC ;
+// @10:40
+  LUT5 \stato_RNIAIO32[1]  (
+	.I0(stato[1]),
+	.I1(stato[0]),
+	.I2(un1_fu1),
+	.I3(un1_coda0_0_sqmuxa_0),
+	.I4(un1_coda0_0_sqmuxa_1),
+	.O(un1_ru17_2_i)
+);
+defparam \stato_RNIAIO32[1] .INIT=32'hECECECA8;
+// @10:40
+  LUT6 fu1_RNIT19U (
+	.I0(fu1),
+	.I1(fu2),
+	.I2(fu3),
+	.I3(fu4),
+	.I4(stato[1]),
+	.I5(stato[0]),
+	.O(un1_ru17_i)
+);
+defparam fu1_RNIT19U.INIT=64'hFFFF0000FFFE0000;
+// @10:40
+  LUT5_L \coda0e_RNO[0]  (
+	.I0(coda1[0]),
+	.I1(ru1),
+	.I2(ru2),
+	.I3(stato[1]),
+	.I4(stato[0]),
+	.LO(N_109_i)
+);
+defparam \coda0e_RNO[0] .INIT=32'hFF03AA02;
+// @10:40
+  LUT6_L \coda0e_RNO[2]  (
+	.I0(coda1[2]),
+	.I1(ru3),
+	.I2(ru1),
+	.I3(ru2),
+	.I4(stato[1]),
+	.I5(stato[0]),
+	.LO(N_140_i)
+);
+defparam \coda0e_RNO[2] .INIT=64'hFFFFF0F3AAAAA0A2;
+  LUT6_L \coda0e_RNO[1]  (
+	.I0(coda1[1]),
+	.I1(ru3),
+	.I2(ru1),
+	.I3(ru2),
+	.I4(stato[1]),
+	.I5(stato[0]),
+	.LO(N_113)
+);
+defparam \coda0e_RNO[1] .INIT=64'h00000F03AAAAAFAB;
+// @10:58
+  LUT3_L \coda1_8_cZ[0]  (
+	.I0(coda2[0]),
+	.I1(coda0[0]),
+	.I2(stato[0]),
+	.LO(coda1_8[0])
+);
+defparam \coda1_8_cZ[0] .INIT=8'hCA;
+// @10:58
+  LUT3_L \coda1_8_cZ[1]  (
+	.I0(coda2[1]),
+	.I1(coda0[1]),
+	.I2(stato[0]),
+	.LO(coda1_8[1])
+);
+defparam \coda1_8_cZ[1] .INIT=8'hCA;
+// @10:58
+  LUT3_L \coda2_9_cZ[1]  (
+	.I0(coda3[1]),
+	.I1(coda1[1]),
+	.I2(stato[0]),
+	.LO(coda2_9[1])
+);
+defparam \coda2_9_cZ[1] .INIT=8'hCA;
+// @10:58
+  LUT3_L \coda2_9_cZ[2]  (
+	.I0(coda3[2]),
+	.I1(coda1[2]),
+	.I2(stato[0]),
+	.LO(coda2_9[2])
+);
+defparam \coda2_9_cZ[2] .INIT=8'hCA;
+// @10:58
+  LUT3_L \coda2_9_cZ[0]  (
+	.I0(coda3[0]),
+	.I1(coda1[0]),
+	.I2(stato[0]),
+	.LO(coda2_9[0])
+);
+defparam \coda2_9_cZ[0] .INIT=8'hCA;
+// @10:58
+  LUT3_L \coda1_8_cZ[2]  (
+	.I0(coda2[2]),
+	.I1(coda0[2]),
+	.I2(stato[0]),
+	.LO(coda1_8[2])
+);
+defparam \coda1_8_cZ[2] .INIT=8'hCA;
+// @10:58
+  LUT2_L \coda3_8_cZ[0]  (
+	.I0(coda2[0]),
+	.I1(stato[0]),
+	.LO(coda3_8[0])
+);
+defparam \coda3_8_cZ[0] .INIT=4'h8;
+// @10:58
+  LUT2_L \coda3_8_cZ[1]  (
+	.I0(coda2[1]),
+	.I1(stato[0]),
+	.LO(coda3_8[1])
+);
+defparam \coda3_8_cZ[1] .INIT=4'h8;
+// @10:58
+  LUT2_L \coda3_8_cZ[2]  (
+	.I0(coda2[2]),
+	.I1(stato[0]),
+	.LO(coda3_8[2])
+);
+defparam \coda3_8_cZ[2] .INIT=4'h8;
+// @10:65
+  LUT2 ru18_cZ (
+	.I0(stato[1]),
+	.I1(stato[0]),
+	.O(ru18)
+);
+defparam ru18_cZ.INIT=4'h4;
+  LUT1_L \stato_RNO[0]  (
+	.I0(stato[0]),
+	.LO(stato_i[0])
+);
+defparam \stato_RNO[0] .INIT=2'h1;
+// @10:40
+  LUT4_L ru2e (
+	.I0(request2),
+	.I1(ru2),
+	.I2(stato[1]),
+	.I3(stato[0]),
+	.LO(ru2e_0)
+);
+defparam ru2e.INIT=16'hACAA;
+// @10:40
+  LUT4_L ru1e (
+	.I0(request1),
+	.I1(ru1),
+	.I2(stato[1]),
+	.I3(stato[0]),
+	.LO(ru1e_0)
+);
+defparam ru1e.INIT=16'hACAA;
+// @10:40
+  LUT4_L ru3e (
+	.I0(request3),
+	.I1(ru3),
+	.I2(stato[1]),
+	.I3(stato[0]),
+	.LO(ru3e_0)
+);
+defparam ru3e.INIT=16'hACAA;
+// @10:40
+  LUT4_L ru4e (
+	.I0(request4),
+	.I1(ru4),
+	.I2(stato[1]),
+	.I3(stato[0]),
+	.LO(ru4e_0)
+);
+defparam ru4e.INIT=16'hACAA;
+// @10:40
+  LUT3_L \coda0e[0]  (
+	.I0(coda0[0]),
+	.I1(N_109_i),
+	.I2(un1_ru17_2_i),
+	.LO(coda0e_0[0])
+);
+defparam \coda0e[0] .INIT=8'hCA;
+// @10:40
+  LUT3_L \coda0e[2]  (
+	.I0(coda0[2]),
+	.I1(N_140_i),
+	.I2(un1_ru17_2_i),
+	.LO(coda0e_0[2])
+);
+defparam \coda0e[2] .INIT=8'hCA;
+// @10:40
+  LUT3_L \coda0e[1]  (
+	.I0(coda0[1]),
+	.I1(N_113),
+	.I2(un1_ru17_2_i),
+	.LO(coda0e_0[1])
+);
+defparam \coda0e[1] .INIT=8'hCA;
+// @10:58
+  LUT6 g0_nen_RNO (
+	.I0(stato[1]),
+	.I1(stato[0]),
+	.I2(g0_0_0),
+	.I3(g4),
+	.I4(un1_fu1),
+	.I5(un1_coda0_0_sqmuxa_0),
+	.O(un1_coda0_0_sqmuxa_2)
+);
+defparam g0_nen_RNO.INIT=64'h6666444462224000;
+// @10:68
+  LUT6_L fu3_RNI3QKM (
+	.I0(fu3),
+	.I1(fu4),
+	.I2(ru4),
+	.I3(ru3),
+	.I4(ru1),
+	.I5(ru2),
+	.LO(un1_coda0_0_sqmuxa_1)
+);
+defparam fu3_RNI3QKM.INIT=64'h0000000000005530;
+// @10:68
+  LUT4 g0_nen_RNO_1 (
+	.I0(fu3),
+	.I1(fu4),
+	.I2(ru4),
+	.I3(ru3),
+	.O(g4)
+);
+defparam g0_nen_RNO_1.INIT=16'h5530;
+// @10:68
+  LUT4 fu1_RNIAMQE (
+	.I0(fu1),
+	.I1(fu2),
+	.I2(ru1),
+	.I3(ru2),
+	.O(un1_coda0_0_sqmuxa_0)
+);
+defparam fu1_RNIAMQE.INIT=16'h5350;
+// @10:106
+  LUT4 fu1_RNIM51E (
+	.I0(fu1),
+	.I1(fu2),
+	.I2(fu3),
+	.I3(fu4),
+	.O(un1_fu1)
+);
+defparam fu1_RNIM51E.INIT=16'hFFFE;
+  LUT2 g0_nen_RNO_0 (
+	.I0(ru1),
+	.I1(ru2),
+	.O(g0_0_0)
+);
+defparam g0_nen_RNO_0.INIT=4'h1;
+// @10:40
+  LUT5_L \grante[2]  (
+	.I0(grant[2]),
+	.I1(coda0[0]),
+	.I2(coda0[1]),
+	.I3(coda0[2]),
+	.I4(un1_ru17_i),
+	.LO(grante_0[2])
+);
+defparam \grante[2] .INIT=32'h0030AAAA;
+// @10:40
+  LUT5_L \grante[1]  (
+	.I0(grant[1]),
+	.I1(coda0[0]),
+	.I2(coda0[1]),
+	.I3(coda0[2]),
+	.I4(un1_ru17_i),
+	.LO(grante_0[1])
+);
+defparam \grante[1] .INIT=32'h000CAAAA;
+// @10:40
+  LUT5_L \grante[0]  (
+	.I0(grant[0]),
+	.I1(coda0[0]),
+	.I2(coda0[1]),
+	.I3(coda0[2]),
+	.I4(un1_ru17_i),
+	.LO(grante_0[0])
+);
+defparam \grante[0] .INIT=32'hC000AAAA;
+// @10:40
+  LUT5_L \grante[3]  (
+	.I0(grant[3]),
+	.I1(coda0[0]),
+	.I2(coda0[1]),
+	.I3(coda0[2]),
+	.I4(un1_ru17_i),
+	.LO(grante_0[3])
+);
+defparam \grante[3] .INIT=32'h0300AAAA;
+// @10:40
+  FDC \stato_Z[1]  (
+	.Q(stato[1]),
+	.D(stato[0]),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC \stato_Z[0]  (
+	.Q(stato[0]),
+	.D(stato_i[0]),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDCE fu1_Z (
+	.Q(fu1),
+	.D(ru1),
+	.C(clock),
+	.CLR(reset),
+	.CE(ru18)
+);
+// @10:40
+  FDCE fu2_Z (
+	.Q(fu2),
+	.D(ru2),
+	.C(clock),
+	.CLR(reset),
+	.CE(ru18)
+);
+// @10:40
+  FDCE fu3_Z (
+	.Q(fu3),
+	.D(ru3),
+	.C(clock),
+	.CLR(reset),
+	.CE(ru18)
+);
+// @10:40
+  FDCE fu4_Z (
+	.Q(fu4),
+	.D(ru4),
+	.C(clock),
+	.CLR(reset),
+	.CE(ru18)
+);
+// @10:40
+  FDC ru1_Z (
+	.Q(ru1),
+	.D(ru1e_0),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC ru2_Z (
+	.Q(ru2),
+	.D(ru2e_0),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC ru3_Z (
+	.Q(ru3),
+	.D(ru3e_0),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC ru4_Z (
+	.Q(ru4),
+	.D(ru4e_0),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC \grant_Z[3]  (
+	.Q(grant[3]),
+	.D(grante_0[3]),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC \grant_Z[2]  (
+	.Q(grant[2]),
+	.D(grante_0[2]),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC \grant_Z[1]  (
+	.Q(grant[1]),
+	.D(grante_0[1]),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC \grant_Z[0]  (
+	.Q(grant[0]),
+	.D(grante_0[0]),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDCE \grant_o_Z[3]  (
+	.Q(grant_o[3]),
+	.D(grant[3]),
+	.C(clock),
+	.CLR(reset),
+	.CE(ru18)
+);
+// @10:40
+  FDCE \grant_o_Z[2]  (
+	.Q(grant_o[2]),
+	.D(grant[2]),
+	.C(clock),
+	.CLR(reset),
+	.CE(ru18)
+);
+// @10:40
+  FDCE \grant_o_Z[1]  (
+	.Q(grant_o[1]),
+	.D(grant[1]),
+	.C(clock),
+	.CLR(reset),
+	.CE(ru18)
+);
+// @10:40
+  FDCE \grant_o_Z[0]  (
+	.Q(grant_o[0]),
+	.D(grant[0]),
+	.C(clock),
+	.CLR(reset),
+	.CE(ru18)
+);
+// @10:40
+  FDC \coda0_Z[2]  (
+	.Q(coda0[2]),
+	.D(coda0e_0[2]),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC \coda0_Z[1]  (
+	.Q(coda0[1]),
+	.D(coda0e_0[1]),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC \coda0_Z[0]  (
+	.Q(coda0[0]),
+	.D(coda0e_0[0]),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FD g0_nen_Z (
+	.Q(N_278),
+	.D(un1_coda0_0_sqmuxa_2),
+	.C(clock)
+);
+// @10:40
+  LUT3_L \coda30[0]  (
+	.I0(N_279),
+	.I1(N_280),
+	.I2(N_278),
+	.LO(coda3[0])
+);
+defparam \coda30[0] .INIT=8'hCA;
+// @10:40
+  LUT3_L \coda31[1]  (
+	.I0(N_281),
+	.I1(N_282),
+	.I2(N_278),
+	.LO(coda3[1])
+);
+defparam \coda31[1] .INIT=8'hCA;
+// @10:40
+  LUT3_L \coda32[2]  (
+	.I0(N_283),
+	.I1(N_284),
+	.I2(N_278),
+	.LO(coda3[2])
+);
+defparam \coda32[2] .INIT=8'hCA;
+// @10:40
+  LUT3_L \coda23[0]  (
+	.I0(N_285),
+	.I1(N_286),
+	.I2(N_278),
+	.LO(coda2[0])
+);
+defparam \coda23[0] .INIT=8'hCA;
+// @10:40
+  LUT3_L \coda24[1]  (
+	.I0(N_287),
+	.I1(N_288),
+	.I2(N_278),
+	.LO(coda2[1])
+);
+defparam \coda24[1] .INIT=8'hCA;
+// @10:40
+  LUT3_L \coda25[2]  (
+	.I0(N_289),
+	.I1(N_290),
+	.I2(N_278),
+	.LO(coda2[2])
+);
+defparam \coda25[2] .INIT=8'hCA;
+// @10:40
+  LUT3_L \coda16[0]  (
+	.I0(N_291),
+	.I1(N_292),
+	.I2(N_278),
+	.LO(coda1[0])
+);
+defparam \coda16[0] .INIT=8'hCA;
+// @10:40
+  LUT3_L \coda17[1]  (
+	.I0(N_293),
+	.I1(N_294),
+	.I2(N_278),
+	.LO(coda1[1])
+);
+defparam \coda17[1] .INIT=8'hCA;
+// @10:40
+  LUT3_L \coda18[2]  (
+	.I0(N_295),
+	.I1(N_296),
+	.I2(N_278),
+	.LO(coda1[2])
+);
+defparam \coda18[2] .INIT=8'hCA;
+// @10:40
+  FDC \coda1_rcen_Z[2]  (
+	.Q(N_295),
+	.D(coda1[2]),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC \coda1_rcen_Z[1]  (
+	.Q(N_293),
+	.D(coda1[1]),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC \coda1_rcen_Z[0]  (
+	.Q(N_291),
+	.D(coda1[0]),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC \coda2_rcen_Z[2]  (
+	.Q(N_289),
+	.D(coda2[2]),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC \coda2_rcen_Z[1]  (
+	.Q(N_287),
+	.D(coda2[1]),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC \coda2_rcen_Z[0]  (
+	.Q(N_285),
+	.D(coda2[0]),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC \coda3_rcen_Z[2]  (
+	.Q(N_283),
+	.D(coda3[2]),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC \coda3_rcen_Z[1]  (
+	.Q(N_281),
+	.D(coda3[1]),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC \coda3_rcen_Z[0]  (
+	.Q(N_279),
+	.D(coda3[0]),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC \coda3_Z[0]  (
+	.Q(N_280),
+	.D(coda3_8[0]),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC \coda3_Z[1]  (
+	.Q(N_282),
+	.D(coda3_8[1]),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC \coda3_Z[2]  (
+	.Q(N_284),
+	.D(coda3_8[2]),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC \coda2_Z[0]  (
+	.Q(N_286),
+	.D(coda2_9[0]),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC \coda2_Z[1]  (
+	.Q(N_288),
+	.D(coda2_9[1]),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC \coda2_Z[2]  (
+	.Q(N_290),
+	.D(coda2_9[2]),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC \coda1_Z[0]  (
+	.Q(N_292),
+	.D(coda1_8[0]),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC \coda1_Z[1]  (
+	.Q(N_294),
+	.D(coda1_8[1]),
+	.C(clock),
+	.CLR(reset)
+);
+// @10:40
+  FDC \coda1_Z[2]  (
+	.Q(N_296),
+	.D(coda1_8[2]),
+	.C(clock),
+	.CLR(reset)
+);
+  assign GND = 1'b0;
+  assign VCC = 1'b1;
+endmodule /* b03 */
+

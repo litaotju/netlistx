@@ -1,0 +1,112 @@
+//
+// Written by Synplify
+// Product Version "H-2013.03"
+// Program "Synplify Premier", Mapper "maprc, Build 1495R"
+// Wed Jul 15 16:00:34 2015
+//
+// Source file index table:
+// Object locations will have the form <file>:<line>
+// file 0 "noname"
+// file 1 "\c:\synopsys\fpga_h201303\lib\vhd\std.vhd "
+// file 2 "\c:\synopsys\fpga_h201303\lib\vhd\snps_haps_pkg.vhd "
+// file 3 "\c:\synopsys\fpga_h201303\lib\vhd\std1164.vhd "
+// file 4 "\c:\synopsys\fpga_h201303\lib\vhd\numeric.vhd "
+// file 5 "\c:\synopsys\fpga_h201303\lib\vhd\umr_capim.vhd "
+// file 6 "\c:\synopsys\fpga_h201303\lib\vhd\arith.vhd "
+// file 7 "\c:\synopsys\fpga_h201303\lib\vhd\unsigned.vhd "
+// file 8 "\e:\ise_workspace\synopsys_flatten_virtex7\benchmark_vhdl\b01.vhd "
+// file 9 "\e:\ise_workspace\synopsys_flatten_virtex7\benchmark_vhdl\b02.vhd "
+// file 10 "\e:\ise_workspace\synopsys_flatten_virtex7\design_constraints.sdc "
+// file 11 "\e:/ise_workspace/synopsys_flatten_virtex7/design_constraints.sdc "
+
+`timescale 100 ps/100 ps
+module b02 (
+  reset,
+  clock,
+  linea,
+  u
+)
+;
+input reset ;
+input clock ;
+input linea ;
+output u ;
+wire reset ;
+wire clock ;
+wire linea ;
+wire u ;
+wire [2:0] stato;
+wire [2:0] stato_11;
+wire VCC_x ;
+wire GND_x ;
+wire stato30 ;
+wire \stato_11_2_0_.N_14_mux_i  ;
+wire GND ;
+wire VCC ;
+// @9:30
+  LUT4_L \stato_11_2_0_.m5  (
+	.I0(linea),
+	.I1(stato[0]),
+	.I2(stato[1]),
+	.I3(stato[2]),
+	.LO(stato_11[0])
+);
+defparam \stato_11_2_0_.m5 .INIT=16'h031B;
+// @9:26
+  LUT4_L \stato_11_2_0_.N_14_mux_i_cZ  (
+	.I0(linea),
+	.I1(stato[0]),
+	.I2(stato[1]),
+	.I3(stato[2]),
+	.LO(\stato_11_2_0_.N_14_mux_i )
+);
+defparam \stato_11_2_0_.N_14_mux_i_cZ .INIT=16'hCC34;
+// @9:30
+  LUT4_L \stato_11_2_0_.m11  (
+	.I0(linea),
+	.I1(stato[0]),
+	.I2(stato[1]),
+	.I3(stato[2]),
+	.LO(stato_11[2])
+);
+defparam \stato_11_2_0_.m11 .INIT=16'h1CE8;
+// @9:52
+  LUT3_L \stato_11_2_0_.stato30  (
+	.I0(stato[0]),
+	.I1(stato[1]),
+	.I2(stato[2]),
+	.LO(stato30)
+);
+defparam \stato_11_2_0_.stato30 .INIT=8'h10;
+// @9:26
+  FDC \stato_Z[2]  (
+	.Q(stato[2]),
+	.D(stato_11[2]),
+	.C(clock),
+	.CLR(reset)
+);
+// @9:26
+  FDC \stato_Z[1]  (
+	.Q(stato[1]),
+	.D(\stato_11_2_0_.N_14_mux_i ),
+	.C(clock),
+	.CLR(reset)
+);
+// @9:26
+  FDC \stato_Z[0]  (
+	.Q(stato[0]),
+	.D(stato_11[0]),
+	.C(clock),
+	.CLR(reset)
+);
+// @9:26
+  FDC u_Z (
+	.Q(u),
+	.D(stato30),
+	.C(clock),
+	.CLR(reset)
+);
+  assign GND = 1'b0;
+  assign VCC = 1'b1;
+endmodule /* b02 */
+
