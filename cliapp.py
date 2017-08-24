@@ -5,12 +5,11 @@ import os
 import sys
 
 from file_util import vm_files2
+
 __all__ = ["CliApp"]
 
 class CliApp(object):
-    '''基本的命令行程序
-    '''
-    #常量
+    '''基本的命令行程序'''
     QUIT_COMMANDS = ('quit', 'exit', 'q')
     MODE_INTERACTIVE = 'interactive'
     MODE_BATCH = 'batch'
@@ -22,6 +21,8 @@ class CliApp(object):
         self.name = "CliApp" if name == None else name
         self.script_mode = False #在脚本模式为true时，运行一个命令出错，则后面的命令停止执行
         self.call = {}  # cmd:func
+        self.help = {}  # cmd:help
+
         self.opath = "" # 输出路径的基路径
         self.mode = CliApp.DEFAULT_MODE # batch or interactive
         self.path = CliApp.DEFAULT_PATH #默认路径为 os.getcwd()当前路径, 不变式：self.path一直是存在的路径
@@ -38,16 +39,22 @@ class CliApp(object):
         self.addFunction('history', self.showHistory)
 
         self.addFunction('setmode', self.setMode)
-        self.addFunction("readvm", self.getSingleFile)
-
+        self.addFunction("mode", lambda: sys.stdout.write(self.mode + os.linesep),
+                         u'打印当前模式')
         self.addFunction("batch", self.batch)
         self.addFunction("single", self.single)
         self.addFunction("source", self.readScript)
-        self.addFunction("mode", lambda: sys.stdout.write(self.mode + os.linesep))
-        self.addFunction("file", lambda: sys.stdout.write(self.current_file + os.linesep))
+
+        self.addFunction("readvm", self.getSingleFile)
+        self.addFunction("file", lambda: sys.stdout.write(self.current_file + os.linesep),
+                                u'打印当前的正在处理的（网表）文件')
+
         if os.name == 'nt': 
             self.addFunction('cls', lambda: os.system("cls"))
-            
+        else:
+            self.addFunction('clear', lambda:os.system("clear"),
+                             u"Clear screen")
+
     def _sequence(self):
         u'''产生序列供batch函数使用
         '''
@@ -198,9 +205,8 @@ class CliApp(object):
         u'''打印用法信息
         '''
         print "--------------------------usage----------------------------"
-        print os.linesep.join(["%10.10s : %s" % (cmd, func.__doc__)\
-                                  for cmd, func in self.call.iteritems()])
-        print "--------------------------usage----------------------------"
+        print os.linesep.join(["%10.10s : %s" % (cmd, self.help[cmd].strip())\
+                                  for cmd in self.call.keys()])
 
     def getSingleFile(self):
         u'''预读取一个文件，设置为当前文件。并返回当前的文件名
@@ -215,7 +221,7 @@ class CliApp(object):
             self.current_file = filename
         return
 
-    def addFunction(self, cmd, func):
+    def addFunction(self, cmd, func, help=None):
         u'''@brief:为app添加新的 cmd-func对，添加新的功能
             @params:
                 cmd, a string indicate the cmd from user
@@ -227,8 +233,10 @@ class CliApp(object):
                                  do you want to override: (yes?no)" % cmd)
             if override == 'yes':
                 self.call[cmd] = func
+                self.help[cmd] = func.__doc__ if help is None else help
         else:
             self.call[cmd] = func
+            self.help[cmd] = func.__doc__ if help is None else help
         return self
 
     def run(self):

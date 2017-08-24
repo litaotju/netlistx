@@ -5,7 +5,6 @@ Created on Thu Jun 18 16:30:03 2015
 this file is composed of a lot of functions to parse and util the netlist Src file
 """
 
-import os
 import re
 import copy
 
