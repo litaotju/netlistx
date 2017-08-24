@@ -71,7 +71,7 @@ def unbalance_paths(G):
             unp = is_unp(s,t)
             if unp is not None:
                 unp_cnt += 1
-                print "UNP cnt: %d" % unp_cnt
+                #print "UNP cnt: %d" % unp_cnt
             upath2.append(unp)
     upath2 = filter(lambda x: x!= None, upath2)
     upath2 = {x[0]:x[1] for x in upath2}
