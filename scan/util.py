@@ -232,9 +232,11 @@ class RecordRuntime(object):
         self.start_time = 0
 
     def __enter__(self):
-        self.start_time = time.clock()
+        #self.start_time = time.clock()
+        self.start_time = time.time()
 
     def __exit__(self, exc_type, exc_value, traceback):
-        runtime = time.clock() - self.start_time
+        #runtime = time.clock() - self.start_time
+        runtime = time.time() - self.start_time
         self.out.write("%s, %s\n" % (self.circuit, runtime))
         self.out.close()
