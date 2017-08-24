@@ -15,7 +15,8 @@ from netlistx.graph.util import WriteDotBeforeAfter
 from netlistx.graph.circuitgraph import CircuitGraph, fusionable_pair
 from netlistx.graph.esgraph import ESGraph
 from netlistx.scan.util import (get_namegraph, upath_cycle, gen_m_script, 
-                                        run_matlab, read_solution, isbalanced)
+                                        run_matlab, read_solution, isbalanced,
+                                        RecordRuntime)
 from netlistx.prototype.unbpath import unbalance_paths_deprecate
 from netlistx.scan.scanapp import ScanApp as ScanAppBase
 from netlistx.scan.instrumentor import FullReplaceInstrumentor, FusionInstrumentor
@@ -146,7 +147,8 @@ def get_scan_fds(esgrh, opath):
     
     # 运行脚本，读取结果
     if LEVEL == 1:
-        run_matlab(script_file, port)
+        with RecordRuntime(os.path.join(opath, "matlab_runtime.txt"), esgrh.name):
+            run_matlab(script_file, port)
         scan_fds += read_solution(os.path.join(opath, solution_file), node2x)
     
     #从字符串，获取真正的扫描触发器对象，
@@ -280,9 +282,13 @@ class ESScanApp(ScanApp):
 
     def _get_scan_fds(self):
         self.prepare_graph()
-        self.scan_fds = get_scan_fds(self.esgrh, self.opath)
+        
+        with RecordRuntime(os.path.join(self.opath, "runtime.txt"), self.esgrh.name): 
+            self.scan_fds = get_scan_fds(self.esgrh, self.opath)
+        
         self.esgrh.remove_nodes_from(self.scan_fds)
         assert(isbalanced(self.esgrh))
+        self.instrumentor = None
 
 class ESScanAppCut(ScanApp):
     '''使用Cut图的方法，将大的图减小，然后分别求解
@@ -311,6 +317,7 @@ class ESScanAppCut(ScanApp):
             self.esgrh.remove_nodes_from(scan_fds)
 
         assert(isbalanced(self.esgrh))
+
     
 class ESScanAppIter(ScanApp):
     ''' 本APP适用于图比较复杂的情况，找UNP和找CYCLE都比较费时间。所以分两步求解
@@ -319,7 +326,7 @@ class ESScanAppIter(ScanApp):
     '''
     #大扇出触发器作为SFF的比例，默认为20%
     #即：取前 PORTION_MOST_FANOUT_AS_SFF 当作扫描触发器,先将这部分触发器从图中移除
-    PORTION_MOST_FANOUT_AS_SFF = 0.2
+    PORTION_MOST_FANOUT_AS_SFF = 0.20
 
     def __init__(self, name="ESScanIter"):
         #global IS_ITER
@@ -330,22 +337,24 @@ class ESScanAppIter(ScanApp):
     def _get_scan_fds(self):
         self.prepare_graph()
         esgrh, graph = self.esgrh, self.graph   
+        
+        with RecordRuntime(os.path.join(self.opath, "runtime.txt"), self.esgrh.name): 
+            #从大到小排列触发器的出度
+            self.fds.sort(key=esgrh.out_degree, reverse=True)
+            self.scan_fds = self.fds[ : int(len(self.fds)*self.PORTION_MOST_FANOUT_AS_SFF)]
+            esgrh.remove_nodes_from(self.scan_fds)
 
-        #从大到小排列触发器的出度
-        self.fds.sort(key=esgrh.out_degree, reverse=True)
-        self.scan_fds = self.fds[ : int(len(self.fds)*self.PORTION_MOST_FANOUT_AS_SFF)]
-        esgrh.remove_nodes_from(self.scan_fds)
-
-        iter_cnt = 0
-        #迭代求解，直到图变平衡
-        while(not isbalanced(esgrh)):
-            opath = os.path.join(self.opath, "iter%d" % iter_cnt)
-            scan_fds = get_scan_fds(esgrh, opath)
-            #每一轮的结果必然不为0，如果为0.说明图已经被平衡了
-            assert len(scan_fds) != 0
-            iter_cnt += 1
-            self.scan_fds += scan_fds
-            esgrh.remove_nodes_from(scan_fds)
+            iter_cnt = 0
+            #迭代求解，直到图变平衡
+            while(not isbalanced(esgrh)):
+                opath = os.path.join(self.opath, "iter%d" % iter_cnt)
+                scan_fds = get_scan_fds(esgrh, opath)
+                #每一轮的结果必然不为0，如果为0.说明图已经被平衡了
+                assert len(scan_fds) != 0
+                iter_cnt += 1
+                self.scan_fds += scan_fds
+                esgrh.remove_nodes_from(scan_fds)
+        self.instrumentor = None
     
     def set_portion(self):
         u'设置 大扇出D触发器的转换为SFF的比例'
@@ -354,7 +363,7 @@ class ESScanAppIter(ScanApp):
             self.PORTION_MOST_FANOUT_AS_SFF = portion
         else:
             print "Ileagal Value, portion must >=0 and <=1"
-
+ 
 
 class ESScanAppFusionFirst(ScanApp):
     u'''1. 先将能够逻辑混合的所有触发器，都直接选出来作为扫描触发器。并将这部分触发器从图中移除
@@ -390,11 +399,11 @@ if __name__ == "__main__":
                 'cut': ESScanAppCut,
                 "fusion": ESScanAppFusionFirst}
 
-    defaultAppClass = ESScanAppFusionFirst
+    defaultAppClass = ESScanAppIter
     app = None
     try:
         app = app_ctxt[sys.argv[1]]()
-    except KeyError: #参数不在 'normal' 'iter' 'cut'中时
+    except KeyError: #参数不在 'normal' 'iter' 'cut' 'fusion'中时
         print "Usage: partial_esgraph [<normal> <iter> <cut> <fusion>]"
         exit()
     except IndexError: #没有参数时
