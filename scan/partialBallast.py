@@ -1,6 +1,7 @@
 ﻿# -*- coding: utf-8 -*-
 
 import time
+import os
 import networkx as nx
 
 # user-defined module
@@ -10,8 +11,9 @@ from netlistx.graph.cloudgraph import CloudRegGraph
 from netlistx.graph.circuitgraph import CircuitGraph
 from netlistx.prototype.fas import comb_fas
 from netlistx.scan.scanapp import ScanApp
+from netlistx.scan.instrumentor import FullReplaceInstrumentor
 
-from netlistx.scan.util import isbalanced
+from netlistx.scan.util import isbalanced, RecordRuntime
 __check = isbalanced
 
 __all__ = ["balance", "ballast", "BallastApp"]
@@ -111,7 +113,7 @@ def ballast(crgraph):
 
         timecycle += (tcycle - start)
         timebal += (tbal - tcycle)
-    fobj = open("test\\timeStats.txt", 'a')
+    fobj = open(os.path.join("test","timeStats.txt"), 'a')
     fobj.write("%s , cycle:%.3f, bal:%.3f, total:%.3f\n"
                % (crgraph.name[:-11], timecycle, timebal, (timecycle + timebal)))
     fobj.close()
@@ -142,7 +144,31 @@ class BallastApp(ScanApp):
         cr = CloudRegGraph(g)
         cr.info()
         self.fds = filter(cc.isDff, g.nodes_iter())
-        self.scan_fds = ballast(cr)
+        with RecordRuntime( os.path.join(self.opath, "runtime.txt"), g.name): 
+            self.scan_fds = ballast(cr)
+
+    def after_get_scan_fds(self):
+
+        # 插入扫描后的输出子路径
+        INSERT_PATH = "netlist_inserted"
+        # 插入扫描后的输出子路径
+        BEFORE_INSERT_PATH = "netlist"
+
+        # 保存插入前的网表
+        opath = os.path.join(self.opath, BEFORE_INSERT_PATH)
+        if not os.path.exists(opath):
+            os.makedirs(opath)
+        self.netlist.write(opath)
+
+        # 如果子类没有指定指定instumentor，则指定默认的instrumentor
+        # 否则使用子类指定的instrumentor 进行扫描插入
+        instrumentor = FullReplaceInstrumentor(self.netlist, self.scan_fds)
+        instrumentor.insert_scan()
+        # 保存插入后的网表
+        opath = os.path.join(self.opath, INSERT_PATH)
+        if not os.path.exists(opath):
+            os.makedirs(opath)
+        self.netlist.write(opath)
 
 if __name__ == "__main__":
     BallastApp().run()
