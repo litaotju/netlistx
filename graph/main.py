@@ -14,6 +14,10 @@ from netlistx.graph.circuitgraph import get_graph, save_graphs, fanout_stat
 from netlistx.graph.cloudgraph import CloudRegGraph
 from netlistx.graph.esgraph import ESGraph
 
+from netlistx.scan.util import get_namegraph, upath_cycle
+from netlistx.scan.cycles import simple_cycles
+from netlistx.prototype.unbpath import unbalance_paths
+
 class GraphMainApp(CliApp):
 
     def __init__(self):
@@ -28,7 +32,7 @@ class GraphMainApp(CliApp):
         u'''@breif:根据模式，对一个目录或者一个单独的文件运行一个 process, process
             @param:
                 process, a function( single file) with to handle a file
-            @return:
+            @return:=
                 void
         '''
         if self.mode == GraphMainApp.MODE_INTERACTIVE:
@@ -90,8 +94,39 @@ class GraphMainApp(CliApp):
         def __process(eachVm):
             g = get_graph( eachVm )
             es = ESGraph( g )
+            selfloop_nodes = [node for node in es.nodes_iter()
+                    if es.has_edge(node, node)]
             es.save_info_item2csv( csvfile )
             logger.info( es.info() )
+            es.remove_nodes_from(selfloop_nodes)
+           
+            name_graph = get_namegraph(es)
+
+
+            #从大到小排列触发器的出度
+            nodes = name_graph.nodes()
+            nodes.sort(key=name_graph.out_degree, reverse=True)
+            p = os.path.join(self.opath, es.name)
+            if not os.path.exists(p):
+                os.makedirs(p)
+            fobj = open(p+".degrees.csv", 'w')
+            fobj.write("nodes, out_dgree\n")
+            for eachNode in nodes:
+                fobj.write("%s, %d\n" %(eachNode, name_graph.out_degree(eachNode)))
+            fobj.close()
+
+            #移除出度最大的
+            #i = 2
+            #remove_nodes = nodes[int(len(nodes)*0.2)*i : int(len(nodes)*0.2)*(i+1)]
+            #name_graph.remove_nodes_from(remove_nodes)
+            #打印环和不平衡路径的信息 
+            #cycles_cnt = 0
+            #for c in simple_cycles(name_graph):
+            #    cycles_cnt += 1
+            #    print "cycles cnt: %d" % cycles_cnt
+            #u = unbalance_paths(name_graph)
+            #logger.info("UNPS: %d " % len(u))
+            #logger.info("Cycles: %d" % len(c))
             return
         self.runProcess(__process)
         return 
