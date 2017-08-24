@@ -1,4 +1,4 @@
-"""
+﻿"""
 ========================
 Cycle finding algorithms
 ========================
@@ -196,7 +196,7 @@ def simple_cycles(G):
 #                    print thisnode,nbrs,":",nextnode,blocked,B,path,stack,startnode
 #                    f=raw_input("pause")
                 if nextnode == startnode:
-                    print path
+                    # print path
                     yield path[:]
                     closed.update(path)
 #                        print "Found a cycle",path,closed
